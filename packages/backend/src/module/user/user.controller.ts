@@ -2,6 +2,8 @@ import { Controller, Get, VERSION_NEUTRAL, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
+import { LoginDto } from './dto';
+import type { ILoginResponseDto, IUserResponseDto } from './dto';
 
 @Controller({
   path: 'user',
@@ -10,14 +12,24 @@ import type { UserJwtPayload } from '@reus-able/types';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  /**
+   * 用户登录（SSO 第三方登录）
+   * @param loginDto 登录请求参数
+   * @returns 登录响应（包含用户信息和 JWT token）
+   */
   @Get('login')
-  login(@Query('ticket') ticket: string) {
-    return this.userService.login(ticket);
+  async login(@Query() loginDto: LoginDto): Promise<ILoginResponseDto> {
+    return this.userService.login(loginDto.ticket);
   }
 
+  /**
+   * 获取当前登录用户信息
+   * @param user 当前登录用户（从 JWT 解析）
+   * @returns 用户信息
+   */
   @Get('data')
   @AuthRoles('user')
-  findOne(@UserParams() user: UserJwtPayload) {
+  async findOne(@UserParams() user: UserJwtPayload): Promise<IUserResponseDto> {
     return this.userService.findOne(user.id);
   }
 }

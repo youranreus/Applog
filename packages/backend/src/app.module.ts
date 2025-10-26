@@ -26,7 +26,7 @@ import { ENTITY_LIST } from '@/entities';
         username: cfg.get('MYSQL_USER', 'root'),
         password: cfg.get('MYSQL_PASSWORD', 'root'),
         database: cfg.get('MYSQL_DATABASE', 'ware-house'),
-        synchronize: false,
+        synchronize: true,
         entities: [...ENTITY_LIST],
       }),
     }),

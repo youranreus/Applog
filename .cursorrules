@@ -564,8 +564,39 @@ pnpm c  # 使用交互式提交
 - Logger 使用属性注入：`@Inject(HLOGGER_TOKEN) private logger: HLogger`
 
 ### 3. 异步处理
-- 使用 `async/await` 处理异步操作
+- **必须使用 `async/await`** 处理异步操作，**禁止混用 `await` 和 `.then()`**
+- 使用 `try-catch` 进行错误处理，不使用 `.catch()`
 - 为 Promise 提供明确的类型
+
+```typescript
+// ✅ 正确：使用 async/await + try-catch
+async function fetchData() {
+  try {
+    const response = await api.getData();
+    const data = response.data;
+    this.log('获取数据成功');
+    return data;
+  } catch (error) {
+    this.error(`获取数据失败: ${error.message}`);
+    throw new BusinessException('获取数据失败');
+  }
+}
+
+// ❌ 错误：混用 await 和 .then()
+async function fetchData() {
+  const data = await api.getData()
+    .then(res => res.data)
+    .catch(e => console.error(e));
+  return data;
+}
+
+// ❌ 错误：使用 .then() 而不是 await
+async function fetchData() {
+  return api.getData()
+    .then(res => res.data)
+    .catch(e => console.error(e));
+}
+```
 
 ### 4. 环境变量
 - 使用 `ConfigService` 管理配置（已配置为全局）
