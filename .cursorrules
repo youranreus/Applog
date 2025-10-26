@@ -31,6 +31,14 @@ throw new BusinessException('错误信息');
 import type { UserJwtPayload } from '@reus-able/types';
 ```
 
+### 命名规范速查
+- **变量、字段**: camelCase (`userName`, `userId`, `createdAt`)
+- **常量**: UPPER_SNAKE_CASE (`MAX_COUNT`, `API_VERSION`)
+- **Interface**: I + PascalCase (`IUser`, `IUserResponse`)
+- **Type**: PascalCase (`UserRole`, `PostStatus`)
+- **类名**: PascalCase (`UserService`, `PostEntity`)
+- **避免使用**: enum 枚举（使用 type + const 对象替代）
+
 ---
 
 ## 项目概述
@@ -398,12 +406,94 @@ if (!resource) {
 - 运行 `pnpm --filter @applog/backend run lint` 检查代码
 
 ### 命名规范
-- **文件名**: 使用 PascalCase（实体、DTO）或 kebab-case（工具函数）
-- **类名**: PascalCase
-- **函数/变量**: camelCase
-- **常量**: UPPER_SNAKE_CASE
-- **接口**: PascalCase（不使用 I 前缀）
-- **类型别名**: PascalCase
+
+#### 文件命名
+- **实体、DTO、类文件**: PascalCase（如 `User.ts`, `CreateUserDto.ts`）
+- **工具函数、模块**: kebab-case（如 `user-utils.ts`, `user.controller.ts`）
+
+#### 代码命名
+- **类名**: PascalCase（如 `UserService`, `PostEntity`）
+- **变量、字段**: camelCase（如 `userName`, `userId`, `createdAt`）
+- **函数、方法**: camelCase（如 `findOne`, `createUser`, `getUserList`）
+- **常量**: UPPER_SNAKE_CASE（如 `MAX_COUNT`, `DEFAULT_PAGE_SIZE`, `API_VERSION`）
+- **Interface 接口**: **必须使用 I 前缀 + PascalCase**（如 `IUser`, `IUserResponse`, `ICreateUserDto`）
+- **Type 类型别名**: PascalCase（如 `UserRole`, `PostStatus`）
+
+#### 类型声明规范
+```typescript
+// ✅ 正确：Interface 使用 I 前缀
+interface IUser {
+  id: string;
+  userName: string;  // 字段使用 camelCase
+  email: string;
+}
+
+interface IUserResponse {
+  data: IUser;
+  message: string;
+}
+
+// ✅ 正确：Type 类型别名使用 PascalCase
+type UserRole = 'admin' | 'user';
+type PostStatus = 'draft' | 'published' | 'archived';
+
+// ✅ 正确：常量使用 UPPER_SNAKE_CASE
+const MAX_PAGE_SIZE = 100;
+const DEFAULT_TIMEOUT = 3000;
+const API_BASE_URL = 'https://api.example.com';
+
+// ✅ 正确：变量使用 camelCase
+const userName = 'John';
+const userId = '123';
+let pageNumber = 1;
+
+// ❌ 错误：Interface 不使用 I 前缀
+interface User {  // 应该是 IUser
+  id: string;
+}
+
+// ❌ 错误：字段使用 snake_case
+interface IUser {
+  user_name: string;  // 应该是 userName
+  created_at: Date;   // 应该是 createdAt
+}
+```
+
+#### 枚举使用规范
+**尽量避免使用 enum 枚举**，推荐使用以下替代方案：
+
+```typescript
+// ❌ 不推荐：使用 enum
+enum UserRole {
+  Admin = 'admin',
+  User = 'user',
+}
+
+// ✅ 推荐：使用 type + const 对象
+type UserRole = 'admin' | 'user';
+const USER_ROLES = {
+  ADMIN: 'admin',
+  USER: 'user',
+} as const;
+
+// ✅ 推荐：使用 type + union
+type PostStatus = 'draft' | 'published' | 'archived';
+
+// ✅ 推荐：需要常量时使用 const 对象
+const POST_STATUS = {
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
+  ARCHIVED: 'archived',
+} as const;
+
+type PostStatus = typeof POST_STATUS[keyof typeof POST_STATUS];
+```
+
+**枚举替代方案的优势**：
+- 更好的类型推断
+- 更灵活的类型操作
+- 避免 enum 的运行时开销
+- 更符合 TypeScript 最佳实践
 
 ## pnpm Workspace 使用
 
@@ -510,42 +600,47 @@ pnpm c  # 使用交互式提交
 ### 代码质量
 1. **禁止使用 `any`**: 除非有充分理由，否则禁止使用 `any` 类型
 2. **类型安全**: 所有 API 调用、数据库操作都应有类型保护
-3. **错误处理**: 必须妥善处理所有可能的错误情况
-4. **代码复用**: 提取公共逻辑到服务或工具函数
-5. **文档注释**: 为复杂逻辑添加 JSDoc 注释
+3. **命名规范**（必须严格遵守）:
+   - 变量、字段：camelCase (`userName`, `createdAt`)
+   - 常量：UPPER_SNAKE_CASE (`MAX_COUNT`, `API_VERSION`)
+   - Interface：**必须使用 I 前缀** (`IUser`, `IUserResponse`)
+   - **禁止使用 enum**：使用 type + const 对象替代
+4. **错误处理**: 必须妥善处理所有可能的错误情况
+5. **代码复用**: 提取公共逻辑到服务或工具函数
+6. **文档注释**: 为复杂逻辑添加 JSDoc 注释
 
 ### 项目基础设施使用（重要）
-6. **日志记录**: 
+7. **日志记录**: 
    - **必须使用** `HLogger`（来自 `@reus-able/nestjs`）
    - 在所有 Service 中通过 `@Inject(HLOGGER_TOKEN)` 注入
    - 记录重要操作和错误信息
    
-7. **配置管理**:
+8. **配置管理**:
    - **必须使用** `ConfigService` 读取配置
    - 不要硬编码任何配置值（URL、端口、密钥等）
    
-8. **权限控制**:
+9. **权限控制**:
    - 使用 `@AuthRoles('user')` 或 `@AuthRoles('admin')` 装饰器
    - 不需要权限的公开接口不使用装饰器
    - 需要当前用户信息时使用 `@UserParams()` 装饰器
    
-9. **API 版本控制**:
-   - 所有 Controller 必须指定版本：`version: [VERSION_NEUTRAL, '1']`
+10. **API 版本控制**:
+    - 所有 Controller 必须指定版本：`version: [VERSION_NEUTRAL, '1']`
    
-10. **异常处理**:
+11. **异常处理**:
     - 业务异常优先使用 `BusinessException`
     - 全局异常过滤器会自动统一响应格式
 
 ### 安全性
-11. **输入验证**: 
+12. **输入验证**: 
     - 使用 `class-validator` 装饰器验证所有用户输入
     - 全局 ValidationPipe 已配置自动类型转换
     
-12. **数据安全**:
+13. **数据安全**:
     - 使用参数化查询防止 SQL 注入（TypeORM 已支持）
     - 敏感数据加密存储
     
-13. **认证授权**:
+14. **认证授权**:
     - 全局 AuthGuard 已配置
     - 合理使用 `@AuthRoles` 控制访问权限
 
