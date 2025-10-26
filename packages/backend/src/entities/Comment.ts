@@ -24,6 +24,7 @@ export interface CommentExportData {
   status: 'pending' | 'approved' | 'rejected';
   likeCount: number;
   dislikeCount: number;
+  extra?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,6 +63,12 @@ export class CommentEntity {
     default: 0,
   })
   dislikeCount: number;
+
+  @Column({
+    nullable: true,
+    type: 'json',
+  })
+  extra: Record<string, any>;
 
   // 关联文章（多对一）
   @Column({
@@ -117,6 +124,7 @@ export class CommentEntity {
       status: this.status,
       likeCount: this.likeCount,
       dislikeCount: this.dislikeCount,
+      extra: this.extra,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

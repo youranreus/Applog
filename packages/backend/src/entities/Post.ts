@@ -26,6 +26,7 @@ export interface PostExportData {
     avatar?: string;
   };
   tags?: string[];
+  extra?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +86,12 @@ export class PostEntity {
   })
   tags: string[];
 
+  @Column({
+    nullable: true,
+    type: 'json',
+  })
+  extra: Record<string, any>;
+
   // 关联作者（多对一）
   @Column({
     nullable: false,
@@ -118,6 +125,7 @@ export class PostEntity {
       viewCount: this.viewCount,
       authorId: this.authorId,
       tags: this.tags,
+      extra: this.extra,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
