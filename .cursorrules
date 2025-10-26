@@ -1,0 +1,620 @@
+# AppLog Project - Cursor Rules
+
+## 快速参考
+
+### 核心装饰器和工具（来自 @reus-able/nestjs）
+```typescript
+// 权限控制
+import { AuthRoles, UserParams } from '@reus-able/nestjs';
+@AuthRoles('user')    // 需要 user 权限
+@AuthRoles('admin')   // 需要 admin 权限
+@UserParams() user: UserJwtPayload  // 获取当前用户
+
+// 日志记录
+import { HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
+@Inject(HLOGGER_TOKEN) private logger: HLogger;
+
+// 异常处理
+import { BusinessException } from '@reus-able/nestjs';
+throw new BusinessException('错误信息');
+```
+
+### 全局模块（已配置，直接使用）
+- **LoggerModule**: 日志服务（通过 `HLOGGER_TOKEN` 注入）
+- **ConfigModule**: 配置管理（通过 `ConfigService` 注入）
+- **AuthGuard**: 权限守卫（自动检查 `@AuthRoles`）
+- **ValidationPipe**: 参数校验（自动转换类型）
+- **异常过滤器**: 统一错误响应格式
+
+### 类型定义（来自 @reus-able/types）
+```typescript
+import type { UserJwtPayload } from '@reus-able/types';
+```
+
+---
+
+## 项目概述
+这是一个使用 TypeScript 开发的全栈博客应用，采用 pnpm workspace 进行 monorepo 管理。
+
+## 项目结构
+```
+applog/
+├── packages/
+│   ├── backend/        # NestJS 后端服务
+│   ├── frontend/       # Vue3 前端应用（待开发）
+│   └── finder/         # 其他模块（待开发）
+├── pnpm-workspace.yaml
+└── package.json
+```
+
+## 技术栈
+
+### 后端 (NestJS)
+- **框架**: NestJS 10.x + Fastify
+- **数据库**: TypeORM + MySQL2
+- **验证**: class-validator + class-transformer
+- **语言**: TypeScript 5.x (严格模式)
+- **包管理**: pnpm workspace
+
+### 前端 (Vue3)
+- **框架**: Vue 3
+- **语言**: TypeScript (严格模式)
+- **包管理**: pnpm workspace
+
+## TypeScript 规范
+
+### 通用规则
+1. **严格类型检查**: 必须为所有函数、变量、参数提供明确的类型声明
+2. **避免 `any`**: 尽可能避免使用 `any`，使用具体类型或泛型
+3. **类型推断**: 充分利用 TypeScript 的类型推断能力，但在接口边界必须显式声明
+4. **类型导入**: 使用 `import type` 导入仅用于类型的导入
+
+### 后端 TypeScript 配置
+- Target: ES2021
+- Module: CommonJS
+- 路径别名: `@/*` 映射到 `src/*`
+- 装饰器支持: 启用 `experimentalDecorators` 和 `emitDecoratorMetadata`
+
+## NestJS 开发规范
+
+### 0. 项目基础设施（必读）
+
+#### 全局模块
+项目已配置以下全局模块，开发时应优先使用：
+
+**LoggerModule** - 来自 `@reus-able/nestjs`
+```typescript
+import { HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
+
+@Injectable()
+export class YourService {
+  @Inject(HLOGGER_TOKEN)
+  private logger: HLogger;
+
+  someMethod() {
+    this.logger.log('message', YourService.name);
+    this.logger.error('error', YourService.name);
+  }
+}
+```
+
+**ConfigModule** - 来自 `@nestjs/config`
+- 已配置为全局模块
+- 支持多环境配置：`.env.production.local`, `.env.development.local`, `.env.production`, `.env.development`, `.env`
+- 通过依赖注入使用：
+```typescript
+import { ConfigService } from '@nestjs/config';
+
+constructor(private config: ConfigService) {}
+
+const value = this.config.get<string>('KEY_NAME', 'default_value');
+```
+
+**TypeORM + MySQL**
+- 已配置全局 TypeORM 连接
+- 新模块需要注册实体：
+```typescript
+@Module({
+  imports: [TypeOrmModule.forFeature([YourEntity])],
+})
+```
+
+#### 全局守卫与拦截器（已配置）
+- **AuthGuard**: 全局权限守卫，自动检查路由权限
+- **TransformInterceptor**: 统一响应格式转换
+- **AllExceptionsFilter & HttpExceptionFilter**: 统一异常处理
+- **ValidationPipe**: 全局参数校验（支持自动类型转换）
+
+#### 权限控制装饰器
+项目使用 `@reus-able/nestjs` 提供的权限装饰器：
+
+**@AuthRoles** - 路由权限控制
+```typescript
+import { AuthRoles, UserParams } from '@reus-able/nestjs';
+import type { UserJwtPayload } from '@reus-able/types';
+
+@Controller('api')
+export class SomeController {
+  // 需要 user 权限（普通用户）
+  @Get('data')
+  @AuthRoles('user')
+  getData(@UserParams() user: UserJwtPayload) {
+    return this.service.getData(user.id);
+  }
+
+  // 需要 admin 权限（管理员）
+  @Post('admin/action')
+  @AuthRoles('admin')
+  adminAction() {
+    return this.service.doAdmin();
+  }
+
+  // 不需要权限校验时，不使用装饰器
+  @Get('public')
+  publicData() {
+    return this.service.getPublic();
+  }
+}
+```
+
+**权限等级说明**：
+- 项目只有两种权限：`user`（普通用户）和 `admin`（管理员）
+- 不需要权限校验的接口不要使用 `@AuthRoles` 装饰器
+- 使用 `@UserParams()` 装饰器获取当前登录用户信息
+
+**@UserParams** - 获取当前用户信息
+```typescript
+import { UserParams } from '@reus-able/nestjs';
+import type { UserJwtPayload } from '@reus-able/types';
+
+@Get('profile')
+@AuthRoles('user')
+getUserProfile(@UserParams() user: UserJwtPayload) {
+  // user 包含: id, username, role 等信息
+  return this.service.getProfile(user.id);
+}
+```
+
+#### 异常处理
+优先使用 `BusinessException` 处理业务异常：
+```typescript
+import { BusinessException } from '@reus-able/nestjs';
+
+if (!data) {
+  throw new BusinessException('数据不存在');
+}
+
+// 也可以使用 NestJS 内置异常
+throw new NotFoundException('资源未找到');
+```
+
+#### API 版本控制
+项目启用了 URI 版本控制，默认版本为 `VERSION_NEUTRAL` 和 `'1'`：
+```typescript
+import { Controller, VERSION_NEUTRAL } from '@nestjs/common';
+
+@Controller({
+  path: 'users',
+  version: [VERSION_NEUTRAL, '1'],
+})
+export class UserController {}
+```
+
+### 1. 模块组织
+- 按功能模块划分代码（如 `user`, `post`, `auth` 等）
+- 每个模块包含: `*.module.ts`, `*.controller.ts`, `*.service.ts`
+- 使用 barrel exports（index.ts）统一导出
+- 模块中使用实体时，必须在 Module 的 imports 中注册：`TypeOrmModule.forFeature([Entity])`
+
+### 2. 控制器 (Controllers)
+```typescript
+import { Controller, Get, Post, Param, Body, VERSION_NEUTRAL } from '@nestjs/common';
+import { AuthRoles, UserParams } from '@reus-able/nestjs';
+import type { UserJwtPayload } from '@reus-able/types';
+
+@Controller({
+  path: 'users',
+  version: [VERSION_NEUTRAL, '1'],
+})
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  // 公开接口，无需权限
+  @Get('list')
+  async getList(): Promise<UserResponseDto[]> {
+    return this.userService.getList();
+  }
+
+  // 需要 user 权限
+  @Get(':id')
+  @AuthRoles('user')
+  async findOne(
+    @Param('id') id: string,
+    @UserParams() user: UserJwtPayload,
+  ): Promise<UserResponseDto> {
+    return this.userService.findOne(id, user);
+  }
+
+  // 需要 admin 权限
+  @Post('create')
+  @AuthRoles('admin')
+  async create(
+    @Body() createDto: CreateUserDto,
+    @UserParams() user: UserJwtPayload,
+  ): Promise<UserResponseDto> {
+    return this.userService.create(createDto, user);
+  }
+}
+```
+- **必须使用 API 版本控制**：`version: [VERSION_NEUTRAL, '1']`
+- **权限控制**：根据接口需求使用 `@AuthRoles('user')` 或 `@AuthRoles('admin')`
+- **获取当前用户**：使用 `@UserParams()` 装饰器
+- 使用 DTO 进行请求/响应类型定义
+- 控制器应保持轻量，业务逻辑放在 Service 中
+
+### 3. 服务 (Services)
+```typescript
+import { Inject, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { HLogger, HLOGGER_TOKEN, BusinessException } from '@reus-able/nestjs';
+
+@Injectable()
+export class UserService {
+  @InjectRepository(User)
+  private userRepository: Repository<User>;
+
+  @Inject(HLOGGER_TOKEN)
+  private logger: HLogger;
+
+  constructor(private config: ConfigService) {}
+
+  private log(message: string) {
+    this.logger.log(message, UserService.name);
+  }
+
+  private error(message: string) {
+    this.logger.error(message, UserService.name);
+  }
+
+  async findOne(id: string): Promise<User> {
+    this.log(`查找用户: ${id}`);
+    
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      this.error(`用户不存在: ${id}`);
+      throw new BusinessException(`用户 #${id} 不存在`);
+    }
+    
+    return user;
+  }
+
+  async create(data: CreateUserDto): Promise<User> {
+    const apiUrl = this.config.get<string>('API_URL', 'http://localhost');
+    this.log(`创建用户，API: ${apiUrl}`);
+    
+    // 业务逻辑...
+    return await this.userRepository.save(data);
+  }
+}
+```
+- 使用 `@Injectable()` 装饰器
+- **必须注入并使用 Logger**：`@Inject(HLOGGER_TOKEN) private logger: HLogger`
+- **使用 ConfigService** 读取配置：通过构造函数注入
+- **优先使用 BusinessException** 处理业务异常
+- 依赖注入通过构造函数或属性注入
+- 为关键操作添加日志记录
+
+### 4. DTO (Data Transfer Objects)
+```typescript
+import { IsString, IsEmail, IsNotEmpty } from 'class-validator';
+
+export class CreateUserDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
+```
+- 使用 `class-validator` 装饰器进行验证
+- 创建独立的 DTO 文件
+- 区分 CreateDto、UpdateDto、ResponseDto
+
+### 5. Entity (实体)
+```typescript
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+
+@Entity('users')
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'varchar', length: 255 })
+  name: string;
+
+  @Column({ type: 'varchar', length: 255, unique: true })
+  email: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
+```
+- 使用 TypeORM 装饰器定义实体
+- 明确指定数据库表名和列类型
+- 使用合适的关系装饰器（@OneToMany, @ManyToOne 等）
+
+### 6. 错误处理
+- **优先使用 `BusinessException`**（来自 `@reus-able/nestjs`）处理业务异常
+- 也可使用 NestJS 内置异常类（NotFoundException, BadRequestException 等）
+- 创建自定义异常时继承 `HttpException`
+- 项目已配置全局异常过滤器（AllExceptionsFilter, HttpExceptionFilter），会自动统一处理错误响应
+
+```typescript
+import { BusinessException } from '@reus-able/nestjs';
+import { NotFoundException } from '@nestjs/common';
+
+// 推荐：业务异常使用 BusinessException
+if (!user) {
+  throw new BusinessException('用户不存在');
+}
+
+// 也可以：使用 NestJS 内置异常
+if (!resource) {
+  throw new NotFoundException('资源未找到');
+}
+```
+
+## Vue3 开发规范
+
+### 1. 组件编写
+- 使用 `<script setup lang="ts">` 语法
+- 使用 Composition API
+- 明确定义 props 和 emits 的类型
+
+### 2. 组合式函数 (Composables)
+- 使用 `use` 前缀命名（如 `useUser`, `useAuth`）
+- 提供完整的 TypeScript 类型定义
+- 保持函数职责单一
+
+### 3. 类型定义
+- 为 API 响应创建接口类型
+- 为组件 props 定义明确类型
+- 使用 `defineProps<>()` 泛型语法
+
+## 代码风格
+
+### Prettier 配置
+- 使用单引号: `singleQuote: true`
+- 尾随逗号: `trailingComma: 'all'`
+- 运行 `pnpm --filter @applog/backend run format` 格式化代码
+
+### ESLint
+- 遵循 `@typescript-eslint/recommended` 规则
+- 集成 Prettier 规则
+- 运行 `pnpm --filter @applog/backend run lint` 检查代码
+
+### 命名规范
+- **文件名**: 使用 PascalCase（实体、DTO）或 kebab-case（工具函数）
+- **类名**: PascalCase
+- **函数/变量**: camelCase
+- **常量**: UPPER_SNAKE_CASE
+- **接口**: PascalCase（不使用 I 前缀）
+- **类型别名**: PascalCase
+
+## pnpm Workspace 使用
+
+### 包命名
+- 统一使用 `@applog/` 前缀
+- 示例: `@applog/backend`, `@applog/frontend`, `@applog/finder`
+
+### 常用命令
+```bash
+# 安装依赖
+pnpm install
+
+# 为特定包添加依赖
+pnpm --filter @applog/backend add <package>
+
+# 运行开发服务器
+pnpm fe          # 前端
+pnpm be          # 后端
+pnpm dev         # 全部
+
+# 构建
+pnpm build:fe    # 构建前端
+pnpm build:be    # 构建后端
+pnpm build       # 构建全部
+```
+
+### 跨包引用
+- 在 package.json 中添加工作区依赖: `"@applog/shared": "workspace:*"`
+- 确保被依赖的包正确导出类型
+
+## Git 提交规范
+
+### 使用 Commitizen
+```bash
+pnpm c  # 使用交互式提交
+```
+
+### Commit Message 格式
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Type 类型
+- `feat`: 新功能
+- `fix`: 修复 bug
+- `docs`: 文档更新
+- `style`: 代码格式调整
+- `refactor`: 重构
+- `perf`: 性能优化
+- `test`: 测试相关
+- `chore`: 构建/工具链更新
+
+## 最佳实践
+
+### 1. 使用项目基础设施
+- **必须使用 LoggerModule**：在所有 Service 中注入 `HLogger` 进行日志记录
+- **必须使用 ConfigModule**：通过 `ConfigService` 读取配置，不要硬编码
+- **必须使用权限装饰器**：合理使用 `@AuthRoles` 控制接口权限
+- **必须使用 API 版本控制**：所有 Controller 都要指定 `version: [VERSION_NEUTRAL, '1']`
+
+### 2. 依赖注入
+- 优先使用依赖注入而非直接实例化
+- 通过构造函数或属性注入（`@Inject`）依赖
+- Logger 使用属性注入：`@Inject(HLOGGER_TOKEN) private logger: HLogger`
+
+### 3. 异步处理
+- 使用 `async/await` 处理异步操作
+- 为 Promise 提供明确的类型
+
+### 4. 环境变量
+- 使用 `ConfigService` 管理配置（已配置为全局）
+- 创建配置类型定义
+- 不要在代码中硬编码敏感信息
+- 支持多环境配置文件
+
+### 5. 数据库查询
+- 使用 TypeORM Query Builder 处理复杂查询
+- 使用事务处理关联操作
+- 注意 N+1 查询问题，合理使用 relations
+- 新模块必须在 Module 中注册实体：`TypeOrmModule.forFeature([Entity])`
+
+### 6. API 设计
+- 遵循 RESTful 规范
+- 使用合适的 HTTP 状态码
+- 提供清晰的错误信息（使用 BusinessException）
+- 合理设置接口权限（user / admin / public）
+
+### 7. 性能优化
+- 使用分页处理大量数据（nestjs-typeorm-paginate）
+- 合理使用缓存
+- 数据库查询优化（索引、查询优化）
+
+### 8. 测试
+- 为关键业务逻辑编写单元测试
+- 使用 Jest 进行测试
+- 保持测试覆盖率
+
+## 注意事项
+
+### 代码质量
+1. **禁止使用 `any`**: 除非有充分理由，否则禁止使用 `any` 类型
+2. **类型安全**: 所有 API 调用、数据库操作都应有类型保护
+3. **错误处理**: 必须妥善处理所有可能的错误情况
+4. **代码复用**: 提取公共逻辑到服务或工具函数
+5. **文档注释**: 为复杂逻辑添加 JSDoc 注释
+
+### 项目基础设施使用（重要）
+6. **日志记录**: 
+   - **必须使用** `HLogger`（来自 `@reus-able/nestjs`）
+   - 在所有 Service 中通过 `@Inject(HLOGGER_TOKEN)` 注入
+   - 记录重要操作和错误信息
+   
+7. **配置管理**:
+   - **必须使用** `ConfigService` 读取配置
+   - 不要硬编码任何配置值（URL、端口、密钥等）
+   
+8. **权限控制**:
+   - 使用 `@AuthRoles('user')` 或 `@AuthRoles('admin')` 装饰器
+   - 不需要权限的公开接口不使用装饰器
+   - 需要当前用户信息时使用 `@UserParams()` 装饰器
+   
+9. **API 版本控制**:
+   - 所有 Controller 必须指定版本：`version: [VERSION_NEUTRAL, '1']`
+   
+10. **异常处理**:
+    - 业务异常优先使用 `BusinessException`
+    - 全局异常过滤器会自动统一响应格式
+
+### 安全性
+11. **输入验证**: 
+    - 使用 `class-validator` 装饰器验证所有用户输入
+    - 全局 ValidationPipe 已配置自动类型转换
+    
+12. **数据安全**:
+    - 使用参数化查询防止 SQL 注入（TypeORM 已支持）
+    - 敏感数据加密存储
+    
+13. **认证授权**:
+    - 全局 AuthGuard 已配置
+    - 合理使用 `@AuthRoles` 控制访问权限
+
+## 开发流程
+
+### 1. 功能开发
+1. **创建功能分支**
+2. **定义 Entity 和 DTO**
+3. **实现 Service 层业务逻辑**
+   - 必须注入并使用 `HLogger`
+   - 使用 `ConfigService` 读取配置
+   - 使用 `BusinessException` 处理异常
+4. **创建 Controller 暴露 API**
+   - 指定 API 版本
+   - 使用 `@AuthRoles` 设置权限
+   - 需要用户信息时使用 `@UserParams()`
+5. **在 Module 中注册**
+   - 注册 Controller 和 Provider
+   - 使用 `TypeOrmModule.forFeature([Entity])` 注册实体
+6. **在 AppModule 中导入新模块**
+
+### 2. 模块创建示例
+```typescript
+// post.module.ts
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { PostController } from './post.controller';
+import { PostService } from './post.service';
+import { PostEntity } from '@/entities';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([PostEntity])],
+  controllers: [PostController],
+  providers: [PostService],
+  exports: [PostService], // 如果其他模块需要使用
+})
+export class PostModule {}
+```
+
+```typescript
+// app.module.ts - 导入新模块
+import { PostModule } from '@/module/post';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ ... }),
+    TypeOrmModule.forRootAsync({ ... }),
+    LoggerModule,
+    UserModule,
+    PostModule, // 添加新模块
+    EventEmitterModule.forRoot(),
+  ],
+  // ...
+})
+export class AppModule {}
+```
+
+### 3. 代码审查要点
+- TypeScript 类型完整性
+- 是否使用了 Logger 和 ConfigService
+- 权限控制是否正确（`@AuthRoles`）
+- 错误处理是否完善（`BusinessException`）
+- 代码是否符合规范
+- 是否有潜在的性能问题
+
+### 4. 提交前检查
+- 运行 `pnpm --filter @applog/backend run lint` 检查代码
+- 运行 `pnpm --filter @applog/backend run format` 格式化代码
+- 确保类型检查通过
+- 测试 API 接口
+- 使用 `pnpm c` 规范提交信息
+
