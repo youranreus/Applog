@@ -11,8 +11,8 @@ export interface UserExportData {
   name: string;
   email: string;
   avatar?: string;
-  created_at: Date;
-  updated_at: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 @Entity({
@@ -45,10 +45,10 @@ export class UserEntity {
   ssoId: number;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updatedAt: Date;
 
   public getData(): UserExportData {
     return {
@@ -56,8 +56,8 @@ export class UserEntity {
       name: this.name,
       email: this.email,
       avatar: this.avatar,
-      created_at: this.created_at,
-      updated_at: this.updated_at,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
     };
   }
 }
