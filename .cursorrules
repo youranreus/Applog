@@ -524,31 +524,300 @@ pnpm build       # 构建全部
 - 在 package.json 中添加工作区依赖: `"@applog/shared": "workspace:*"`
 - 确保被依赖的包正确导出类型
 
-## Git 提交规范
+## Git 提交规范（约定式提交）
+
+### 重要说明
+**当 AI Agent 帮助创建代码提交时，必须严格遵守以下约定式提交规范（Conventional Commits）。**
 
 ### 使用 Commitizen
 ```bash
-pnpm c  # 使用交互式提交
+pnpm c  # 使用交互式提交工具
 ```
 
 ### Commit Message 格式
 ```
 <type>(<scope>): <subject>
 
-<body>
+[可选的 body]
 
-<footer>
+[可选的 footer]
 ```
 
-### Type 类型
-- `feat`: 新功能
-- `fix`: 修复 bug
-- `docs`: 文档更新
-- `style`: 代码格式调整
-- `refactor`: 重构
-- `perf`: 性能优化
-- `test`: 测试相关
-- `chore`: 构建/工具链更新
+#### 格式说明
+- **type**: 提交类型（必需）
+- **scope**: 影响范围（可选，建议添加）
+- **subject**: 简短描述（必需，不超过 50 字符）
+- **body**: 详细描述（可选，说明改动的原因和内容）
+- **footer**: 备注信息（可选，如关联的 issue、破坏性变更说明）
+
+### Type 类型（必须使用）
+
+#### 主要类型
+- **feat**: 新功能（feature）
+  - 添加新的功能特性
+  - 示例：`feat(user): 添加用户头像上传功能`
+
+- **fix**: 修复 Bug
+  - 修复代码中的错误
+  - 示例：`fix(post): 修复文章列表分页错误`
+
+- **docs**: 文档更新
+  - 仅修改文档（README、注释等）
+  - 示例：`docs(readme): 更新项目安装说明`
+
+- **style**: 代码格式调整
+  - 不影响代码功能的格式修改（空格、缩进、分号等）
+  - 示例：`style(backend): 统一代码缩进为 2 空格`
+
+- **refactor**: 代码重构
+  - 既不是新功能也不是 bug 修复的代码改动
+  - 示例：`refactor(user): 优化用户服务层代码结构`
+
+- **perf**: 性能优化
+  - 提升性能的代码改动
+  - 示例：`perf(post): 优化文章列表查询性能`
+
+- **test**: 测试相关
+  - 添加或修改测试代码
+  - 示例：`test(user): 添加用户注册单元测试`
+
+- **chore**: 构建/工具链更新
+  - 构建过程或辅助工具的变动
+  - 示例：`chore(deps): 升级 nestjs 到 10.3.7`
+
+#### 其他类型
+- **build**: 构建系统或外部依赖的变更
+  - 示例：`build(npm): 修改 package.json 脚本`
+
+- **ci**: CI 配置文件和脚本的变更
+  - 示例：`ci(github): 添加 GitHub Actions 工作流`
+
+- **revert**: 回滚之前的提交
+  - 示例：`revert: 回滚 feat(user): 添加用户头像上传功能`
+
+### Scope 范围（建议使用）
+
+#### Backend Scope
+- `user`: 用户模块
+- `post`: 文章模块
+- `comment`: 评论模块
+- `auth`: 认证模块
+- `config`: 配置相关
+- `database`: 数据库相关
+- `api`: API 接口
+- `middleware`: 中间件
+- `guard`: 守卫
+- `dto`: 数据传输对象
+- `entity`: 实体
+
+#### Frontend Scope（待开发）
+- `components`: 组件
+- `views`: 视图页面
+- `store`: 状态管理
+- `router`: 路由
+- `utils`: 工具函数
+- `api`: API 请求
+
+#### 通用 Scope
+- `deps`: 依赖项
+- `config`: 配置文件
+- `docs`: 文档
+- `types`: 类型定义
+
+### Subject 编写规范
+
+#### 要求
+1. **使用中文**（项目团队为中文母语）
+2. **使用动词开头**：添加、修复、优化、重构等
+3. **不超过 50 个字符**
+4. **不要使用句号结尾**
+5. **言简意赅**：准确描述改动内容
+
+#### ✅ 好的 Subject 示例
+```
+feat(user): 添加用户登录功能
+fix(post): 修复文章删除时评论未级联删除的问题
+refactor(auth): 重构 JWT 验证逻辑
+perf(post): 优化文章列表查询，添加数据库索引
+docs(api): 更新 API 文档，添加用户接口说明
+style(backend): 统一使用单引号
+chore(deps): 升级 TypeScript 到 5.3.0
+```
+
+#### ❌ 不好的 Subject 示例
+```
+feat: update                          // 太模糊，没有说明更新了什么
+fix: bug fix                          // 没有说明修复了什么 bug
+feat(user): add user login function.  // 使用了英文，且有句号
+feat(user): 添加了用户登录功能，包括密码加密和 JWT 生成  // 太长，超过 50 字符
+fix: 修复                             // 没有 scope，描述不清晰
+```
+
+### Body 编写规范（可选）
+
+当提交需要更详细的说明时添加 body：
+
+```
+feat(post): 添加文章草稿自动保存功能
+
+- 每 30 秒自动保存草稿到数据库
+- 用户可以从草稿列表恢复编辑
+- 草稿保存不触发文章发布流程
+- 添加草稿数量限制，最多保存 10 篇
+
+相关 issue: #123
+```
+
+#### Body 规范
+1. 与 subject 之间空一行
+2. 使用列表说明主要改动点
+3. 解释**为什么**做这个改动，而不仅是**做了什么**
+4. 每行不超过 72 个字符
+
+### Footer 编写规范（可选）
+
+#### 关联 Issue
+```
+feat(user): 添加用户权限管理功能
+
+实现了基于角色的权限控制系统
+
+Closes #45
+```
+
+#### 破坏性变更（BREAKING CHANGE）
+```
+feat(api): 重构用户 API 接口
+
+BREAKING CHANGE: 
+- 用户 API 路径从 /api/users 改为 /api/v1/users
+- 响应数据格式变更，所有接口统一使用 { data, message } 格式
+- 删除了 /api/users/list 接口，请使用 /api/v1/users 代替
+
+迁移指南：详见 docs/migration-v1.md
+```
+
+### 完整提交示例
+
+#### 简单提交
+```
+feat(user): 添加用户头像上传功能
+```
+
+#### 带 Body 的提交
+```
+feat(post): 添加文章标签功能
+
+- 支持为文章添加多个标签
+- 标签支持模糊搜索
+- 文章列表支持按标签筛选
+- 添加标签管理接口（增删改查）
+
+Closes #78
+```
+
+#### 带破坏性变更的提交
+```
+refactor(auth): 重构认证系统，使用新的 JWT 方案
+
+将 JWT 的签名算法从 HS256 升级到 RS256，提高安全性。
+同时调整了 token 的有效期和刷新机制。
+
+BREAKING CHANGE:
+- 旧的 JWT token 将全部失效
+- 客户端需要重新实现 token 刷新逻辑
+- 配置文件需要添加 RSA 密钥对
+
+迁移指南：详见 docs/auth-migration.md
+Closes #156
+```
+
+### AI Agent 提交代码时的规范
+
+**当 AI Agent 帮助创建提交时，必须：**
+
+1. ✅ **自动选择正确的 type**：根据代码改动性质选择
+2. ✅ **添加合适的 scope**：根据修改的模块选择
+3. ✅ **编写清晰的 subject**：使用中文，动词开头，不超过 50 字符
+4. ✅ **多个改动时考虑拆分提交**：每个提交只做一件事
+5. ✅ **重要改动添加 body**：说明改动原因和影响
+6. ✅ **破坏性变更必须标注 BREAKING CHANGE**
+
+#### 提交拆分原则
+```bash
+# ✅ 好的做法：功能拆分提交
+git commit -m "feat(user): 添加用户实体和 DTO"
+git commit -m "feat(user): 添加用户服务层逻辑"
+git commit -m "feat(user): 添加用户 API 接口"
+git commit -m "docs(api): 更新用户接口文档"
+
+# ❌ 不好的做法：所有改动一次提交
+git commit -m "feat(user): 完成用户模块开发"
+```
+
+### 提交前检查清单
+
+在创建提交前，AI Agent 应该检查：
+
+- [ ] 提交信息格式符合约定式提交规范
+- [ ] type 选择正确
+- [ ] scope 选择合适（如果适用）
+- [ ] subject 使用中文，清晰简洁
+- [ ] 多个不相关改动已拆分为多个提交
+- [ ] 破坏性变更已标注 BREAKING CHANGE
+- [ ] 关联的 issue 已在 footer 中引用
+
+### 常见场景示例
+
+#### 场景 1：添加新功能
+```
+feat(post): 添加文章评论功能
+```
+
+#### 场景 2：修复 Bug
+```
+fix(user): 修复用户登录时密码验证错误
+```
+
+#### 场景 3：性能优化
+```
+perf(post): 优化文章列表查询，添加缓存机制
+```
+
+#### 场景 4：代码重构
+```
+refactor(user): 重构用户服务，提取公共方法
+```
+
+#### 场景 5：依赖更新
+```
+chore(deps): 升级 @nestjs/core 到 10.3.7
+```
+
+#### 场景 6：配置修改
+```
+chore(config): 更新数据库连接配置
+```
+
+#### 场景 7：文档更新
+```
+docs(readme): 更新项目结构说明
+```
+
+#### 场景 8：多文件改动
+```bash
+# 如果改动涉及多个模块，考虑拆分提交
+feat(user): 添加用户实体定义
+feat(user): 实现用户服务逻辑
+feat(user): 添加用户 API 接口
+
+# 或者如果改动属于同一个功能，可以合并
+feat(user): 完成用户模块基础功能
+
+- 添加用户实体和 DTO
+- 实现用户 CRUD 服务
+- 添加用户管理 API 接口
+```
 
 ## 最佳实践
 
