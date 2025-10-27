@@ -85,9 +85,7 @@ export class PostService {
    * @param queryDto 查询参数
    * @returns 分页的文章列表
    */
-  async findAll(
-    queryDto: QueryPostDto,
-  ): Promise<Pagination<IPostListItemDto>> {
+  async findAll(queryDto: QueryPostDto): Promise<Pagination<IPostListItemDto>> {
     const { page = 1, limit = 10, keyword, tags } = queryDto;
 
     this.log(
@@ -220,9 +218,7 @@ export class PostService {
       });
 
       if (commentCount > 0) {
-        this.warn(
-          `文章 #${id} 存在 ${commentCount} 条评论，无法删除`,
-        );
+        this.warn(`文章 #${id} 存在 ${commentCount} 条评论，无法删除`);
         throw new BusinessException(
           `该文章存在 ${commentCount} 条评论，无法删除`,
         );
@@ -240,4 +236,3 @@ export class PostService {
     }
   }
 }
-

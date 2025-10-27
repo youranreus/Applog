@@ -50,4 +50,3 @@ export class CreatePostDto {
   @IsOptional()
   extra?: Record<string, any>;
 }
-

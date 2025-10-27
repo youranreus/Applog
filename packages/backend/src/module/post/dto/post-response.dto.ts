@@ -5,4 +5,3 @@ import type { PostExportData } from '@/entities';
  * 复用 PostEntity 的 PostExportData 接口
  */
 export type IPostResponseDto = PostExportData;
-

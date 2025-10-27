@@ -19,4 +19,3 @@ export interface IPostListItemDto {
   createdAt: Date;
   updatedAt: Date;
 }
-

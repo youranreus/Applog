@@ -11,4 +11,3 @@ import { PostEntity, CommentEntity } from '@/entities';
   exports: [PostService],
 })
 export class PostModule {}
-

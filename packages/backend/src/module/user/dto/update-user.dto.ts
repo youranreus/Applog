@@ -14,4 +14,3 @@ export class UpdateUserDto {
   @MaxLength(500, { message: '头像地址最多 500 个字符' })
   avatar?: string;
 }
-
