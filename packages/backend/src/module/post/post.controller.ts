@@ -1,16 +1,19 @@
 import {
   Controller,
+  Get,
   Post,
   Delete,
   Body,
   Param,
+  Query,
   VERSION_NEUTRAL,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
-import { CreatePostDto } from './dto';
-import type { IPostResponseDto } from './dto';
+import { CreatePostDto, QueryPostDto } from './dto';
+import type { IPostResponseDto, IPostListItemDto } from './dto';
+import type { Pagination } from 'nestjs-typeorm-paginate';
 
 @Controller({
   path: 'post',
@@ -18,6 +21,18 @@ import type { IPostResponseDto } from './dto';
 })
 export class PostController {
   constructor(private readonly postService: PostService) {}
+
+  /**
+   * 获取文章列表（支持分页、搜索、标签筛选）
+   * @param queryDto 查询参数
+   * @returns 分页的文章列表
+   */
+  @Get()
+  async findAll(
+    @Query() queryDto: QueryPostDto,
+  ): Promise<Pagination<IPostListItemDto>> {
+    return this.postService.findAll(queryDto);
+  }
 
   /**
    * 创建文章
