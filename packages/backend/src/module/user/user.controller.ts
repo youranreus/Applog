@@ -1,8 +1,15 @@
-import { Controller, Get, VERSION_NEUTRAL, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  VERSION_NEUTRAL,
+  Query,
+  Body,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
-import { LoginDto } from './dto';
+import { LoginDto, UpdateUserDto } from './dto';
 import type { ILoginResponseDto, IUserResponseDto } from './dto';
 
 @Controller({
@@ -31,5 +38,20 @@ export class UserController {
   @AuthRoles('user')
   async findOne(@UserParams() user: UserJwtPayload): Promise<IUserResponseDto> {
     return this.userService.findOne(user.id);
+  }
+
+  /**
+   * 更新当前登录用户信息
+   * @param user 当前登录用户（从 JWT 解析）
+   * @param updateData 更新数据（用户名和头像）
+   * @returns 更新后的用户信息
+   */
+  @Put('data')
+  @AuthRoles('user')
+  async updateUser(
+    @UserParams() user: UserJwtPayload,
+    @Body() updateData: UpdateUserDto,
+  ): Promise<IUserResponseDto> {
+    return this.userService.updateUser(user.id, updateData);
   }
 }

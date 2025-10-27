@@ -8,6 +8,7 @@ import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { ILoginResponseDto, IUserResponseDto } from './dto';
+import type { UpdateUserDto } from './dto';
 import { mapSsoRoleToUserRole } from '@/utils/types';
 
 @Injectable()
@@ -203,6 +204,52 @@ export class UserService {
       }
       this.error(`查询用户信息失败: ${error.message}`);
       throw new BusinessException('查询用户信息失败');
+    }
+  }
+
+  /**
+   * 更新用户信息
+   * @param id SSO 用户 ID
+   * @param updateData 更新数据
+   * @returns 更新后的用户信息
+   */
+  async updateUser(
+    id: number,
+    updateData: UpdateUserDto,
+  ): Promise<IUserResponseDto> {
+    this.log(`开始更新用户 #${id} 信息`);
+
+    try {
+      // 查询用户是否存在
+      const user = await this.userRepo.findOne({ where: { ssoId: id } });
+
+      if (isNil(user)) {
+        this.warn(`用户 #${id} 不存在`);
+        throw new BusinessException('用户不存在');
+      }
+
+      // 更新用户信息
+      if (updateData.name !== undefined) {
+        user.name = updateData.name;
+        this.log(`更新用户 #${id} 名称: ${updateData.name}`);
+      }
+
+      if (updateData.avatar !== undefined) {
+        user.avatar = updateData.avatar;
+        this.log(`更新用户 #${id} 头像`);
+      }
+
+      // 保存到数据库
+      const savedUser = await this.userRepo.save(user);
+      this.log(`用户 #${id} 信息更新成功`);
+
+      return savedUser.getData();
+    } catch (error) {
+      if (error instanceof BusinessException) {
+        throw error;
+      }
+      this.error(`更新用户信息失败: ${error.message}`);
+      throw new BusinessException('更新用户信息失败');
     }
   }
 }
