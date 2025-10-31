@@ -39,6 +39,12 @@ import type { UserJwtPayload } from '@reus-able/types';
 - **类名**: PascalCase (`UserService`, `PostEntity`)
 - **避免使用**: enum 枚举（使用 type + const 对象替代）
 
+### 代码质量要求
+- **函数长度**: 单函数不超过 150 行
+- **必须添加注释**: 所有函数都要有 JSDoc 注释（参数、返回值、逻辑说明）
+- **异步处理**: 使用 async/await，禁止混用 .then()
+- **禁止使用 any**: 除非有充分理由
+
 ---
 
 ## 项目概述
@@ -286,10 +292,25 @@ export class UserService {
     this.logger.error(message, UserService.name);
   }
 
+  /**
+   * 根据 ID 查找用户
+   * @param id - 用户 ID
+   * @returns 用户实体
+   * @throws {BusinessException} 当用户不存在时抛出异常
+   * 
+   * 逻辑说明：
+   * 1. 记录查询日志
+   * 2. 从数据库查询用户
+   * 3. 若用户不存在，记录错误并抛出业务异常
+   * 4. 返回用户实体
+   */
   async findOne(id: string): Promise<User> {
     this.log(`查找用户: ${id}`);
     
+    // 查询数据库
     const user = await this.userRepository.findOne({ where: { id } });
+    
+    // 用户不存在时抛出异常
     if (!user) {
       this.error(`用户不存在: ${id}`);
       throw new BusinessException(`用户 #${id} 不存在`);
@@ -298,11 +319,23 @@ export class UserService {
     return user;
   }
 
+  /**
+   * 创建新用户
+   * @param data - 创建用户的 DTO
+   * @returns 创建成功的用户实体
+   * 
+   * 逻辑说明：
+   * 1. 从配置中获取 API URL
+   * 2. 记录创建用户日志
+   * 3. 保存用户到数据库
+   * 4. 返回创建的用户实体
+   */
   async create(data: CreateUserDto): Promise<User> {
+    // 获取配置
     const apiUrl = this.config.get<string>('API_URL', 'http://localhost');
     this.log(`创建用户，API: ${apiUrl}`);
     
-    // 业务逻辑...
+    // 保存用户到数据库
     return await this.userRepository.save(data);
   }
 }
@@ -313,6 +346,7 @@ export class UserService {
 - **优先使用 BusinessException** 处理业务异常
 - 依赖注入通过构造函数或属性注入
 - 为关键操作添加日志记录
+- **必须添加 JSDoc 注释**：标注参数、返回值和逻辑说明
 
 ### 4. DTO (Data Transfer Objects)
 ```typescript
@@ -394,6 +428,134 @@ if (!resource) {
 - 使用 `defineProps<>()` 泛型语法
 
 ## 代码风格
+
+### JSDoc 注释规范
+
+#### 基本要求
+- **所有函数必须添加 JSDoc 注释**
+- 必须标注参数（`@param`）和返回值（`@returns`）
+- 必须简明标注函数逻辑和主要流程
+- 复杂逻辑需要在函数内添加行内注释说明
+
+#### 注释格式
+```typescript
+/**
+ * 函数功能简短描述（一句话说明功能）
+ * @param paramName - 参数说明
+ * @param anotherParam - 另一个参数说明
+ * @returns 返回值说明
+ * @throws {ExceptionType} 可能抛出的异常说明
+ * 
+ * 逻辑说明：
+ * 1. 第一步操作
+ * 2. 第二步操作
+ * 3. 第三步操作
+ */
+async functionName(paramName: string, anotherParam: number): Promise<ReturnType> {
+  // 关键步骤注释
+  const result = await someOperation();
+  
+  // 条件判断说明
+  if (condition) {
+    // 分支逻辑说明
+    return result;
+  }
+  
+  return defaultValue;
+}
+```
+
+#### 完整示例
+```typescript
+/**
+ * 根据条件查询用户列表，支持分页
+ * @param query - 查询条件对象
+ * @param page - 页码，从 1 开始
+ * @param pageSize - 每页数量，默认 10，最大 100
+ * @returns 分页后的用户列表
+ * @throws {BusinessException} 当查询参数无效时抛出异常
+ * 
+ * 逻辑说明：
+ * 1. 验证分页参数，确保 page >= 1 且 pageSize 在合理范围内
+ * 2. 构建查询条件，支持用户名、邮箱模糊搜索
+ * 3. 执行分页查询，获取总数和数据列表
+ * 4. 格式化返回结果，包含数据和分页信息
+ */
+async findUsers(
+  query: IUserQuery,
+  page: number = 1,
+  pageSize: number = 10,
+): Promise<IPaginatedResult<User>> {
+  // 验证分页参数
+  if (page < 1 || pageSize < 1 || pageSize > 100) {
+    throw new BusinessException('分页参数无效');
+  }
+
+  // 构建查询条件
+  const queryBuilder = this.userRepository
+    .createQueryBuilder('user')
+    .where('user.deletedAt IS NULL');
+
+  // 添加搜索条件
+  if (query.userName) {
+    queryBuilder.andWhere('user.userName LIKE :userName', {
+      userName: `%${query.userName}%`,
+    });
+  }
+
+  // 执行分页查询
+  const [users, total] = await queryBuilder
+    .skip((page - 1) * pageSize)
+    .take(pageSize)
+    .getManyAndCount();
+
+  // 返回格式化结果
+  return {
+    data: users,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+```
+
+#### 注释要点
+1. **简洁明了**：避免冗长描述，突出重点
+2. **说明逻辑**：重点说明"为什么"而不只是"做什么"
+3. **标注异常**：明确可能抛出的异常类型和原因
+4. **更新及时**：代码变更时同步更新注释
+5. **中文优先**：项目使用中文注释，提高团队理解效率
+
+#### 行内注释示例
+```typescript
+async processOrder(orderId: string): Promise<void> {
+  // 获取订单详情
+  const order = await this.orderRepository.findOne({ where: { id: orderId } });
+
+  // 订单不存在则抛出异常
+  if (!order) {
+    throw new BusinessException('订单不存在');
+  }
+
+  // 检查订单状态，只有待支付状态才能处理
+  if (order.status !== ORDER_STATUS.PENDING) {
+    throw new BusinessException('订单状态不正确');
+  }
+
+  // 开启事务处理支付
+  await this.dataSource.transaction(async (manager) => {
+    // 更新订单状态
+    await manager.update(Order, orderId, { status: ORDER_STATUS.PAID });
+    
+    // 创建支付记录
+    await manager.save(Payment, { orderId, amount: order.amount });
+    
+    // 发送支付成功通知
+    await this.notificationService.sendPaymentSuccess(order.userId);
+  });
+}
+```
 
 ### Prettier 配置
 - 使用单引号: `singleQuote: true`
@@ -890,7 +1052,13 @@ async function fetchData() {
 - 合理使用缓存
 - 数据库查询优化（索引、查询优化）
 
-### 8. 测试
+### 8. 代码质量与可维护性
+- **函数长度控制**：单函数不超过 150 行，超过则拆分
+- **文档注释**：所有函数必须添加 JSDoc，标注参数、返回值和逻辑
+- **代码可读性**：使用有意义的变量名，添加必要的注释
+- **避免代码重复**：提取公共逻辑，遵循 DRY 原则
+
+### 9. 测试
 - 为关键业务逻辑编写单元测试
 - 使用 Jest 进行测试
 - 保持测试覆盖率
@@ -905,42 +1073,50 @@ async function fetchData() {
    - 常量：UPPER_SNAKE_CASE (`MAX_COUNT`, `API_VERSION`)
    - Interface：**必须使用 I 前缀** (`IUser`, `IUserResponse`)
    - **禁止使用 enum**：使用 type + const 对象替代
-4. **错误处理**: 必须妥善处理所有可能的错误情况
-5. **代码复用**: 提取公共逻辑到服务或工具函数
-6. **文档注释**: 为复杂逻辑添加 JSDoc 注释
+4. **函数长度限制**: 
+   - **单函数行数不能超过 150 行**
+   - 超过限制时必须拆分为多个小函数
+   - 保持函数职责单一，易于测试和维护
+5. **文档注释**（必须添加）:
+   - **所有函数必须添加 JSDoc 注释**
+   - 必须标注参数（`@param`）和返回值（`@returns`）
+   - 必须简明标注函数逻辑和主要流程
+   - 复杂逻辑需要在函数内添加行内注释说明
+6. **错误处理**: 必须妥善处理所有可能的错误情况
+7. **代码复用**: 提取公共逻辑到服务或工具函数
 
 ### 项目基础设施使用（重要）
-7. **日志记录**: 
+8. **日志记录**: 
    - **必须使用** `HLogger`（来自 `@reus-able/nestjs`）
    - 在所有 Service 中通过 `@Inject(HLOGGER_TOKEN)` 注入
    - 记录重要操作和错误信息
    
-8. **配置管理**:
+9. **配置管理**:
    - **必须使用** `ConfigService` 读取配置
    - 不要硬编码任何配置值（URL、端口、密钥等）
    
-9. **权限控制**:
-   - 使用 `@AuthRoles('user')` 或 `@AuthRoles('admin')` 装饰器
-   - 不需要权限的公开接口不使用装饰器
-   - 需要当前用户信息时使用 `@UserParams()` 装饰器
+10. **权限控制**:
+    - 使用 `@AuthRoles('user')` 或 `@AuthRoles('admin')` 装饰器
+    - 不需要权限的公开接口不使用装饰器
+    - 需要当前用户信息时使用 `@UserParams()` 装饰器
    
-10. **API 版本控制**:
+11. **API 版本控制**:
     - 所有 Controller 必须指定版本：`version: [VERSION_NEUTRAL, '1']`
    
-11. **异常处理**:
+12. **异常处理**:
     - 业务异常优先使用 `BusinessException`
     - 全局异常过滤器会自动统一响应格式
 
 ### 安全性
-12. **输入验证**: 
+13. **输入验证**: 
     - 使用 `class-validator` 装饰器验证所有用户输入
     - 全局 ValidationPipe 已配置自动类型转换
     
-13. **数据安全**:
+14. **数据安全**:
     - 使用参数化查询防止 SQL 注入（TypeORM 已支持）
     - 敏感数据加密存储
     
-14. **认证授权**:
+15. **认证授权**:
     - 全局 AuthGuard 已配置
     - 合理使用 `@AuthRoles` 控制访问权限
 
@@ -999,12 +1175,16 @@ export class AppModule {}
 ```
 
 ### 3. 代码审查要点
-- TypeScript 类型完整性
-- 是否使用了 Logger 和 ConfigService
-- 权限控制是否正确（`@AuthRoles`）
-- 错误处理是否完善（`BusinessException`）
-- 代码是否符合规范
-- 是否有潜在的性能问题
+- **TypeScript 类型完整性**：是否有明确的类型声明，是否避免使用 `any`
+- **基础设施使用**：是否使用了 Logger 和 ConfigService
+- **权限控制**：`@AuthRoles` 使用是否正确
+- **错误处理**：是否使用 `BusinessException` 处理业务异常
+- **函数长度**：单函数是否超过 150 行，是否需要拆分
+- **文档注释**：是否添加了 JSDoc 注释，参数、返回值、逻辑说明是否完整
+- **命名规范**：变量、常量、接口命名是否符合规范
+- **代码可读性**：是否有必要的行内注释，逻辑是否清晰
+- **性能问题**：是否有潜在的性能问题（N+1 查询、重复计算等）
+- **安全性**：是否有输入验证，是否有安全隐患
 
 ### 4. 提交前检查
 - 运行 `pnpm --filter @applog/backend run lint` 检查代码
