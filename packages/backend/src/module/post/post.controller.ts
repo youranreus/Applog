@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -11,7 +12,7 @@ import {
 import { PostService } from './post.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
-import { CreatePostDto, QueryPostDto } from './dto';
+import { CreatePostDto, UpdatePostDto, QueryPostDto } from './dto';
 import type { IPostResponseDto, IPostListItemDto } from './dto';
 import type { Pagination } from 'nestjs-typeorm-paginate';
 
@@ -47,6 +48,21 @@ export class PostController {
     @UserParams() user: UserJwtPayload,
   ): Promise<IPostResponseDto> {
     return this.postService.create(createDto, user.id);
+  }
+
+  /**
+   * 更新文章（局部更新）
+   * @param id 文章ID
+   * @param updateDto 更新数据
+   * @returns 更新后的文章信息
+   */
+  @Patch(':id')
+  @AuthRoles('admin')
+  async update(
+    @Param('id') id: string,
+    @Body() updateDto: UpdatePostDto,
+  ): Promise<IPostResponseDto> {
+    return this.postService.update(Number(id), updateDto);
   }
 
   /**

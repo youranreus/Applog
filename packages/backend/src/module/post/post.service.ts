@@ -6,6 +6,7 @@ import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import { PostEntity, CommentEntity } from '@/entities';
 import type {
   CreatePostDto,
+  UpdatePostDto,
   IPostResponseDto,
   QueryPostDto,
   IPostListItemDto,
@@ -83,6 +84,83 @@ export class PostService {
     } catch (error) {
       this.error(`创建文章失败: ${error.message}`);
       throw new BusinessException('创建文章失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 更新文章
+   * @param id 文章ID
+   * @param updateData 更新数据
+   * @returns 更新后的文章信息
+   *
+   * 逻辑说明：
+   * 1. 查询文章是否存在
+   * 2. 逐个更新提供的字段（只更新传入的字段）
+   * 3. 保存更新后的文章
+   * 4. 返回更新后的文章数据
+   */
+  async update(
+    id: number,
+    updateData: UpdatePostDto,
+  ): Promise<IPostResponseDto> {
+    this.log(`开始更新文章 #${id}`);
+
+    try {
+      // 查询文章是否存在
+      const post = await this.postRepo.findOne({ where: { id } });
+
+      if (isNil(post)) {
+        this.warn(`文章 #${id} 不存在`);
+        throw new BusinessException('文章不存在');
+      }
+
+      // 逐个更新提供的字段（局部更新）
+      if (updateData.title !== undefined) {
+        post.title = updateData.title;
+        this.log(`更新文章 #${id} 标题: ${updateData.title}`);
+      }
+
+      if (updateData.content !== undefined) {
+        post.content = updateData.content;
+        this.log(`更新文章 #${id} 内容`);
+      }
+
+      if (updateData.summary !== undefined) {
+        post.summary = updateData.summary;
+        this.log(`更新文章 #${id} 摘要`);
+      }
+
+      if (updateData.cover !== undefined) {
+        post.cover = updateData.cover;
+        this.log(`更新文章 #${id} 封面`);
+      }
+
+      if (updateData.status !== undefined) {
+        post.status = updateData.status;
+        this.log(`更新文章 #${id} 状态: ${updateData.status}`);
+      }
+
+      if (updateData.tags !== undefined) {
+        post.tags = updateData.tags;
+        this.log(`更新文章 #${id} 标签: ${updateData.tags.join(', ')}`);
+      }
+
+      if (updateData.extra !== undefined) {
+        post.extra = updateData.extra;
+        this.log(`更新文章 #${id} 额外数据`);
+      }
+
+      // 保存更新
+      const savedPost = await this.postRepo.save(post);
+      this.log(`文章 #${id} 更新成功`);
+
+      return savedPost.getData();
+    } catch (error) {
+      if (error instanceof BusinessException) {
+        throw error;
+      }
+      this.error(`更新文章失败: ${error.message}`);
+      throw new BusinessException('更新文章失败，请稍后重试');
     }
   }
 
