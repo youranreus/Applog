@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
-import { PostEntity, CommentEntity, UserEntity } from '@/entities';
+import { PostEntity, CommentEntity } from '@/entities';
 import type {
   CreatePostDto,
   IPostResponseDto,
@@ -25,9 +25,6 @@ export class PostService {
   @InjectRepository(CommentEntity)
   private commentRepo: Repository<CommentEntity>;
 
-  @InjectRepository(UserEntity)
-  private userRepo: Repository<UserEntity>;
-
   @Inject(HLOGGER_TOKEN)
   private logger: HLogger;
 
@@ -48,33 +45,23 @@ export class PostService {
   /**
    * 创建文章
    * @param createData 创建文章的数据
-   * @param ssoId 当前用户的 ssoId
+   * @param userId 当前用户的数据库 ID（来自 JWT）
    * @returns 创建后的文章信息
-   * 
+   *
    * 逻辑说明：
-   * 1. 通过 ssoId 查询用户，获取数据库 id
-   * 2. 使用数据库 id 作为 authorId 创建文章
+   * 1. 使用 JWT 中的用户数据库 ID 作为 authorId
+   * 2. 创建文章实体
    * 3. 保存文章到数据库
    * 4. 返回文章数据
    */
   async create(
     createData: CreatePostDto,
-    ssoId: number,
+    userId: number,
   ): Promise<IPostResponseDto> {
-    this.log(`管理员 #${ssoId} 开始创建文章，标题: ${createData.title}`);
+    this.log(`用户 #${userId} 开始创建文章，标题: ${createData.title}`);
 
     try {
-      // 查询用户，获取数据库 id
-      const user = await this.userRepo.findOne({ where: { ssoId } });
-
-      if (isNil(user)) {
-        this.error(`用户 #${ssoId} 不存在`);
-        throw new BusinessException('用户不存在，无法创建文章');
-      }
-
-      this.log(`找到用户，数据库ID: ${user.id}，SSO ID: ${ssoId}`);
-
-      // 创建文章实体，使用数据库 id 作为 authorId
+      // 创建文章实体，直接使用 JWT 中的用户数据库 ID
       const post = this.postRepo.create({
         title: createData.title,
         content: createData.content,
@@ -83,20 +70,17 @@ export class PostService {
         status: createData.status || 'draft',
         tags: createData.tags,
         extra: createData.extra,
-        authorId: user.id, // 使用数据库 id
+        authorId: userId,
       });
 
       // 保存到数据库
       const savedPost = await this.postRepo.save(post);
       this.log(
-        `文章创建成功，文章ID: ${savedPost.id}，作者数据库ID: ${user.id}，SSO ID: ${ssoId}，状态: ${savedPost.status}`,
+        `文章创建成功，文章ID: ${savedPost.id}，作者: ${userId}，状态: ${savedPost.status}`,
       );
 
       return savedPost.getData();
     } catch (error) {
-      if (error instanceof BusinessException) {
-        throw error;
-      }
       this.error(`创建文章失败: ${error.message}`);
       throw new BusinessException('创建文章失败，请稍后重试');
     }

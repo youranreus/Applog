@@ -156,8 +156,9 @@ export class UserService {
    *
    * 逻辑说明：
    * 1. 获取 TOKEN_SECRET 配置
-   * 2. 构建 JWT payload，将字符串 role 转换为数字（符合 @reus-able/types 定义）
-   * 3. 使用 jsonwebtoken 生成 token，有效期 3 天
+   * 2. 构建 JWT payload，使用数据库 id（而非 ssoId）
+   * 3. 将字符串 role 转换为数字（符合 @reus-able/types 定义）
+   * 4. 使用 jsonwebtoken 生成 token，有效期 3 天
    */
   private generateToken(user: UserEntity): string {
     const tokenSecret = this.config.get<string>('TOKEN_SECRET');
@@ -167,7 +168,7 @@ export class UserService {
     }
 
     const payload = {
-      id: user.ssoId,
+      id: user.id, // 使用数据库自增 id
       email: user.email,
       role: mapUserRoleToJwtRole(user.role), // 将字符串 role 转换为数字
       refresh: false,
@@ -177,7 +178,9 @@ export class UserService {
       const token = jwt.sign(payload, tokenSecret, {
         expiresIn: '3d',
       });
-      this.log(`JWT token 生成成功，有效期: 3 天`);
+      this.log(
+        `JWT token 生成成功，数据库ID: ${user.id}，SSO ID: ${user.ssoId}，有效期: 3 天`,
+      );
       return token;
     } catch (error) {
       this.error(`JWT token 生成失败: ${error.message}`);
@@ -187,14 +190,14 @@ export class UserService {
 
   /**
    * 获取用户信息
-   * @param id SSO 用户 ID
+   * @param id 用户数据库 ID（来自 JWT）
    * @returns 用户信息
    */
   async findOne(id: number): Promise<IUserResponseDto> {
-    this.log(`查询用户信息，ssoId: ${id}`);
+    this.log(`查询用户信息，数据库ID: ${id}`);
 
     try {
-      const user = await this.userRepo.findOne({ where: { ssoId: id } });
+      const user = await this.userRepo.findOne({ where: { id } });
 
       if (isNil(user)) {
         this.warn(`用户 #${id} 不存在`);
@@ -214,7 +217,7 @@ export class UserService {
 
   /**
    * 更新用户信息
-   * @param id SSO 用户 ID
+   * @param id 用户数据库 ID（来自 JWT）
    * @param updateData 更新数据
    * @returns 更新后的用户信息
    */
@@ -226,7 +229,7 @@ export class UserService {
 
     try {
       // 查询用户是否存在
-      const user = await this.userRepo.findOne({ where: { ssoId: id } });
+      const user = await this.userRepo.findOne({ where: { id } });
 
       if (isNil(user)) {
         this.warn(`用户 #${id} 不存在`);
