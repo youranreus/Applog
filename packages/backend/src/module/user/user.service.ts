@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { ILoginResponseDto, IUserResponseDto } from './dto';
 import type { UpdateUserDto } from './dto';
-import { mapSsoRoleToUserRole } from '@/utils/types';
+import { mapSsoRoleToUserRole, mapUserRoleToJwtRole } from '@/utils/types';
 
 @Injectable()
 export class UserService {
@@ -153,6 +153,11 @@ export class UserService {
    * 生成 JWT Token
    * @param user 用户实体
    * @returns JWT token 字符串
+   *
+   * 逻辑说明：
+   * 1. 获取 TOKEN_SECRET 配置
+   * 2. 构建 JWT payload，将字符串 role 转换为数字（符合 @reus-able/types 定义）
+   * 3. 使用 jsonwebtoken 生成 token，有效期 3 天
    */
   private generateToken(user: UserEntity): string {
     const tokenSecret = this.config.get<string>('TOKEN_SECRET');
@@ -163,9 +168,9 @@ export class UserService {
 
     const payload = {
       id: user.ssoId,
-      username: user.name,
       email: user.email,
-      role: user.role,
+      role: mapUserRoleToJwtRole(user.role), // 将字符串 role 转换为数字
+      refresh: false,
     };
 
     try {
