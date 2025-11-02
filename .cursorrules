@@ -72,6 +72,8 @@ applog/
 
 ### 前端 (Vue3)
 - **框架**: Vue 3
+- **UI 组件库**: Shadcn-vue
+- **样式**: Tailwind CSS
 - **语言**: TypeScript (严格模式)
 - **包管理**: pnpm workspace
 
@@ -420,6 +422,7 @@ if (!resource) {
 packages/frontend/src/
 ├── assets/        # @assets - 存放静态资源（CSS、图片、字体等）
 ├── components/    # @components - 存放公共组件
+│   └── ui/        # @components/ui - Shadcn-vue 基础组件
 ├── constants/     # @constants - 存放常量
 ├── hooks/         # @hooks - 存放公共 hooks（无业务属性）
 ├── pages/         # @pages - 存放页面视图
@@ -453,6 +456,38 @@ import logoImg from '@/assets/images/logo.png'
 - 组件应该是通用的、无业务属性的 UI 组件
 - 业务相关组件建议放在对应页面目录下
 - 组件按功能模块组织（可选）：`Button/`, `Card/`, `Form/` 等
+
+**@components/ui** - Shadcn-vue 组件目录
+- **重要**：存放从 Shadcn-vue 添加的 UI 组件
+- Shadcn-vue 组件通过 CLI 工具添加到项目，代码直接存在于项目中
+- 文件命名遵循 Shadcn-vue 规范（如 `button.vue`, `card.vue`, `dialog.vue`）
+- 这些组件是基础 UI 组件，可以随意修改和定制
+- 示例目录结构：
+  ```
+  components/
+  ├── ui/              # Shadcn-vue 基础组件
+  │   ├── button.vue
+  │   ├── card.vue
+  │   ├── dialog.vue
+  │   └── ...
+  ├── Layout/          # 布局组件
+  │   ├── Header.vue
+  │   └── Footer.vue
+  └── ...
+  ```
+- 使用 Shadcn-vue 组件：
+```vue
+<script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+</script>
+
+<template>
+  <Card>
+    <Button>点击我</Button>
+  </Card>
+</template>
+```
 ```vue
 <!-- components/Button.vue - 通用按钮组件 -->
 <script setup lang="ts">
@@ -544,13 +579,83 @@ export const useUserStore = defineStore('user', () => {
 - 文件命名使用 kebab-case（如 `date-utils.ts`, `format-utils.ts`）
 - 工具函数应该无副作用、可测试
 
+### Shadcn-vue 使用规范
+
+#### 组件库介绍
+- **Shadcn-vue** 是一个基于 Vue 3 的组件库
+- 组件代码直接存在于项目中（不是 npm 包），可以随意修改和定制
+- 基于 Radix Vue 和 Tailwind CSS
+- 组件通过 CLI 工具添加到项目
+
+#### 添加组件
+使用 Shadcn-vue CLI 添加组件：
+```bash
+# 添加单个组件
+npx shadcn-vue@latest add button
+npx shadcn-vue@latest add card
+npx shadcn-vue@latest add dialog
+
+# 添加多个组件
+npx shadcn-vue@latest add button card dialog
+```
+
+#### 组件目录
+- Shadcn-vue 组件统一放在 `@components/ui` 目录
+- 组件文件命名遵循 Shadcn-vue 规范（小写，如 `button.vue`）
+- 每个组件可能有相关的类型文件或工具函数
+
+#### 使用组件
+```vue
+<script setup lang="ts">
+// 从 @components/ui 导入 Shadcn-vue 组件
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+</script>
+
+<template>
+  <Card>
+    <CardHeader>
+      <CardTitle>标题</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <Button>点击按钮</Button>
+      <Dialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>对话框标题</DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    </CardContent>
+  </Card>
+</template>
+```
+
+#### 定制组件
+- **可以直接修改**：Shadcn-vue 组件代码在项目中，可以随时修改
+- **样式定制**：使用 Tailwind CSS 类名进行样式定制
+- **功能扩展**：可以在组件中添加自定义逻辑和功能
+- **组合使用**：Shadcn-vue 组件可以与其他组件组合使用
+
+#### 最佳实践
+1. **优先使用 Shadcn-vue 组件**：需要基础 UI 组件时，优先从 Shadcn-vue 添加
+2. **合理定制**：根据项目需求定制组件样式和功能
+3. **保持一致性**：定制组件时保持与整体设计风格一致
+4. **文档记录**：如果对 Shadcn-vue 组件进行了重大修改，建议添加注释说明
+
 ### 1. 组件编写
 
 #### 组件放置位置原则
+- **@components/ui**：存放 Shadcn-vue 基础 UI 组件
+  - 通过 Shadcn-vue CLI 添加的组件
+  - 基础 UI 组件（Button, Card, Dialog, Input 等）
+  - 可以随时修改和定制
+  
 - **@components**：存放通用的、无业务属性的公共组件
   - 可在多个页面和模块中复用
-  - 例如：`Button`, `Input`, `Card`, `Modal`, `Table` 等
-  - 这些组件不包含特定业务逻辑
+  - 例如：`Layout/Header.vue`, `Layout/Footer.vue` 等布局组件
+  - 这些组件不包含特定业务逻辑，可能组合使用 Shadcn-vue 组件
   
 - **@pages/[module]/components**：存放特定业务模块的组件
   - 仅在某个业务模块内使用
@@ -565,26 +670,57 @@ export const useUserStore = defineStore('user', () => {
 - **合理选择组件放置位置**：通用组件放在 `@components`，业务组件放在对应页面目录
 
 #### 组件示例
+
+**示例 1：使用 Shadcn-vue 组件**
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useUserStore } from '@/stores/user-store'
+
+interface IProps {
+  userId: string
+}
+
+const props = defineProps<IProps>()
+const userStore = useUserStore()
+const isExpanded = ref(false)
+
+// 加载用户数据
+userStore.fetchUser(props.userId)
+</script>
+
+<template>
+  <Card>
+    <CardHeader>
+      <CardTitle>{{ userStore.user?.name }}</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <Button @click="isExpanded = !isExpanded">
+        {{ isExpanded ? '收起' : '展开' }}
+      </Button>
+    </CardContent>
+  </Card>
+</template>
+```
+
+**示例 2：自定义组件使用 Store**
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { IUser } from '@/types/user.types'
 import { useUserStore } from '@/stores/user-store'
 
-// 定义 props 类型
 interface IProps {
   userId: string
 }
 
 const props = defineProps<IProps>()
-
-// 使用 store 处理业务逻辑
 const userStore = useUserStore()
-
-// 组件只处理视图相关的状态
 const isExpanded = ref(false)
 
-// 加载用户数据（调用 store 方法）
+// 加载用户数据
 userStore.fetchUser(props.userId)
 </script>
 
