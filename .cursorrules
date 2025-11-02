@@ -418,6 +418,8 @@ if (!resource) {
 
 ```
 packages/frontend/src/
+├── assets/        # @assets - 存放静态资源（CSS、图片、字体等）
+├── components/    # @components - 存放公共组件
 ├── constants/     # @constants - 存放常量
 ├── hooks/         # @hooks - 存放公共 hooks（无业务属性）
 ├── pages/         # @pages - 存放页面视图
@@ -428,6 +430,49 @@ packages/frontend/src/
 ```
 
 #### 目录说明
+
+**@assets** - 静态资源目录
+- 存放项目静态资源文件
+- 包括：CSS 样式文件、图片、字体、图标等
+- 文件组织建议：
+  - `css/` - 样式文件（如 `base.css`, `variables.css`）
+  - `images/` - 图片资源
+  - `fonts/` - 字体文件
+  - `icons/` - 图标文件
+```typescript
+// 在组件中引入样式
+import '@/assets/css/base.css'
+
+// 在组件中引入图片
+import logoImg from '@/assets/images/logo.png'
+```
+
+**@components** - 公共组件目录
+- 存放可在多个页面复用的公共组件
+- 文件命名使用 PascalCase（如 `Button.vue`, `UserCard.vue`）
+- 组件应该是通用的、无业务属性的 UI 组件
+- 业务相关组件建议放在对应页面目录下
+- 组件按功能模块组织（可选）：`Button/`, `Card/`, `Form/` 等
+```vue
+<!-- components/Button.vue - 通用按钮组件 -->
+<script setup lang="ts">
+interface IButtonProps {
+  type?: 'primary' | 'secondary' | 'danger'
+  disabled?: boolean
+}
+
+const props = withDefaults(defineProps<IButtonProps>(), {
+  type: 'primary',
+  disabled: false,
+})
+</script>
+
+<template>
+  <button :class="[`btn-${type}`]" :disabled="disabled">
+    <slot />
+  </button>
+</template>
+```
 
 **@constants** - 常量目录
 - 存放项目中使用的常量值
@@ -501,11 +546,23 @@ export const useUserStore = defineStore('user', () => {
 
 ### 1. 组件编写
 
+#### 组件放置位置原则
+- **@components**：存放通用的、无业务属性的公共组件
+  - 可在多个页面和模块中复用
+  - 例如：`Button`, `Input`, `Card`, `Modal`, `Table` 等
+  - 这些组件不包含特定业务逻辑
+  
+- **@pages/[module]/components**：存放特定业务模块的组件
+  - 仅在某个业务模块内使用
+  - 例如：`pages/user/components/UserCard.vue`（仅用户模块使用）
+  - 包含特定业务逻辑的组件
+
 #### 基本要求
 - 使用 `<script setup lang="ts">` 语法
 - 使用 Composition API
 - 明确定义 props 和 emits 的类型
 - **组件应专注于视图渲染，复杂逻辑提取到 hooks 或 stores**
+- **合理选择组件放置位置**：通用组件放在 `@components`，业务组件放在对应页面目录
 
 #### 组件示例
 ```vue
@@ -1365,7 +1422,8 @@ pnpm c  # 使用交互式提交工具
 - `entity`: 实体
 
 #### Frontend Scope
-- `components`: 组件
+- `assets`: 静态资源
+- `components`: 公共组件
 - `pages`: 页面视图
 - `store`: 状态管理
 - `router`: 路由

@@ -21,4 +21,11 @@ export default defineConfigWithVueTs(
   vueTsConfigs.recommended,
   ...pluginOxlint.configs['flat/recommended'],
   skipFormatting,
+
+  // 关闭组件名必须为多词的规则
+  {
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
 )
