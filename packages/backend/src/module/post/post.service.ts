@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
-import { PostEntity, CommentEntity } from '@/entities';
+import { PostEntity } from '@/entities';
+import { CommentService } from '../comment/comment.service';
 import type {
   CreatePostDto,
   UpdatePostDto,
@@ -23,13 +24,13 @@ export class PostService {
   @InjectRepository(PostEntity)
   private postRepo: Repository<PostEntity>;
 
-  @InjectRepository(CommentEntity)
-  private commentRepo: Repository<CommentEntity>;
-
   @Inject(HLOGGER_TOKEN)
   private logger: HLogger;
 
-  constructor(private config: ConfigService) {}
+  constructor(
+    private config: ConfigService,
+    private commentService: CommentService,
+  ) {}
 
   private log(message: string) {
     this.logger.log(message, PostService.name);
@@ -296,10 +297,8 @@ export class PostService {
         throw new BusinessException('文章不存在');
       }
 
-      // 检查文章是否有评论
-      const commentCount = await this.commentRepo.count({
-        where: { postId: id },
-      });
+      // 检查文章是否有评论（通过 CommentService 检查）
+      const commentCount = await this.commentService.countByPostId(id);
 
       if (commentCount > 0) {
         this.warn(`文章 #${id} 存在 ${commentCount} 条评论，无法删除`);

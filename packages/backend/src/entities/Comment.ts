@@ -23,7 +23,6 @@ export interface CommentExportData {
   parentId?: number;
   status: 'pending' | 'approved' | 'rejected';
   likeCount: number;
-  dislikeCount: number;
   extra?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
@@ -56,13 +55,6 @@ export class CommentEntity {
     default: 0,
   })
   likeCount: number;
-
-  @Column({
-    nullable: false,
-    type: 'int',
-    default: 0,
-  })
-  dislikeCount: number;
 
   @Column({
     nullable: true,
@@ -123,7 +115,6 @@ export class CommentEntity {
       parentId: this.parentId,
       status: this.status,
       likeCount: this.likeCount,
-      dislikeCount: this.dislikeCount,
       extra: this.extra,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
