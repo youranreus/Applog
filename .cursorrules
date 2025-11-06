@@ -588,16 +588,18 @@ export const useUserStore = defineStore('user', () => {
 - 组件通过 CLI 工具添加到项目
 
 #### 添加组件
-使用 Shadcn-vue CLI 添加组件：
+使用 Shadcn-vue CLI 添加组件（必须使用 pnpm）：
 ```bash
 # 添加单个组件
-npx shadcn-vue@latest add button
-npx shadcn-vue@latest add card
-npx shadcn-vue@latest add dialog
+pnpm dlx shadcn-vue@latest add button
+pnpm dlx shadcn-vue@latest add card
+pnpm dlx shadcn-vue@latest add dialog
 
 # 添加多个组件
-npx shadcn-vue@latest add button card dialog
+pnpm dlx shadcn-vue@latest add button card dialog
 ```
+
+**注意**：项目使用 pnpm 作为包管理器，添加 Shadcn-vue 组件时必须使用 `pnpm dlx` 而不是 `npx`。
 
 #### 组件目录
 - Shadcn-vue 组件统一放在 `@components/ui` 目录
