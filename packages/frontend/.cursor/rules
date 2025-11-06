@@ -1,0 +1,783 @@
+# Frontend (Vue3) 专用规则
+
+## 技术栈
+- **框架**: Vue 3 + Composition API
+- **UI 组件库**: Shadcn-vue
+- **样式**: Tailwind CSS
+- **状态管理**: Pinia
+- **路由**: Vue Router
+- **语言**: TypeScript (严格模式)
+- **包管理**: pnpm workspace
+
+## 前端项目结构（必读）
+
+前端项目采用模块化组织方式，严格遵循分层开发理念。项目结构如下：
+
+```
+packages/frontend/src/
+├── assets/        # @assets - 存放静态资源（CSS、图片、字体等）
+├── components/    # @components - 存放公共组件
+│   └── ui/        # @components/ui - Shadcn-vue 基础组件
+├── constants/     # @constants - 存放常量
+├── hooks/         # @hooks - 存放公共 hooks（无业务属性）
+├── pages/         # @pages - 存放页面视图
+├── router/        # @router - 存放路由信息
+├── stores/        # @stores - 存放 store 与业务逻辑
+├── types/         # @types - 存放类型定义
+└── utils/         # @utils - 存放工具函数
+```
+
+### 目录说明
+
+**@assets** - 静态资源目录
+- 存放项目静态资源文件
+- 包括：CSS 样式文件、图片、字体、图标等
+- 文件组织建议：
+  - `css/` - 样式文件（如 `base.css`, `variables.css`）
+  - `images/` - 图片资源
+  - `fonts/` - 字体文件
+  - `icons/` - 图标文件
+```typescript
+// 在组件中引入样式
+import '@/assets/css/base.css'
+
+// 在组件中引入图片
+import logoImg from '@/assets/images/logo.png'
+```
+
+**@components** - 公共组件目录
+- 存放可在多个页面复用的公共组件
+- 文件命名使用 PascalCase（如 `Button.vue`, `UserCard.vue`）
+- 组件应该是通用的、无业务属性的 UI 组件
+- 业务相关组件建议放在对应页面目录下
+- 组件按功能模块组织（可选）：`Button/`, `Card/`, `Form/` 等
+
+**@components/ui** - Shadcn-vue 组件目录
+- **重要**：存放从 Shadcn-vue 添加的 UI 组件
+- Shadcn-vue 组件通过 CLI 工具添加到项目，代码直接存在于项目中
+- 文件命名遵循 Shadcn-vue 规范（如 `button.vue`, `card.vue`, `dialog.vue`）
+- 这些组件是基础 UI 组件，可以随意修改和定制
+- 示例目录结构：
+  ```
+  components/
+  ├── ui/              # Shadcn-vue 基础组件
+  │   ├── button.vue
+  │   ├── card.vue
+  │   ├── dialog.vue
+  │   └── ...
+  ├── Layout/          # 布局组件
+  │   ├── Header.vue
+  │   └── Footer.vue
+  └── ...
+  ```
+
+**@constants** - 常量目录
+- 存放项目中使用的常量值
+- 常量命名使用 `UPPER_SNAKE_CASE`
+- 例如：`API_BASE_URL`, `MAX_PAGE_SIZE`, `DEFAULT_TIMEOUT`
+```typescript
+// constants/api.ts
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+export const API_TIMEOUT = 30000
+export const MAX_PAGE_SIZE = 100
+```
+
+**@hooks** - 公共 Hooks 目录
+- **重要**：此目录下的 hooks 必须无业务属性，保持通用性和可复用性
+- 例如：`useRequest`, `useLocalStorage`, `useDebounce`, `useThrottle`
+- 命名使用 `use` 前缀 + PascalCase（如 `useRequest.ts`）
+- 这些 hooks 应该可以在任何业务场景中复用
+```typescript
+// hooks/useRequest.ts - 通用请求 hook，无业务属性
+export function useRequest<T>(url: string, options?: RequestOptions) {
+  const loading = ref(false)
+  const error = ref<Error | null>(null)
+  const data = ref<T | null>(null)
+  
+  // 通用请求逻辑...
+  
+  return { loading, error, data, execute }
+}
+```
+
+**@pages** - 页面视图目录
+- 存放页面级组件（路由对应的视图）
+- 文件命名使用 PascalCase（如 `UserList.vue`, `PostDetail.vue`）
+- 页面组件应保持简洁，专注于 UI 渲染
+- 复杂的业务逻辑应提取到 `@hooks` 或 `@stores` 中
+
+**@router** - 路由目录
+- 存放路由配置
+- 使用 Vue Router 进行路由管理
+- 路由定义应与页面文件结构保持一致
+
+**@stores** - 状态管理目录
+- 存放 Pinia stores，包含业务逻辑和状态管理
+- 文件命名使用 kebab-case（如 `user-store.ts`, `post-store.ts`）
+- Store 应包含：
+  - 状态定义（state）
+  - 业务逻辑（actions）
+  - 计算属性（getters）
+```typescript
+// stores/user-store.ts
+export const useUserStore = defineStore('user', () => {
+  const user = ref<IUser | null>(null)
+  
+  async function fetchUser(id: string) {
+    // 业务逻辑
+  }
+  
+  return { user, fetchUser }
+})
+```
+
+**@types** - 类型定义目录
+- 存放 TypeScript 类型和接口定义
+- 遵循命名规范：Interface 使用 `I` 前缀 + PascalCase，Type 使用 PascalCase
+- 文件命名使用 kebab-case（如 `user.types.ts`, `api.types.ts`）
+
+**@utils** - 工具函数目录
+- 存放纯函数工具方法
+- 文件命名使用 kebab-case（如 `date-utils.ts`, `format-utils.ts`）
+- 工具函数应该无副作用、可测试
+
+## Shadcn-vue 使用规范
+
+### 组件库介绍
+- **Shadcn-vue** 是一个基于 Vue 3 的组件库
+- 组件代码直接存在于项目中（不是 npm 包），可以随意修改和定制
+- 基于 Radix Vue 和 Tailwind CSS
+- 组件通过 CLI 工具添加到项目
+
+### 添加组件
+使用 Shadcn-vue CLI 添加组件（必须使用 pnpm）：
+```bash
+# 添加单个组件
+pnpm dlx shadcn-vue@latest add button
+pnpm dlx shadcn-vue@latest add card
+pnpm dlx shadcn-vue@latest add dialog
+
+# 添加多个组件
+pnpm dlx shadcn-vue@latest add button card dialog
+```
+
+**注意**：项目使用 pnpm 作为包管理器，添加 Shadcn-vue 组件时必须使用 `pnpm dlx` 而不是 `npx`。
+
+### 组件目录
+- Shadcn-vue 组件统一放在 `@components/ui` 目录
+- 组件文件命名遵循 Shadcn-vue 规范（小写，如 `button.vue`）
+- 每个组件可能有相关的类型文件或工具函数
+
+### 使用组件
+```vue
+<script setup lang="ts">
+// 从 @components/ui 导入 Shadcn-vue 组件
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+</script>
+
+<template>
+  <Card>
+    <CardHeader>
+      <CardTitle>标题</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <Button>点击按钮</Button>
+      <Dialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>对话框标题</DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    </CardContent>
+  </Card>
+</template>
+```
+
+### 定制组件
+- **可以直接修改**：Shadcn-vue 组件代码在项目中，可以随时修改
+- **样式定制**：使用 Tailwind CSS 类名进行样式定制
+- **功能扩展**：可以在组件中添加自定义逻辑和功能
+- **组合使用**：Shadcn-vue 组件可以与其他组件组合使用
+
+### 最佳实践
+1. **优先使用 Shadcn-vue 组件**：需要基础 UI 组件时，优先从 Shadcn-vue 添加
+2. **合理定制**：根据项目需求定制组件样式和功能
+3. **保持一致性**：定制组件时保持与整体设计风格一致
+4. **文档记录**：如果对 Shadcn-vue 组件进行了重大修改，建议添加注释说明
+
+## 组件编写
+
+### 组件放置位置原则
+- **@components/ui**：存放 Shadcn-vue 基础 UI 组件
+  - 通过 Shadcn-vue CLI 添加的组件
+  - 基础 UI 组件（Button, Card, Dialog, Input 等）
+  - 可以随时修改和定制
+  
+- **@components**：存放通用的、无业务属性的公共组件
+  - 可在多个页面和模块中复用
+  - 例如：`Layout/Header.vue`, `Layout/Footer.vue` 等布局组件
+  - 这些组件不包含特定业务逻辑，可能组合使用 Shadcn-vue 组件
+  
+- **@pages/[module]/components**：存放特定业务模块的组件
+  - 仅在某个业务模块内使用
+  - 例如：`pages/user/components/UserCard.vue`（仅用户模块使用）
+  - 包含特定业务逻辑的组件
+
+### 基本要求
+- 使用 `<script setup lang="ts">` 语法
+- 使用 Composition API
+- 明确定义 props 和 emits 的类型
+- **组件应专注于视图渲染，复杂逻辑提取到 hooks 或 stores**
+- **合理选择组件放置位置**：通用组件放在 `@components`，业务组件放在对应页面目录
+
+### 组件示例
+
+**示例 1：使用 Shadcn-vue 组件**
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useUserStore } from '@/stores/user-store'
+
+interface IProps {
+  userId: string
+}
+
+const props = defineProps<IProps>()
+const userStore = useUserStore()
+const isExpanded = ref(false)
+
+// 加载用户数据
+userStore.fetchUser(props.userId)
+</script>
+
+<template>
+  <Card>
+    <CardHeader>
+      <CardTitle>{{ userStore.user?.name }}</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <Button @click="isExpanded = !isExpanded">
+        {{ isExpanded ? '收起' : '展开' }}
+      </Button>
+    </CardContent>
+  </Card>
+</template>
+```
+
+**示例 2：自定义组件使用 Store**
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import type { IUser } from '@/types/user.types'
+import { useUserStore } from '@/stores/user-store'
+
+interface IProps {
+  userId: string
+}
+
+const props = defineProps<IProps>()
+const userStore = useUserStore()
+const isExpanded = ref(false)
+
+// 加载用户数据
+userStore.fetchUser(props.userId)
+</script>
+
+<template>
+  <div>
+    <h2>{{ userStore.user?.name }}</h2>
+    <!-- 视图渲染 -->
+  </div>
+</template>
+```
+
+### ❌ 错误示例（逻辑过多）
+```vue
+<script setup lang="ts">
+// ❌ 错误：在组件中编写过多业务逻辑
+const fetchUserData = async () => {
+  // 不应该在这里写 API 调用逻辑
+  const response = await fetch(`/api/users/${userId}`)
+  const data = await response.json()
+  // ... 更多业务逻辑
+}
+</script>
+```
+
+### ✅ 正确示例（逻辑分离）
+```vue
+<script setup lang="ts">
+// ✅ 正确：使用 hook 处理业务逻辑
+import { useUser } from '@/hooks/useUser'
+
+const { user, loading, error } = useUser(props.userId)
+</script>
+```
+
+## 组合式函数 (Composables / Hooks)
+
+### 分类说明
+项目中的 hooks 分为两类：
+
+**1. 公共 Hooks（@hooks）**
+- **必须无业务属性**，保持通用性
+- 可在任何业务场景中复用
+- 例如：`useRequest`, `useLocalStorage`, `useDebounce`, `useThrottle`
+- 这些 hooks 不应该包含任何业务逻辑
+
+**2. 业务 Hooks（可选，建议放在业务模块目录）**
+- 包含特定业务逻辑
+- 通常组合使用多个公共 hooks 和 stores
+- 例如：可以在 `pages/user/hooks/useUserList.ts` 中创建 `useUserList`
+
+### 公共 Hook 示例
+```typescript
+/**
+ * 通用请求 Hook（无业务属性）
+ * @param url - 请求地址
+ * @param options - 请求选项
+ * @returns 请求状态和数据
+ * 
+ * 逻辑说明：
+ * 1. 管理请求的加载状态
+ * 2. 处理请求错误
+ * 3. 返回响应数据
+ */
+export function useRequest<T>(
+  url: string,
+  options?: RequestInit,
+): {
+  loading: Ref<boolean>
+  error: Ref<Error | null>
+  data: Ref<T | null>
+  execute: () => Promise<void>
+} {
+  const loading = ref(false)
+  const error = ref<Error | null>(null)
+  const data = ref<T | null>(null)
+
+  const execute = async () => {
+    loading.value = true
+    error.value = null
+    
+    try {
+      const response = await fetch(url, options)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      data.value = await response.json()
+    } catch (e) {
+      error.value = e instanceof Error ? e : new Error('Unknown error')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { loading, error, data, execute }
+}
+```
+
+### 业务 Hook 示例（可在页面目录中）
+```typescript
+/**
+ * 用户列表 Hook（包含业务逻辑）
+ * @param query - 查询条件
+ * @returns 用户列表相关状态和方法
+ */
+export function useUserList(query: IUserQuery) {
+  // 使用公共 hook
+  const { loading, error, data, execute } = useRequest<IUser[]>(
+    `/api/users?keyword=${query.keyword}`,
+  )
+  
+  // 业务逻辑
+  const users = computed(() => data.value || [])
+  const hasUsers = computed(() => users.value.length > 0)
+  
+  // 业务方法
+  const refresh = () => {
+    execute()
+  }
+
+  return { loading, error, users, hasUsers, refresh }
+}
+```
+
+### Hook 编写规范
+- 使用 `use` 前缀命名（如 `useUser`, `useAuth`, `useRequest`）
+- 提供完整的 TypeScript 类型定义
+- **必须添加 JSDoc 注释**：标注参数、返回值和逻辑说明
+- 保持函数职责单一
+- 公共 hooks 必须无业务属性
+
+## 类型定义
+
+### 类型文件组织
+- 在 `@types` 目录下按模块组织类型文件
+- 文件命名：kebab-case（如 `user.types.ts`, `api.types.ts`）
+
+### 类型定义规范
+```typescript
+// types/user.types.ts
+
+// Interface 使用 I 前缀
+export interface IUser {
+  id: string
+  userName: string
+  email: string
+  createdAt: string
+}
+
+export interface IUserResponse {
+  data: IUser
+  message: string
+}
+
+// Type 类型别名使用 PascalCase
+export type UserRole = 'admin' | 'user'
+export type UserStatus = 'active' | 'inactive'
+
+// 常量对象
+export const USER_ROLES = {
+  ADMIN: 'admin',
+  USER: 'user',
+} as const
+```
+
+### 组件 Props 类型
+```typescript
+// ✅ 正确：使用 interface 定义 props
+interface IUserCardProps {
+  user: IUser
+  showEmail?: boolean
+  onEdit?: (id: string) => void
+}
+
+const props = defineProps<IUserCardProps>()
+
+// ✅ 正确：使用 interface 定义 emits
+interface IUserCardEmits {
+  (e: 'edit', id: string): void
+  (e: 'delete', id: string): void
+}
+
+const emit = defineEmits<IUserCardEmits>()
+```
+
+## 分层开发理念
+
+### 三层架构
+项目严格遵循三层架构：
+
+**1. 视图层（View Layer）**
+- **位置**：`@pages` 目录下的 `.vue` 文件
+- **职责**：专注于 UI 渲染和用户交互
+- **原则**：
+  - 组件保持简洁，只处理视图相关逻辑
+  - 不直接调用 API
+  - 不包含复杂业务逻辑
+  - 通过 hooks 或 stores 获取数据和操作方法
+
+**2. 数据层（Data Layer）**
+- **位置**：`@stores` 目录
+- **职责**：管理应用状态和业务逻辑
+- **原则**：
+  - 包含业务状态管理
+  - 包含业务操作方法
+  - API 调用封装在 stores 中
+
+**3. 接口层（API Layer）**
+- **位置**：可在 `@utils/api.ts` 或 stores 中直接封装
+- **职责**：封装 API 请求
+- **原则**：
+  - 统一处理请求和响应
+  - 统一错误处理
+  - 类型安全
+
+### 分层开发示例
+
+**视图层（UserList.vue）**
+```vue
+<script setup lang="ts">
+import { useUserList } from './hooks/useUserList'
+import { useUserStore } from '@/stores/user-store'
+
+// 视图层只负责组合 hooks 和渲染
+const query = ref({ keyword: '' })
+const { users, loading, refresh } = useUserList(query)
+</script>
+
+<template>
+  <div>
+    <input v-model="query.keyword" />
+    <button @click="refresh">刷新</button>
+    <ul v-if="!loading">
+      <li v-for="user in users" :key="user.id">
+        {{ user.userName }}
+      </li>
+    </ul>
+  </div>
+</template>
+```
+
+**数据层（user-store.ts）**
+```typescript
+// stores/user-store.ts
+export const useUserStore = defineStore('user', () => {
+  const users = ref<IUser[]>([])
+  const loading = ref(false)
+
+  /**
+   * 获取用户列表
+   * @param query - 查询条件
+   * @returns 用户列表
+   */
+  async function fetchUsers(query: IUserQuery): Promise<IUser[]> {
+    loading.value = true
+    try {
+      // API 调用封装在 store 中
+      const response = await api.get<IUserResponse[]>('/api/users', { params: query })
+      users.value = response.data
+      return users.value
+    } catch (error) {
+      console.error('获取用户列表失败', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { users, loading, fetchUsers }
+})
+```
+
+## 代码复用与分割
+
+### 代码复用原则
+1. **提取公共逻辑**：
+   - 通用逻辑提取到 `@hooks`（无业务属性）
+   - 业务逻辑提取到 `@stores` 或业务 hooks
+   - 工具函数提取到 `@utils`
+
+2. **合理分割代码**：
+   - 单个组件不超过 300 行
+   - 单个函数不超过 150 行
+   - 单个 hook 职责单一
+
+3. **代码组织**：
+   - 按功能模块组织代码
+   - 使用 barrel exports（index.ts）统一导出
+   - 避免循环依赖
+
+## Store 使用规范
+
+### Store 组织
+- 使用 Pinia 进行状态管理
+- 按功能模块划分 store
+- Store 文件命名：kebab-case（如 `user-store.ts`, `post-store.ts`）
+
+### Store 结构
+```typescript
+import { defineStore } from 'pinia'
+import type { IUser, IUserQuery } from '@/types/user.types'
+import { api } from '@/utils/api'
+
+/**
+ * 用户 Store
+ * 管理用户相关的状态和业务逻辑
+ */
+export const useUserStore = defineStore('user', () => {
+  // State
+  const user = ref<IUser | null>(null)
+  const users = ref<IUser[]>([])
+  const loading = ref(false)
+
+  // Getters
+  const isLoggedIn = computed(() => user.value !== null)
+  const userName = computed(() => user.value?.userName || '')
+
+  // Actions
+  /**
+   * 获取当前用户信息
+   * @returns 用户信息
+   */
+  async function fetchCurrentUser(): Promise<IUser> {
+    loading.value = true
+    try {
+      const response = await api.get<IUser>('/api/user/me')
+      user.value = response.data
+      return user.value
+    } catch (error) {
+      console.error('获取用户信息失败', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 获取用户列表
+   * @param query - 查询条件
+   */
+  async function fetchUsers(query: IUserQuery): Promise<void> {
+    loading.value = true
+    try {
+      const response = await api.get<IUser[]>('/api/users', { params: query })
+      users.value = response.data
+    } catch (error) {
+      console.error('获取用户列表失败', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 清除用户状态
+   */
+  function clearUser(): void {
+    user.value = null
+    users.value = []
+  }
+
+  return {
+    // State
+    user,
+    users,
+    loading,
+    // Getters
+    isLoggedIn,
+    userName,
+    // Actions
+    fetchCurrentUser,
+    fetchUsers,
+    clearUser,
+  }
+})
+```
+
+## 路由配置规范
+
+### 路由文件组织
+- 路由配置在 `@router` 目录
+- 支持路由懒加载
+- 路由命名使用 camelCase
+
+### 路由示例
+```typescript
+import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
+
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('@/pages/Home.vue'),
+  },
+  {
+    path: '/users',
+    name: 'userList',
+    component: () => import('@/pages/user/UserList.vue'),
+  },
+  {
+    path: '/users/:id',
+    name: 'userDetail',
+    component: () => import('@/pages/user/UserDetail.vue'),
+    props: true,
+  },
+]
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes,
+})
+
+export default router
+```
+
+## 工具函数规范
+
+### 工具函数组织
+- 在 `@utils` 目录下按功能组织工具文件
+- 文件命名：kebab-case（如 `date-utils.ts`, `format-utils.ts`）
+- 工具函数应该是纯函数（无副作用）
+
+### 工具函数示例
+```typescript
+/**
+ * 格式化日期
+ * @param date - 日期对象或时间戳
+ * @param format - 格式字符串
+ * @returns 格式化后的日期字符串
+ */
+export function formatDate(
+  date: Date | number,
+  format: string = 'YYYY-MM-DD',
+): string {
+  const d = typeof date === 'number' ? new Date(date) : date
+  // 格式化逻辑...
+  return formatted
+}
+
+/**
+ * 防抖函数
+ * @param fn - 要防抖的函数
+ * @param delay - 延迟时间（毫秒）
+ * @returns 防抖后的函数
+ */
+export function debounce<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  delay: number = 300,
+): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout>
+  return function (...args: Parameters<T>) {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }
+}
+```
+
+## 前端开发重点
+
+### 组件编写
+- 使用 `<script setup lang="ts">` 语法
+- 使用 Composition API
+- 组件应专注于视图渲染，复杂逻辑提取到 hooks 或 stores
+- 合理选择组件放置位置：
+  - 通用组件放在 `@components`
+  - 业务组件放在对应页面目录
+
+### Shadcn-vue 使用
+- 组件通过 `pnpm dlx shadcn-vue@latest add <component>` 添加
+- 组件统一放在 `@components/ui` 目录
+- 可以直接修改组件代码进行定制
+
+### Hooks 分类
+- **公共 Hooks（@hooks）**: 必须无业务属性，保持通用性
+- **业务 Hooks**: 可在页面目录中创建，包含特定业务逻辑
+
+### Store 使用
+- 使用 Pinia 进行状态管理
+- Store 文件命名：kebab-case（如 `user-store.ts`）
+- API 调用封装在 stores 中
+
+### 类型定义
+- Interface 使用 `I` 前缀 + PascalCase（如 `IUser`）
+- Type 使用 PascalCase（如 `UserRole`）
+- 文件命名：kebab-case（如 `user.types.ts`）
+
+### 代码规范
+- 所有函数必须添加 JSDoc 注释
+- 单个组件不超过 300 行
+- 单个函数不超过 150 行
+- 使用 `async/await`，禁止混用 `.then()`
+
+### 分层开发
+- **视图层**: 专注于 UI 渲染，不直接调用 API
+- **数据层**: Store 管理状态和业务逻辑
+- **接口层**: API 请求封装
