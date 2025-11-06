@@ -23,10 +23,8 @@ const config: Config = {
       
       /**
        * 其他可自定义的样式...
+       * 注意：在 Tailwind v4 中，颜色应该在 CSS 文件的 @theme 块中定义
        */
-      // colors: {
-      //   // 自定义颜色
-      // },
       // spacing: {
       //   // 自定义间距
       // },
