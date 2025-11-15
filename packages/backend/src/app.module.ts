@@ -5,7 +5,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ENV_LIST } from '@/utils/const';
 import { AuthGuard, BusinessException, LoggerModule } from '@reus-able/nestjs';
 import { APP_GUARD, APP_PIPE } from '@nestjs/core';
-import { UserModule, PostModule, CommentModule, PageModule } from '@/module';
+import {
+  UserModule,
+  PostModule,
+  CommentModule,
+  PageModule,
+  SystemConfigModule,
+} from '@/module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ENTITY_LIST } from '@/entities';
@@ -35,6 +41,7 @@ import { ENTITY_LIST } from '@/entities';
     PostModule,
     CommentModule,
     PageModule,
+    SystemConfigModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],
