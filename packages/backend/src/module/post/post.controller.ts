@@ -36,6 +36,16 @@ export class PostController {
   }
 
   /**
+   * 获取文章详情
+   * @param id 文章ID
+   * @returns 文章详细信息（包含完整内容）
+   */
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<IPostResponseDto> {
+    return this.postService.findOne(Number(id));
+  }
+
+  /**
    * 创建文章
    * @param createDto 创建文章的数据
    * @param user 当前登录的管理员用户

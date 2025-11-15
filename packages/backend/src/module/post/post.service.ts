@@ -166,6 +166,37 @@ export class PostService {
   }
 
   /**
+   * 获取文章详情
+   * @param id 文章ID
+   * @returns 文章详细信息（包含完整内容和作者信息）
+   */
+  async findOne(id: number): Promise<IPostResponseDto> {
+    this.log(`查询文章详情，文章ID: ${id}`);
+
+    try {
+      // 查询文章，关联作者信息
+      const post = await this.postRepo.findOne({
+        where: { id },
+        relations: ['author'],
+      });
+
+      if (isNil(post)) {
+        this.warn(`文章 #${id} 不存在`);
+        throw new BusinessException('文章不存在');
+      }
+
+      this.log(`成功获取文章 #${id} 详情`);
+      return post.getData(true); // 包含作者信息
+    } catch (error) {
+      if (error instanceof BusinessException) {
+        throw error;
+      }
+      this.error(`查询文章详情失败: ${error.message}`);
+      throw new BusinessException('查询文章详情失败，请稍后重试');
+    }
+  }
+
+  /**
    * 获取文章列表（分页、搜索、筛选）
    * @param queryDto 查询参数
    * @returns 分页的文章列表
