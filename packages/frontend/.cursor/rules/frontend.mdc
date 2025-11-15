@@ -1,3 +1,7 @@
+---
+alwaysApply: false
+---
+
 # Frontend (Vue3) 专用规则
 
 ## 技术栈
