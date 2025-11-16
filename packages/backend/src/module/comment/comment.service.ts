@@ -60,6 +60,7 @@ export class CommentService {
   async create(
     createData: CreateCommentDto,
     userId?: number,
+    ipAddress?: string,
   ): Promise<ICommentResponseDto> {
     this.log(
       `开始创建评论，文章ID: ${createData.postId}，父评论ID: ${createData.parentId || '无'}`,
@@ -95,6 +96,14 @@ export class CommentService {
         }
       }
 
+      const isGuest = isNil(userId);
+      if (isGuest) {
+        if (!createData.guestName || !createData.guestEmail) {
+          this.warn('游客评论缺少必填的用户名或邮箱');
+          throw new BusinessException('游客需提供昵称和邮箱');
+        }
+      }
+
       // 如果没有提供 userId，使用默认的匿名用户ID（需要配置）
       const authorId =
         userId || this.config.get<number>('ANONYMOUS_USER_ID', 1);
@@ -107,6 +116,10 @@ export class CommentService {
         authorId,
         status: 'pending',
         likeCount: 0,
+        guestName: isGuest ? createData.guestName : undefined,
+        guestEmail: isGuest ? createData.guestEmail : undefined,
+        guestSite: isGuest ? createData.guestSite : undefined,
+        ip: createData.ip || ipAddress,
       });
 
       // 保存到数据库
@@ -415,10 +428,12 @@ export class CommentService {
    */
   async react(
     commentId: number,
-    reactData: ReactCommentDto,
-    userId?: number,
+    _reactData: ReactCommentDto,
+    _userId?: number,
   ): Promise<ICommentResponseDto> {
     this.log(`开始点赞评论，评论ID: ${commentId}`);
+    void _reactData;
+    void _userId;
 
     try {
       // 检查评论是否存在
@@ -471,9 +486,7 @@ export class CommentService {
     id: number,
     approveData: ApproveCommentDto,
   ): Promise<ICommentResponseDto> {
-    this.log(
-      `开始审核评论，评论ID: ${id}，审核状态: ${approveData.status}`,
-    );
+    this.log(`开始审核评论，评论ID: ${id}，审核状态: ${approveData.status}`);
 
     try {
       // 查询评论是否存在
@@ -518,9 +531,7 @@ export class CommentService {
    * 2. 如果有子评论，递归查询子评论的子评论
    * 3. 返回所有层级的子评论
    */
-  private async findAllChildren(
-    parentIds: number[],
-  ): Promise<CommentEntity[]> {
+  private async findAllChildren(parentIds: number[]): Promise<CommentEntity[]> {
     if (parentIds.length === 0) {
       return [];
     }
@@ -550,9 +561,7 @@ export class CommentService {
    * 2. 为每个顶级评论递归查找其子评论
    * 3. 构建嵌套的树形结构
    */
-  private buildCommentTree(
-    comments: CommentEntity[],
-  ): ICommentResponseDto[] {
+  private buildCommentTree(comments: CommentEntity[]): ICommentResponseDto[] {
     // 创建评论映射
     const commentMap = new Map<number, CommentEntity>();
     comments.forEach((comment) => {
@@ -621,4 +630,3 @@ export class CommentService {
     });
   }
 }
-

@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   VERSION_NEUTRAL,
+  Ip,
 } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
@@ -39,8 +40,10 @@ export class CommentController {
   async create(
     @Body() createDto: CreateCommentDto,
     @UserParams() user?: UserJwtPayload,
+    @Ip() ip?: string,
   ): Promise<ICommentResponseDto> {
-    return this.commentService.create(createDto, user?.id);
+    createDto.ip = ip || createDto.ip;
+    return this.commentService.create(createDto, user?.id, ip);
   }
 
   /**
@@ -123,4 +126,3 @@ export class CommentController {
     return this.commentService.approve(Number(id), approveDto);
   }
 }
-

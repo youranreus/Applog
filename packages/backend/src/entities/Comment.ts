@@ -24,6 +24,10 @@ export interface CommentExportData {
   status: 'pending' | 'approved' | 'rejected';
   likeCount: number;
   extra?: Record<string, any>;
+  guestName?: string;
+  guestEmail?: string;
+  guestSite?: string;
+  ip?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +65,34 @@ export class CommentEntity {
     type: 'json',
   })
   extra: Record<string, any>;
+
+  @Column({
+    nullable: true,
+    type: 'varchar',
+    length: 64,
+  })
+  guestName?: string;
+
+  @Column({
+    nullable: true,
+    type: 'varchar',
+    length: 128,
+  })
+  guestEmail?: string;
+
+  @Column({
+    nullable: true,
+    type: 'varchar',
+    length: 255,
+  })
+  guestSite?: string;
+
+  @Column({
+    nullable: true,
+    type: 'varchar',
+    length: 64,
+  })
+  ip?: string;
 
   // 关联文章（多对一）
   @Column({
@@ -116,6 +148,10 @@ export class CommentEntity {
       status: this.status,
       likeCount: this.likeCount,
       extra: this.extra,
+      guestName: this.guestName,
+      guestEmail: this.guestEmail,
+      guestSite: this.guestSite,
+      ip: this.ip,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
