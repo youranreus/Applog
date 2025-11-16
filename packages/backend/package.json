@@ -24,7 +24,7 @@
     "@nestjs/platform-fastify": "^10.3.6",
     "@nestjs/typeorm": "^10.0.2",
     "@reus-able/const": "^1.0.7",
-    "@reus-able/nestjs": "1.0.18",
+    "@reus-able/nestjs": "1.1.8",
     "@reus-able/sso-utils": "^1.0.0",
     "@reus-able/types": "1.0.5",
     "axios": "^1.4.0",

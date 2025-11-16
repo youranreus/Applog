@@ -34,4 +34,3 @@ export class QueryCommentDto {
   @IsOptional()
   status?: CommentStatus;
 }
-

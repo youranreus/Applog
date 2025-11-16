@@ -39,7 +39,7 @@ export class CommentController {
   @Post()
   async create(
     @Body() createDto: CreateCommentDto,
-    @UserParams() user?: UserJwtPayload,
+    @UserParams() user: UserJwtPayload,
     @Ip() ip?: string,
   ): Promise<ICommentResponseDto> {
     createDto.ip = ip || createDto.ip;
