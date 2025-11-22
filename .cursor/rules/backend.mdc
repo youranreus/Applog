@@ -1,4 +1,5 @@
 ---
+globs: packages/backend/*
 alwaysApply: false
 ---
 # Backend (NestJS) 专用规则

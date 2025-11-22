@@ -1,7 +1,7 @@
 ---
+globs: packages/frontend/*
 alwaysApply: false
 ---
-
 # Frontend (Vue3) 专用规则
 
 ## 技术栈
@@ -122,6 +122,7 @@ export function useRequest<T>(url: string, options?: RequestOptions) {
   - 状态定义（state）
   - 业务逻辑（actions）
   - 计算属性（getters）
+
 ```typescript
 // stores/user-store.ts
 export const useUserStore = defineStore('user', () => {
