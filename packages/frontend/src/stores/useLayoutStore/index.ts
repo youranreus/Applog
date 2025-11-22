@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import { defineStore } from 'pinia';
 import { useRequest } from 'alova/client';
-import { alovaInstance } from '@/utils/alova';
+import { getNavPages } from '@/api/page/getNavPages';
 import type { IPageNavItem } from '@/types/layout';
 
 /**
@@ -12,18 +12,17 @@ export const useLayoutStore = defineStore('layout', () => {
   /**
    * 使用 alova 的 useRequest 获取导航和 Footer 页面列表
    * 接口路径: GET /page/nav
+   * 响应拦截器会自动提取 data 字段，返回 IPageNavItem[] 类型
    */
   const {
     loading,
     data: allPages,
     error,
     send: refresh,
-  } = useRequest(
-    () => alovaInstance.Get<IPageNavItem[]>('/page/nav'),
-    {
-      immediate: true, // 立即请求
-    },
-  );
+  } = useRequest(getNavPages, {
+    immediate: true, // 立即请求
+    initialData: [],
+  });
 
   /**
    * 导航页面列表（只读）
@@ -33,7 +32,7 @@ export const useLayoutStore = defineStore('layout', () => {
     if (!allPages.value) {
       return [];
     }
-    return allPages.value.filter((page) => page.showInNav);
+    return allPages.value.filter((page: IPageNavItem) => page.showInNav);
   });
 
   /**
@@ -44,7 +43,7 @@ export const useLayoutStore = defineStore('layout', () => {
     if (!allPages.value) {
       return [];
     }
-    return allPages.value.filter((page) => page.showInFooter);
+    return allPages.value.filter((page: IPageNavItem) => page.showInFooter);
   });
 
   /**
