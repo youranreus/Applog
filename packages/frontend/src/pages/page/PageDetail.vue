@@ -2,7 +2,7 @@
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
 import { usePageDetail } from '@/hooks/usePageDetail';
-import '@/assets/article-content.scss';
+import MarkdownRenderer from '@/components/ui/markdown-renderer/MarkdownRenderer.vue';
 
 const route = useRoute();
 
@@ -56,7 +56,7 @@ const formatDate = (date: Date | string): string => {
       <p v-if="page.summary" class="subheader gb-subheader">{{ page.summary }}</p>
 
       <!-- 正文内容 -->
-      <div id="sections" class="article-content" v-html="page.content" />
+      <MarkdownRenderer :content="page.content" class="article-content" />
 
       <!-- 页面信息（底部） -->
       <div class="mod-date">

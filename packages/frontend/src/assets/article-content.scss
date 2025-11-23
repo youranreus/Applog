@@ -105,7 +105,9 @@
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
     font-size: 0.875em;
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro', monospace;
+    font-family:
+      'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro',
+      monospace;
     color: #1d1d1f;
   }
 
@@ -116,7 +118,9 @@
     border-radius: 0.5rem;
     overflow-x: auto;
     margin: 1.5rem 0;
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro', monospace;
+    font-family:
+      'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', 'Source Code Pro',
+      monospace;
     font-size: 0.875rem;
     line-height: 1.6;
 
@@ -158,15 +162,112 @@
       text-decoration: underline;
     }
   }
+
+  /* 标题锚点链接样式 */
+  .heading-anchor {
+    color: #0071e3;
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    margin-left: 0.5rem;
+    font-weight: normal;
+  }
+
+  h1:hover .heading-anchor,
+  h2:hover .heading-anchor,
+  h3:hover .heading-anchor,
+  h4:hover .heading-anchor,
+  h5:hover .heading-anchor,
+  h6:hover .heading-anchor {
+    opacity: 1;
+  }
+
+  /* 表格样式 - GFM 支持 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  th,
+  td {
+    border: 1px solid #d2d2d7;
+    padding: 0.75rem 1rem;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f5f5f7;
+    font-weight: 600;
+    color: #1d1d1f;
+  }
+
+  tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+
+  tr:hover {
+    background-color: #f5f5f7;
+  }
+
+  /* 任务列表样式 - GFM 支持 */
+  .task-list-item {
+    list-style-type: none;
+    margin-left: -1.5rem;
+  }
+
+  .task-list-item input[type='checkbox'] {
+    margin-right: 0.5rem;
+    cursor: pointer;
+  }
+
+  .task-list-item input[type='checkbox']:checked + * {
+    text-decoration: line-through;
+    color: #6e6e73;
+  }
+
+  /* 删除线样式 - GFM 支持 */
+  del {
+    text-decoration: line-through;
+    color: #6e6e73;
+  }
+
+  /* 脚注样式 - GFM 支持 */
+  .footnote-ref {
+    color: #0071e3;
+    text-decoration: none;
+    font-size: 0.875em;
+    vertical-align: super;
+  }
+
+  .footnote-ref:hover {
+    text-decoration: underline;
+  }
+
+  .footnotes {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #d2d2d7;
+    font-size: 0.875rem;
+    color: #6e6e73;
+  }
+
+  .footnotes ol {
+    margin-left: 0;
+    padding-left: 1.5rem;
+  }
+
+  .footnotes li {
+    margin-bottom: 0.5rem;
+  }
 }
 
 /* 页面信息底部样式 - 模仿 Apple mod-date */
 .mod-date {
   margin-top: 4rem;
-  padding-top: 2rem;
-  border-top: 1px solid #d2d2d7;
   font-size: 0.875rem;
   color: #6e6e73;
   line-height: 1.8;
 }
-
