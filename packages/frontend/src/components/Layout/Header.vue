@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter } from 'vue-router';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 
-const router = useRouter()
+const router = useRouter();
+const layoutStore = useLayoutStore();
 
 /**
  * 导航到指定路由
  * @param name - 路由名称
  */
 const navigateTo = (name: string) => {
-  router.push({ name })
-}
+  router.push({ name });
+};
 </script>
 
 <template>
@@ -22,7 +24,7 @@ const navigateTo = (name: string) => {
         >
           AppLog
         </h1>
-        <nav class="flex items-center">
+        <nav class="flex items-center gap-1">
           <router-link
             :to="{ name: 'home' }"
             class="header-link"
@@ -37,6 +39,24 @@ const navigateTo = (name: string) => {
           >
             文章
           </router-link>
+          <!-- 动态渲染从 store 获取的导航页面 -->
+          <template v-if="layoutStore.loading">
+            <span class="header-link text-gray-400">加载中...</span>
+          </template>
+          <template v-else-if="layoutStore.error">
+            <span class="header-link text-red-400">加载失败</span>
+          </template>
+          <template v-else>
+            <router-link
+              v-for="page in layoutStore.navPages"
+              :key="page.id"
+              :to="`/page/${page.slug}`"
+              class="header-link"
+              active-class="header-link-active"
+            >
+              {{ page.title }}
+            </router-link>
+          </template>
         </nav>
       </div>
     </div>
