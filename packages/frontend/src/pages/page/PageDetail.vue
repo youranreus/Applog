@@ -1,0 +1,109 @@
+<script setup lang="ts">
+import { useRoute } from 'vue-router';
+import { computed } from 'vue';
+import { usePageDetail } from '@/hooks/usePageDetail';
+import '@/assets/article-content.scss';
+
+const route = useRoute();
+
+/**
+ * 从路由参数中获取页面 slug
+ */
+const slug = computed(() => route.params.slug as string);
+
+/**
+ * 使用页面详情 Hook 获取页面数据
+ */
+const { page, loading, error } = usePageDetail(slug);
+
+/**
+ * 格式化日期
+ * @param date - 日期字符串或 Date 对象
+ * @returns 格式化后的日期字符串
+ */
+const formatDate = (date: Date | string): string => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+</script>
+
+<template>
+  <div class="page-detail-page">
+    <!-- 加载状态 -->
+    <template v-if="loading">
+      <div class="text-center text-gray-600 py-12">
+        <p>加载中...</p>
+      </div>
+    </template>
+
+    <!-- 错误状态 -->
+    <template v-else-if="error">
+      <div class="text-center text-red-600 py-12">
+        <p>加载失败: {{ error.message || '未知错误' }}</p>
+      </div>
+    </template>
+
+    <!-- 页面内容 -->
+    <template v-else-if="page">
+      <!-- 文章标题 -->
+      <h1 class="gb-header">{{ page.title }}</h1>
+
+      <!-- 摘要 -->
+      <p v-if="page.summary" class="subheader gb-subheader">{{ page.summary }}</p>
+
+      <!-- 正文内容 -->
+      <div id="sections" class="article-content" v-html="page.content" />
+
+      <!-- 页面信息（底部） -->
+      <div class="mod-date">
+        <div v-if="page.author" class="mb-2">
+          <span class="text-gray-600">作者：</span>
+          <span>{{ page.author.name }}</span>
+        </div>
+        <div class="mb-2">
+          <span class="text-gray-600">发布日期：</span>
+          <span>{{ formatDate(page.createdAt) }}</span>
+        </div>
+        <div v-if="page.updatedAt && page.updatedAt !== page.createdAt" class="mb-2">
+          <span class="text-gray-600">更新日期：</span>
+          <span>{{ formatDate(page.updatedAt) }}</span>
+        </div>
+        <div class="mb-2">
+          <span class="text-gray-600">浏览次数：</span>
+          <span>{{ page.viewCount }} 次</span>
+        </div>
+        <div v-if="page.tags && page.tags.length > 0" class="mt-4">
+          <span class="text-gray-600 mr-2">标签：</span>
+          <span
+            v-for="tag in page.tags"
+            :key="tag"
+            class="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded mr-2"
+          >
+            {{ tag }}
+          </span>
+        </div>
+      </div>
+    </template>
+
+    <!-- 页面不存在 -->
+    <template v-else>
+      <div class="text-center text-gray-600 py-12">
+        <p>页面不存在</p>
+      </div>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+.page-detail-page {
+  width: 100%;
+  max-width: 4xl;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+</style>
+

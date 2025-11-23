@@ -18,6 +18,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/post/PostDetail.vue'),
     props: true,
   },
+  {
+    path: '/page/:slug',
+    name: 'pageDetail',
+    component: () => import('@/pages/page/PageDetail.vue'),
+    props: true,
+  },
 ]
 
 const router = createRouter({
