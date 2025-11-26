@@ -20,18 +20,11 @@ const navigateTo = (name: string) => {
       <div class="flex items-center justify-between h-[52px]">
         <h1
           class="text-xl font-medium text-gray-900 select-none cursor-pointer"
-          @click="navigateTo('home')"
+          @click="navigateTo('postList')"
         >
           AppLog
         </h1>
         <nav class="flex items-center gap-1">
-          <router-link
-            :to="{ name: 'home' }"
-            class="header-link"
-            active-class="header-link-active"
-          >
-            首页
-          </router-link>
           <router-link
             :to="{ name: 'postList' }"
             class="header-link"

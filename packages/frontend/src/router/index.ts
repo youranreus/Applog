@@ -4,8 +4,7 @@ import type { RouteRecordRaw } from 'vue-router'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'home',
-    component: () => import('@/pages/Home.vue'),
+    redirect: { name: 'postList' },
   },
   {
     path: '/posts',
