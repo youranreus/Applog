@@ -101,9 +101,7 @@ const formatDate = (date: Date | string): string => {
 <style scoped>
 .page-detail-page {
   width: 100%;
-  max-width: 4xl;
   margin: 0 auto;
-  padding: 2rem 1rem;
 }
 </style>
 

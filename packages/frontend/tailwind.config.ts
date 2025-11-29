@@ -8,6 +8,7 @@ const config: Config = {
   content: [
     './index.html',
     './src/**/*.{vue,js,ts,jsx,tsx}',
+    './node_modules/konsta/vue/**/*.{js,ts,vue}',
   ],
   theme: {
     extend: {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { ref, onMounted } from 'vue'
+import { kButton } from 'konsta/vue'
 
 const route = useRoute()
 const postId = ref<string>('')
@@ -17,12 +18,12 @@ onMounted(() => {
 <template>
   <div class="post-detail-page">
     <div class="post-header mb-8">
-      <button
+      <k-button
         @click="$router.back()"
         class="text-gray-600 hover:text-gray-900 mb-4 inline-flex items-center"
       >
         <span>← 返回</span>
-      </button>
+      </k-button>
       <h1 class="text-3xl font-bold text-gray-900 mb-2">文章详情</h1>
       <p class="text-gray-600">文章 ID: {{ postId }}</p>
     </div>

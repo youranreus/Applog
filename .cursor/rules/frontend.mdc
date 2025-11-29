@@ -6,7 +6,7 @@ alwaysApply: false
 
 ## 技术栈
 - **框架**: Vue 3 + Composition API
-- **UI 组件库**: Shadcn-vue
+- **UI 组件库**: Konsta UI Vue
 - **样式**: Tailwind CSS
 - **状态管理**: Pinia
 - **路由**: Vue Router
@@ -56,18 +56,17 @@ import logoImg from '@/assets/images/logo.png'
 - 业务相关组件建议放在对应页面目录下
 - 组件按功能模块组织（可选）：`Button/`, `Card/`, `Form/` 等
 
-**@components/ui** - Shadcn-vue 组件目录
-- **重要**：存放从 Shadcn-vue 添加的 UI 组件
-- Shadcn-vue 组件通过 CLI 工具添加到项目，代码直接存在于项目中
-- 文件命名遵循 Shadcn-vue 规范（如 `button.vue`, `card.vue`, `dialog.vue`）
-- 这些组件是基础 UI 组件，可以随意修改和定制
+**@components/ui** - 自定义 UI 组件目录
+- **重要**：存放自定义的 UI 组件或对 Konsta UI 组件的包装
+- Konsta UI 组件通过 npm 包引入，按需导入使用
+- 如果需要封装或扩展 Konsta UI 组件，可以放在此目录
+- 文件命名使用 PascalCase（如 `Button.vue`, `Card.vue`, `Dialog.vue`）
 - 示例目录结构：
   ```
   components/
-  ├── ui/              # Shadcn-vue 基础组件
-  │   ├── button.vue
-  │   ├── card.vue
-  │   ├── dialog.vue
+  ├── ui/              # 自定义 UI 组件
+  │   ├── markdown-renderer/
+  │   │   └── MarkdownRenderer.vue
   │   └── ...
   ├── Layout/          # 布局组件
   │   ├── Header.vue
@@ -146,85 +145,81 @@ export const useUserStore = defineStore('user', () => {
 - 文件命名使用 kebab-case（如 `date-utils.ts`, `format-utils.ts`）
 - 工具函数应该无副作用、可测试
 
-## Shadcn-vue 使用规范
+## Konsta UI 使用规范
 
 ### 组件库介绍
-- **Shadcn-vue** 是一个基于 Vue 3 的组件库
-- 组件代码直接存在于项目中（不是 npm 包），可以随意修改和定制
-- 基于 Radix Vue 和 Tailwind CSS
-- 组件通过 CLI 工具添加到项目
+- **Konsta UI Vue** 是一个基于 Vue 3 的移动端 UI 组件库
+- 基于 Tailwind CSS，提供 iOS 和 Material Design 风格的组件
+- 组件通过 npm 包引入，按需导入使用
+- 适合开发移动端应用或需要移动端风格的 Web 应用
 
-### 添加组件
-使用 Shadcn-vue CLI 添加组件（必须使用 pnpm）：
+### 安装和配置
+Konsta UI 已通过 pnpm 安装：
 ```bash
-# 添加单个组件
-pnpm dlx shadcn-vue@latest add button
-pnpm dlx shadcn-vue@latest add card
-pnpm dlx shadcn-vue@latest add dialog
-
-# 添加多个组件
-pnpm dlx shadcn-vue@latest add button card dialog
+pnpm --filter @applog/frontend add konsta
 ```
 
-**注意**：项目使用 pnpm 作为包管理器，添加 Shadcn-vue 组件时必须使用 `pnpm dlx` 而不是 `npx`。
+### 应用入口配置
+在 `App.vue` 中使用 `k-app` 组件包裹应用：
+```vue
+<script setup lang="ts">
+import { kApp } from 'konsta/vue'
+</script>
 
-### 组件目录
-- Shadcn-vue 组件统一放在 `@components/ui` 目录
-- 组件文件命名遵循 Shadcn-vue 规范（小写，如 `button.vue`）
-- 每个组件可能有相关的类型文件或工具函数
+<template>
+  <k-app theme="ios">
+    <!-- 应用内容 -->
+  </k-app>
+</template>
+```
 
 ### 使用组件
 ```vue
 <script setup lang="ts">
-// 从 @components/ui 导入 Shadcn-vue 组件
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+// 从 konsta/vue 导入组件
+import { kApp, kPage, kNavbar, kBlock, kButton } from 'konsta/vue'
 </script>
 
 <template>
-  <Card>
-    <CardHeader>
-      <CardTitle>标题</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <Button>点击按钮</Button>
-      <Dialog>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>对话框标题</DialogTitle>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-    </CardContent>
-  </Card>
+  <k-app theme="ios">
+    <k-page>
+      <k-navbar title="我的应用" />
+      <k-block strong>
+        <k-button>点击按钮</k-button>
+      </k-block>
+    </k-page>
+  </k-app>
 </template>
 ```
 
-### 定制组件
-- **可以直接修改**：Shadcn-vue 组件代码在项目中，可以随时修改
-- **样式定制**：使用 Tailwind CSS 类名进行样式定制
-- **功能扩展**：可以在组件中添加自定义逻辑和功能
-- **组合使用**：Shadcn-vue 组件可以与其他组件组合使用
+### 主题配置
+- **iOS 主题**：`theme="ios"`（默认）
+- **Material Design 主题**：`theme="material"`
+- 可以在 `k-app` 组件上设置 `theme` 属性
+
+### 组件目录
+- Konsta UI 组件通过 npm 包引入，不需要放在项目目录中
+- 如果需要封装或扩展 Konsta UI 组件，可以放在 `@components/ui` 目录
+- 自定义组件文件命名使用 PascalCase（如 `Button.vue`）
 
 ### 最佳实践
-1. **优先使用 Shadcn-vue 组件**：需要基础 UI 组件时，优先从 Shadcn-vue 添加
-2. **合理定制**：根据项目需求定制组件样式和功能
-3. **保持一致性**：定制组件时保持与整体设计风格一致
-4. **文档记录**：如果对 Shadcn-vue 组件进行了重大修改，建议添加注释说明
+1. **优先使用 Konsta UI 组件**：需要移动端 UI 组件时，优先使用 Konsta UI
+2. **按需导入**：只导入需要的组件，减少打包体积
+3. **主题一致性**：在整个应用中保持主题一致（iOS 或 Material Design）
+4. **自定义封装**：如果需要扩展功能，可以在 `@components/ui` 中创建包装组件
 
 ## 组件编写
 
 ### 组件放置位置原则
-- **@components/ui**：存放 Shadcn-vue 基础 UI 组件
-  - 通过 Shadcn-vue CLI 添加的组件
-  - 基础 UI 组件（Button, Card, Dialog, Input 等）
+- **@components/ui**：存放自定义 UI 组件或对 Konsta UI 的包装组件
+  - 自定义的基础 UI 组件
+  - 对 Konsta UI 组件的扩展或封装
   - 可以随时修改和定制
   
 - **@components**：存放通用的、无业务属性的公共组件
   - 可在多个页面和模块中复用
   - 例如：`Layout/Header.vue`, `Layout/Footer.vue` 等布局组件
-  - 这些组件不包含特定业务逻辑，可能组合使用 Shadcn-vue 组件
+  - 这些组件不包含特定业务逻辑，可能组合使用 Konsta UI 组件
   
 - **@pages/[module]/components**：存放特定业务模块的组件
   - 仅在某个业务模块内使用
@@ -240,12 +235,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 ### 组件示例
 
-**示例 1：使用 Shadcn-vue 组件**
+**示例 1：使用 Konsta UI 组件**
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { kCard, kButton, kBlock } from 'konsta/vue'
 import { useUserStore } from '@/stores/user-store'
 
 interface IProps {
@@ -261,16 +255,14 @@ userStore.fetchUser(props.userId)
 </script>
 
 <template>
-  <Card>
-    <CardHeader>
-      <CardTitle>{{ userStore.user?.name }}</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <Button @click="isExpanded = !isExpanded">
+  <k-card>
+    <k-block strong>
+      <h2>{{ userStore.user?.name }}</h2>
+      <k-button @click="isExpanded = !isExpanded">
         {{ isExpanded ? '收起' : '展开' }}
-      </Button>
-    </CardContent>
-  </Card>
+      </k-button>
+    </k-block>
+  </k-card>
 </template>
 ```
 
@@ -757,10 +749,11 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   - 通用组件放在 `@components`
   - 业务组件放在对应页面目录
 
-### Shadcn-vue 使用
-- 组件通过 `pnpm dlx shadcn-vue@latest add <component>` 添加
-- 组件统一放在 `@components/ui` 目录
-- 可以直接修改组件代码进行定制
+### Konsta UI 使用
+- 组件通过 `konsta/vue` 包导入使用
+- 在 `App.vue` 中使用 `k-app` 包裹应用
+- 按需导入组件，减少打包体积
+- 如需扩展，可在 `@components/ui` 中创建包装组件
 
 ### Hooks 分类
 - **公共 Hooks（@hooks）**: 必须无业务属性，保持通用性

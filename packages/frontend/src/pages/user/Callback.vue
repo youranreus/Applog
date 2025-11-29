@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/useUserStore';
 import type { ISsoCallbackParams } from '@/types/user';
+import Button from '@/components/ui/button/index.vue';
+import { kCard } from 'konsta/vue';
 
 /**
  * 路由实例
@@ -61,37 +63,26 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-background">
-    <div class="w-full max-w-md px-6 py-12 text-center">
-      <!-- 用户图标 -->
-      <div class="mb-8 flex justify-center">
-        <ion-icon
-          name="person-circle-outline"
-          class="text-8xl text-muted-foreground"
-        ></ion-icon>
-      </div>
+  <div class="min-h-screen flex items-center justify-center bg-ios-light-surface">
+    <div class="w-full max-w-md px-6 py-12">
+      <k-card>
+        <h2 class="text-2xl font-bold mb-4">登录</h2>
 
-      <!-- Loading 状态 -->
-      <div v-if="!error" class="space-y-4">
-        <div class="flex justify-center">
-          <div
-            class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-          ></div>
-        </div>
-        <p class="text-muted-foreground">正在处理登录...</p>
-      </div>
+        <p v-if="!error" class="text-sm text-muted-foreground">
+          正在处理登录...
+        </p>
+        <template v-else>
+          <p class="mb-4 text-red-600">{{ error }}</p>
 
-      <!-- 错误状态 -->
-      <div v-else class="space-y-4">
-        <p class="text-destructive">{{ error }}</p>
-        <button
-          type="button"
-          class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-          @click="handleCallback"
-        >
-          重试
-        </button>
-      </div>
+          <Button
+            rounded
+            class="w-full"
+            @click="handleCallback"
+          >
+            重试
+          </Button>
+        </template>
+      </k-card>
     </div>
   </div>
 </template>
