@@ -23,6 +23,22 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/page/PageDetail.vue'),
     props: true,
   },
+  {
+    path: '/user/login',
+    name: 'userLogin',
+    component: () => import('@/pages/user/Login.vue'),
+    meta: {
+      hideLayout: true,
+    },
+  },
+  {
+    path: '/user/callback',
+    name: 'userCallback',
+    component: () => import('@/pages/user/Callback.vue'),
+    meta: {
+      hideLayout: true,
+    },
+  },
 ]
 
 const router = createRouter({

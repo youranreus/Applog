@@ -1,14 +1,33 @@
 <script setup lang="ts">
-import Header from '@/components/Layout/Header.vue'
-import Footer from '@/components/Layout/Footer.vue'
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import Header from '@/components/Layout/Header.vue';
+import Footer from '@/components/Layout/Footer.vue';
+
+/**
+ * 路由实例
+ */
+const route = useRoute();
+
+/**
+ * 是否显示布局（Header/Footer）
+ * 通过路由 meta 中的 hideLayout 属性来判断
+ */
+const showLayout = computed<boolean>(() => {
+  return !(route.meta.hideLayout === true);
+});
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col">
-    <Header />
-    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Header v-if="showLayout" />
+    <main
+      v-if="showLayout"
+      class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+    >
       <router-view />
     </main>
-    <Footer />
+    <router-view v-else />
+    <Footer v-if="showLayout" />
   </div>
 </template>

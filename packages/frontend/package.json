@@ -22,6 +22,7 @@
     "alova": "^3.3.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "localforage": "^1.10.0",
     "lucide-vue-next": "^0.552.0",
     "pinia": "^3.0.3",
     "rehype-autolink-headings": "^7.1.0",
