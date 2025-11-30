@@ -46,8 +46,14 @@ async function handleCallback(): Promise<void> {
     // 调用 userStore 处理 SSO 回调
     await userStore.handleSsoCallback(params);
 
-    // 成功后跳转到首页
-    await router.push('/');
+    // 成功后跳转：如果有保存的 redirect 参数，跳转到原页面，否则跳转到首页
+    const redirect = sessionStorage.getItem('login_redirect');
+    if (redirect) {
+      sessionStorage.removeItem('login_redirect');
+      await router.push(decodeURIComponent(redirect));
+    } else {
+      await router.push('/');
+    }
   } catch (err) {
     console.error('处理 SSO 回调失败:', err);
     error.value = err instanceof Error ? err.message : '处理 SSO 回调失败';

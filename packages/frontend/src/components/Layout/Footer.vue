@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { kLink } from 'konsta/vue'
 import { useLayoutStore } from '@/stores/useLayoutStore'
+import { ROUTE_NAMES } from '@/constants/permission'
 
 const currentYear = computed(() => new Date().getFullYear())
 const layoutStore = useLayoutStore()
@@ -37,7 +38,7 @@ const layoutStore = useLayoutStore()
           >
           </div>
           <router-link
-            to="/admin"
+            :to="{ name: ROUTE_NAMES.USER_DASHBOARD }"
             class="text-xs text-[#424245]! hover:underline"
           >
             管理

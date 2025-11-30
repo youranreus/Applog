@@ -1,7 +1,13 @@
 <script setup lang="ts">
+import { useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/useUserStore';
-import { kCard } from 'konsta/vue'
+import { kCard } from 'konsta/vue';
 import Button from '@/components/ui/button/index.vue';
+
+/**
+ * 路由实例
+ */
+const route = useRoute();
 
 /**
  * 用户 Store
@@ -11,9 +17,16 @@ const userStore = useUserStore();
 /**
  * 处理登录按钮点击
  * 调用 userStore.login() 跳转到 SSO 登录页面
+ * 如果 URL 中有 redirect 参数，保存到 sessionStorage，登录成功后跳转回原页面
  */
 function handleLogin(): void {
   try {
+    // 如果 URL 中有 redirect 参数，保存到 sessionStorage
+    const redirect = route.query.redirect as string | undefined;
+    if (redirect) {
+      sessionStorage.setItem('login_redirect', redirect);
+    }
+
     userStore.login();
   } catch (error) {
     console.error('跳转 SSO 登录失败:', error);
