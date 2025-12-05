@@ -23,6 +23,12 @@ declare module 'vue-router' {
      * 设置为 true 时，页面不显示 Header 和 Footer
      */
     hideLayout?: boolean;
+    /**
+     * 导航页面组标识
+     * 用于指定当前路由所属的导航页面组
+     * 子路由会继承父路由的 navGroup 配置（就近原则）
+     */
+    navGroup?: string;
   }
 }
 

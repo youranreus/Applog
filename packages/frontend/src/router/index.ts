@@ -40,6 +40,9 @@ const routes: RouteRecordRaw[] = [
   // /user 路由组
   {
     path: '/user',
+    meta: {
+      navGroup: 'user',
+    },
     children: [
       {
         path: 'login',

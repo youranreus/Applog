@@ -25,13 +25,6 @@ const navigateTo = (name: string) => {
           AppLog
         </h1>
         <nav class="flex items-center gap-1">
-          <router-link
-            :to="{ name: 'postList' }"
-            class="header-link"
-            active-class="header-link-active"
-          >
-            文章
-          </router-link>
           <!-- 动态渲染从 store 获取的导航页面 -->
           <template v-if="layoutStore.loading">
             <span class="header-link text-gray-400">加载中...</span>
@@ -41,13 +34,13 @@ const navigateTo = (name: string) => {
           </template>
           <template v-else>
             <router-link
-              v-for="page in layoutStore.navPages"
-              :key="page.id"
-              :to="`/page/${page.slug}`"
+              v-for="item in layoutStore.navPages"
+              :key="item.id"
+              :to="item.to"
               class="header-link"
               active-class="header-link-active"
             >
-              {{ page.title }}
+              {{ item.title }}
             </router-link>
           </template>
         </nav>
