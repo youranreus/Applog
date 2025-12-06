@@ -11,7 +11,11 @@ import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
 import { SystemConfigService } from './system-config.service';
 import { BatchConfigDto, SetConfigDto } from './dto';
-import type { ConfigBatchRecord, IConfigResponseDto } from './dto';
+import type {
+  ConfigBatchRecord,
+  IConfigResponseDto,
+  IInitResponseDto,
+} from './dto';
 
 @Controller({
   path: 'config',
@@ -67,5 +71,21 @@ export class SystemConfigController {
     @UserParams() user: UserJwtPayload,
   ): Promise<IConfigResponseDto> {
     return this.systemConfigService.setConfig(payload, user);
+  }
+
+  /**
+   * 初始化系统基础配置
+   * - 需要管理员权限
+   * - 防重复调用：如果系统已初始化则拒绝
+   * @param user 当前管理员
+   * @returns 初始化成功消息
+   */
+  @Post('init')
+  @AuthRoles('admin')
+  async initializeSystem(
+    @UserParams() user: UserJwtPayload,
+  ): Promise<IInitResponseDto> {
+    const message = await this.systemConfigService.initializeSystem(user);
+    return { message };
   }
 }

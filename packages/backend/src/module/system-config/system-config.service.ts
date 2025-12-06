@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import { isNil } from 'lodash';
 import type { UserJwtPayload } from '@reus-able/types';
+import type { ISystemBaseConfig } from '@applog/common';
+import { SYSTEM_CONFIG_KEYS, SYSTEM_CONFIG_PREFIX_DEFAULT } from '@applog/common';
 import { SystemConfigEntity } from '@/entities';
 import type {
   BatchConfigDto,
@@ -29,7 +31,7 @@ export class SystemConfigService {
   public constructor(private config: ConfigService) {
     this.systemKeyPrefix = this.config.get<string>(
       'SYSTEM_CONFIG_PREFIX',
-      'SYSTEM_',
+      SYSTEM_CONFIG_PREFIX_DEFAULT,
     );
     this.adminRoleValue = this.config.get<number>('SYSTEM_ADMIN_ROLE_VALUE', 0);
   }
@@ -196,6 +198,69 @@ export class SystemConfigService {
     } catch (err) {
       this.error(`批量查询配置失败: ${err.message}`);
       throw new BusinessException('批量查询配置失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 初始化系统基础配置
+   * @param user 当前操作用户（需要 admin 权限）
+   * @returns 成功消息
+   *
+   * 逻辑说明：
+   * 1. 生成系统配置 key（使用 systemKeyPrefix + 'BASE_CONFIG'）
+   * 2. 检查配置是否已存在，如果存在则抛出异常（防重复调用）
+   * 3. 创建默认系统配置值
+   * 4. 将配置值序列化为 JSON 字符串存储
+   * 5. 保存配置到数据库
+   * @throws {BusinessException} 如果系统已初始化，则抛出异常
+   */
+  async initializeSystem(user: UserJwtPayload): Promise<string> {
+    const configKey = `${this.systemKeyPrefix}${SYSTEM_CONFIG_KEYS.BASE_CONFIG}`;
+    this.log(`准备初始化系统配置: ${configKey}`);
+
+    // 校验管理员权限
+    this.ensureSystemKeyAccess(configKey, 'write', user);
+
+    try {
+      // 检查配置是否已存在（防重复调用）
+      const existingConfig = await this.configRepo.findOne({
+        where: { configKey },
+      });
+
+      if (!isNil(existingConfig)) {
+        this.warn(`系统配置 ${configKey} 已存在，无法重复初始化`);
+        throw new BusinessException('系统已初始化，无法重复初始化');
+      }
+
+      // 创建默认系统配置
+      const defaultConfig: ISystemBaseConfig = {
+        title: '',
+        description: '',
+        allowUserLogin: true,
+        allowComment: true,
+      };
+
+      // 创建配置实体
+      const config = this.configRepo.create({
+        configKey,
+        configValue: JSON.stringify(defaultConfig),
+        description: '系统基础配置',
+        extra: {
+          type: 'ISystemBaseConfig',
+        },
+      });
+
+      // 保存配置
+      const saved = await this.configRepo.save(config);
+      this.log(`系统配置初始化成功 (ID: ${saved.id})`);
+
+      return '系统初始化成功';
+    } catch (err) {
+      if (err instanceof BusinessException) {
+        throw err;
+      }
+      this.error(`系统配置初始化失败: ${err.message}`);
+      throw new BusinessException('系统初始化失败，请稍后重试');
     }
   }
 }

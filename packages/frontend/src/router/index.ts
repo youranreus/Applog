@@ -63,7 +63,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'dashboard',
         name: ROUTE_NAMES.USER_DASHBOARD,
-        component: () => import('@/pages/user/Dashboard.vue'),
+        component: () => import('@/pages/user/Dashboard/Dashboard.vue'),
         meta: ROUTE_PERMISSIONS[ROUTE_NAMES.USER_DASHBOARD],
       },
       // /user/post 子路由组

@@ -1,0 +1,18 @@
+{
+  "name": "@applog/common",
+  "version": "0.0.1",
+  "description": "AppLog 项目共享类型和工具",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.3"
+  }
+}
