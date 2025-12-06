@@ -1,0 +1,29 @@
+{
+  "version": 1.1,
+  "atDirectives": [
+    {
+      "name": "@apply",
+      "description": "Tailwind CSS @apply directive for applying utility classes"
+    },
+    {
+      "name": "@reference",
+      "description": "Tailwind CSS @reference directive for referencing Tailwind configuration"
+    },
+    {
+      "name": "@screen",
+      "description": "Tailwind CSS @screen directive for responsive breakpoints"
+    },
+    {
+      "name": "@variants",
+      "description": "Tailwind CSS @variants directive for generating variants"
+    },
+    {
+      "name": "@responsive",
+      "description": "Tailwind CSS @responsive directive for responsive utilities"
+    },
+    {
+      "name": "@layer",
+      "description": "Tailwind CSS @layer directive for organizing styles"
+    }
+  ]
+}
