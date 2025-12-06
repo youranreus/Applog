@@ -93,7 +93,7 @@ export const useUserStore = defineStore('user', () => {
   /**
    * 初始化认证状态
    * 从 localforage 恢复 token 和用户信息
-   * 如果 token 存在但用户信息不存在，尝试获取用户信息
+   * 如果 token 存在，无论用户信息是否存在，都调用接口验证 token 有效性并获取最新用户信息
    * @returns Promise<void>
    */
   async function initializeAuth(): Promise<void> {
@@ -105,11 +105,11 @@ export const useUserStore = defineStore('user', () => {
         token.value = storedToken;
       }
 
-      // 恢复用户信息
+      // 恢复用户信息（仅用于初始显示，后续会通过接口验证）
       await restoreUserInfo();
 
-      // 如果 token 存在但用户信息不存在，尝试获取用户信息
-      if (token.value && !user.value) {
+      // 如果 token 存在，无论用户信息是否存在，都调用接口验证 token 有效性
+      if (token.value) {
         await fetchUserInfo();
       }
     } catch (error) {
