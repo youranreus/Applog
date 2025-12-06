@@ -10,7 +10,11 @@ import { UserService } from './user.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
 import { LoginDto, UpdateUserDto } from './dto';
-import type { ILoginResponseDto, IUserResponseDto } from './dto';
+import type {
+  ILoginResponseDto,
+  IUserResponseDto,
+  IUserOverviewDto,
+} from './dto';
 
 @Controller({
   path: 'user',
@@ -53,5 +57,18 @@ export class UserController {
     @Body() updateData: UpdateUserDto,
   ): Promise<IUserResponseDto> {
     return this.userService.updateUser(user.id, updateData);
+  }
+
+  /**
+   * 获取当前登录用户创作概览信息
+   * @param user 当前登录用户（从 JWT 解析）
+   * @returns 用户创作概览信息（文章数量、页面数量、评论数量、收到评论数量）
+   */
+  @Get('overview')
+  @AuthRoles('user')
+  async getOverview(
+    @UserParams() user: UserJwtPayload,
+  ): Promise<IUserOverviewDto> {
+    return this.userService.getOverview(user.id);
   }
 }

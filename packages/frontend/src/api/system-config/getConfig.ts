@@ -30,5 +30,5 @@ import { getSystemConfigKey, isSystemConfigKeySuffix } from '@applog/common';
 export const getConfig = (key: string) => {
   // 如果是系统配置 key 后缀，自动添加前缀
   const fullKey = isSystemConfigKeySuffix(key) ? getSystemConfigKey(key) : key;
-  return alovaInstance.Get<IConfigResponseDto | null>(`/config/${fullKey}`);
+  return alovaInstance.Get<IConfigResponseDto | null>(`/config/${fullKey}`, { cacheFor: null });
 };

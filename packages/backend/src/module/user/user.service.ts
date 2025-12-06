@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { UserEntity } from '@/entities';
+import { UserEntity, PostEntity, PageEntity, CommentEntity } from '@/entities';
 import { ConfigService } from '@nestjs/config';
 import { UserAPI } from '@reus-able/sso-utils';
 import { isNil } from 'lodash';
@@ -7,7 +7,11 @@ import * as jwt from 'jsonwebtoken';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { ILoginResponseDto, IUserResponseDto } from './dto';
+import type {
+  ILoginResponseDto,
+  IUserResponseDto,
+  IUserOverviewDto,
+} from './dto';
 import type { UpdateUserDto } from './dto';
 import { mapSsoRoleToUserRole, mapUserRoleToJwtRole } from '@/utils/types';
 
@@ -15,6 +19,15 @@ import { mapSsoRoleToUserRole, mapUserRoleToJwtRole } from '@/utils/types';
 export class UserService {
   @InjectRepository(UserEntity)
   private userRepo: Repository<UserEntity>;
+
+  @InjectRepository(PostEntity)
+  private postRepo: Repository<PostEntity>;
+
+  @InjectRepository(PageEntity)
+  private pageRepo: Repository<PageEntity>;
+
+  @InjectRepository(CommentEntity)
+  private commentRepo: Repository<CommentEntity>;
 
   @Inject(HLOGGER_TOKEN)
   private logger: HLogger;
@@ -258,6 +271,55 @@ export class UserService {
       }
       this.error(`更新用户信息失败: ${error.message}`);
       throw new BusinessException('更新用户信息失败');
+    }
+  }
+
+  /**
+   * 获取用户创作概览信息
+   * @param id 用户数据库 ID（来自 JWT）
+   * @returns 用户创作概览信息
+   *
+   * 逻辑说明：
+   * 1. 统计用户作为作者的文章数量（authorId = userId）
+   * 2. 统计用户作为作者的页面数量（authorId = userId）
+   * 3. 统计用户发表的评论数量（authorId = userId）
+   * 4. 统计用户作为作者的文章收到的评论数量（通过 JOIN 查询 post.authorId = userId）
+   * 5. 返回包含所有统计数据的概览对象
+   */
+  async getOverview(id: number): Promise<IUserOverviewDto> {
+    this.log(`查询用户 #${id} 创作概览信息`);
+
+    try {
+      // 并行执行所有统计查询以提高性能
+      const [postCount, pageCount, commentCount, receivedCommentCount] =
+        await Promise.all([
+          // 统计文章数量
+          this.postRepo.count({ where: { authorId: id } }),
+          // 统计页面数量
+          this.pageRepo.count({ where: { authorId: id } }),
+          // 统计用户发表的评论数量
+          this.commentRepo.count({ where: { authorId: id } }),
+          // 统计用户作为作者的文章收到的评论数量
+          this.commentRepo
+            .createQueryBuilder('comment')
+            .innerJoin('comment.post', 'post')
+            .where('post.authorId = :userId', { userId: id })
+            .getCount(),
+        ]);
+
+      this.log(
+        `用户 #${id} 创作概览：文章 ${postCount}，页面 ${pageCount}，评论 ${commentCount}，收到评论 ${receivedCommentCount}`,
+      );
+
+      return {
+        postCount,
+        pageCount,
+        commentCount,
+        receivedCommentCount,
+      };
+    } catch (error) {
+      this.error(`查询用户创作概览失败: ${error.message}`);
+      throw new BusinessException('查询创作概览失败');
     }
   }
 }

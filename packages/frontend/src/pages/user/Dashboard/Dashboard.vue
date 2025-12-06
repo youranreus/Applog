@@ -1,13 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { kMenuList, kMenuListItem } from 'konsta/vue';
 import { useSystemStore } from '@/stores/useSystemStore';
+import { useUserStore } from '@/stores/useUserStore';
 import { useSystemInitialize } from './hooks/useSystemInitialize';
 import SystemInitialize from './components/SystemInitialize.vue';
+import PersonalStats from './components/PersonalStats.vue';
+import SystemSettings from './components/SystemSettings.vue';
+
+/**
+ * Tab 类型定义
+ */
+type TabType = 'stats' | 'settings';
 
 /**
  * 使用系统配置 Store 获取配置状态
  */
 const systemStore = useSystemStore();
+
+/**
+ * 使用用户 Store 获取用户信息
+ */
+const userStore = useUserStore();
 
 /**
  * 使用系统初始化 Hook 处理初始化逻辑
@@ -32,6 +46,28 @@ const showInitializeButton = computed(() => {
   // 如果配置为空或请求失败，显示初始化按钮
   return !systemStore.config || !!systemStore.error;
 });
+
+/**
+ * 当前选中的 tab
+ */
+const activeTab = ref<TabType>('stats');
+
+/**
+ * Tab 配置列表
+ */
+const tabs = [
+  { key: 'stats' as TabType, label: '个人统计', icon: '📊' },
+  { key: 'settings' as TabType, label: '系统设置', icon: '⚙️' },
+];
+
+/**
+ * 切换 tab
+ * @param tab - 要切换到的 tab key
+ */
+function switchTab(tab: TabType): void {
+  activeTab.value = tab;
+}
+
 </script>
 
 <template>
@@ -50,8 +86,53 @@ const showInitializeButton = computed(() => {
       />
 
       <!-- 正常内容 -->
-      <div v-else-if="!systemStore.loading" class="text-center text-gray-600 py-12">
-        <p>用户中心功能开发中...</p>
+      <div v-else-if="!systemStore.loading" class="dashboard-main">
+        <div class="dashboard-layout">
+          <!-- 左侧栏 -->
+          <aside class="dashboard-sidebar">
+            <!-- 用户信息卡片 -->
+            <div class="user-info-card">
+              <div class="user-avatar-wrapper">
+                <img
+                  v-if="userStore.user?.avatar"
+                  :src="userStore.user.avatar"
+                  :alt="userStore.user?.name || '用户头像'"
+                  class="user-avatar"
+                />
+                <div
+                  v-else
+                  class="user-avatar user-avatar-emoji"
+                >
+                  👤
+                </div>
+              </div>
+              <h3 class="user-name">{{ userStore.user?.name || '未登录' }}</h3>
+              <p class="user-email">{{ userStore.user?.email || '' }}</p>
+            </div>
+
+            <!-- Tab 导航 -->
+            <k-menu-list strong-ios>
+              <k-menu-list-item
+                v-for="tab in tabs"
+                :key="tab.key"
+                :title="tab.label"
+                :active="activeTab === tab.key"
+                class="px-0"
+                @click="switchTab(tab.key)"
+              >
+              </k-menu-list-item>
+            </k-menu-list>
+          </aside>
+
+          <!-- 右侧内容区 -->
+          <main class="dashboard-content-area">
+            <!-- 个人统计 -->
+            <PersonalStats v-if="activeTab === 'stats'" />
+
+            <!-- 系统设置 -->
+            <SystemSettings v-else-if="activeTab === 'settings'" />
+          </main>
+        </div>
       </div>
 
       <!-- 加载中 -->
@@ -74,6 +155,80 @@ const showInitializeButton = computed(() => {
 
 .dashboard-content {
   margin-top: 2rem;
+}
+
+.dashboard-main {
+  width: 100%;
+}
+
+.dashboard-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+/* 左侧栏 */
+.dashboard-sidebar {
+  flex-shrink: 0;
+  width: 280px;
+}
+
+/* 用户信息卡片 */
+.user-info-card {
+  margin-bottom: 1.5rem;
+}
+
+.user-avatar-wrapper {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.user-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-avatar-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.user-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.user-email {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* 右侧内容区 */
+.dashboard-content-area {
+  flex: 1;
+  min-width: 0;
+}
+:deep(.k-list-item) a {
+  margin: 0;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    width: 100%;
+  }
+
 }
 </style>
 
