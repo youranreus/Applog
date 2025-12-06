@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useSystemConfig } from './hooks/useSystemConfig';
+import { useSystemStore } from '@/stores/useSystemStore';
 import { useSystemInitialize } from './hooks/useSystemInitialize';
 import SystemInitialize from './components/SystemInitialize.vue';
 
 /**
- * 使用系统配置 Hook 获取配置状态
+ * 使用系统配置 Store 获取配置状态
  */
-const {
-  config,
-  loading: configLoading,
-  error: configError,
-  refreshConfig,
-} = useSystemConfig();
+const systemStore = useSystemStore();
 
 /**
  * 使用系统初始化 Hook 处理初始化逻辑
@@ -21,7 +16,7 @@ const {
   loading: initLoading,
   handleInitialize,
 } = useSystemInitialize(async () => {
-  await refreshConfig()
+  await systemStore.refreshConfig();
 });
 
 /**
@@ -30,12 +25,12 @@ const {
  */
 const showInitializeButton = computed(() => {
   // 如果正在加载配置，不显示初始化按钮
-  if (configLoading.value) {
+  if (systemStore.loading) {
     return false;
   }
   
   // 如果配置为空或请求失败，显示初始化按钮
-  return !config.value || !!configError.value;
+  return !systemStore.config || !!systemStore.error;
 });
 </script>
 
@@ -55,7 +50,7 @@ const showInitializeButton = computed(() => {
       />
 
       <!-- 正常内容 -->
-      <div v-else-if="!configLoading" class="text-center text-gray-600 py-12">
+      <div v-else-if="!systemStore.loading" class="text-center text-gray-600 py-12">
         <p>用户中心功能开发中...</p>
       </div>
 
