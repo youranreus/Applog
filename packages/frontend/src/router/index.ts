@@ -96,7 +96,13 @@ const routes: RouteRecordRaw[] = [
             meta: ROUTE_PERMISSIONS[ROUTE_NAMES.USER_PAGE_LIST],
           },
           {
-            path: ':slug',
+            path: 'create',
+            name: ROUTE_NAMES.USER_PAGE_CREATE,
+            component: () => import('@/pages/user/PageEdit/PageEdit.vue'),
+            meta: ROUTE_PERMISSIONS[ROUTE_NAMES.USER_PAGE_CREATE],
+          },
+          {
+            path: 'edit/:slug',
             name: ROUTE_NAMES.USER_PAGE_EDIT,
             component: () => import('@/pages/user/PageEdit/PageEdit.vue'),
             props: true,

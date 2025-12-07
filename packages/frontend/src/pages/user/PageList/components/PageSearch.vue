@@ -61,8 +61,7 @@ function handleKeydown(event: KeyboardEvent): void {
  */
 function handleCreateNew(): void {
   router.push({
-    name: ROUTE_NAMES.USER_PAGE_EDIT,
-    params: { slug: 'new' },
+    name: ROUTE_NAMES.USER_PAGE_CREATE,
   });
 }
 </script>

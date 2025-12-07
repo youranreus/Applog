@@ -4,9 +4,12 @@ import { useRoute } from 'vue-router';
 import { kToggle } from 'konsta/vue';
 import { usePageEdit } from './hooks/usePageEdit';
 import { useLayoutStore } from '@/stores/useLayoutStore';
+import { ROUTE_NAMES } from '@/constants/permission';
 import Input from '@/components/ui/input/index.vue';
 import Button from '@/components/ui/button/index.vue';
 import Card from '@/components/ui/card/index.vue';
+import Select from '@/components/ui/select/index.vue';
+import type { PageStatus } from '@/types/page';
 
 /**
  * 路由实例
@@ -14,16 +17,22 @@ import Card from '@/components/ui/card/index.vue';
 const route = useRoute();
 
 /**
- * 页面 Slug（从路由参数获取）
- */
-const pageSlug = computed(() => String(route.params.slug || ''));
-
-/**
  * 是否为编辑模式
- * 当 slug 存在且不为空时，为编辑模式
+ * 通过路由名称判断是否为编辑模式
  */
 const isEditMode = computed(() => {
-  return !!pageSlug.value && pageSlug.value !== '';
+  return route.name === ROUTE_NAMES.USER_PAGE_EDIT;
+});
+
+/**
+ * 页面 Slug（从路由参数获取）
+ * 仅在编辑模式下获取 slug
+ */
+const pageSlug = computed(() => {
+  if (isEditMode.value) {
+    return String(route.params.slug || '');
+  }
+  return '';
 });
 
 /**
@@ -73,6 +82,15 @@ async function onSaveClick(): Promise<void> {
     console.error('保存失败:', error);
   }
 }
+
+/**
+ * 页面状态选项
+ */
+const statusOptions: Array<{ value: PageStatus; label: string }> = [
+  { value: 'draft', label: '草稿' },
+  { value: 'published', label: '已发布' },
+  { value: 'archived', label: '已归档' },
+];
 
 /**
  * 格式化日期
@@ -171,6 +189,31 @@ const formatDate = (date: Date | string): string => {
             </div>
           </Card>
 
+          <!-- 页面状态 -->
+          <Card outline>
+            <h4 class="text-sm font-semibold text-gray-900 mb-4">页面状态</h4>
+            <div>
+              <label class="block text-sm font-medium text-gray-900 mb-2">
+                页面状态
+              </label>
+              <Select
+                v-model="formData.status"
+                :validation-status="saveError ? 'error' : 'normal'"
+              >
+                <option
+                  v-for="option in statusOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </Select>
+              <p class="text-xs text-gray-500 mt-1">
+                选择页面的发布状态
+              </p>
+            </div>
+          </Card>
+
           <!-- 显示设置 -->
           <Card outline>
             <h4 class="text-sm font-semibold text-gray-900 mb-4">显示设置</h4>
@@ -217,22 +260,24 @@ const formatDate = (date: Date | string): string => {
           </Card>
 
           <!-- 页面统计信息（仅编辑模式显示） -->
-          <Card v-if="isEditMode && pageDetail" outline>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">页面统计</h4>
-            <div class="space-y-2 text-sm mb-4">
-              <div>
-                <span class="text-gray-600">创建时间：</span>
-                <span class="text-gray-900">{{ formatDate(pageDetail.createdAt) }}</span>
+          <Card outline>
+            <template v-if="isEditMode && pageDetail">
+              <h4 class="text-sm font-semibold text-gray-900 mb-4">页面统计</h4>
+              <div class="space-y-2 text-sm mb-4">
+                <div>
+                  <span class="text-gray-600">创建时间：</span>
+                  <span class="text-gray-900">{{ formatDate(pageDetail.createdAt) }}</span>
+                </div>
+                <div v-if="pageDetail.updatedAt && pageDetail.updatedAt !== pageDetail.createdAt">
+                  <span class="text-gray-600">更新时间：</span>
+                  <span class="text-gray-900">{{ formatDate(pageDetail.updatedAt) }}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600">浏览次数：</span>
+                  <span class="text-gray-900">{{ pageDetail.viewCount }} 次</span>
+                </div>
               </div>
-              <div v-if="pageDetail.updatedAt && pageDetail.updatedAt !== pageDetail.createdAt">
-                <span class="text-gray-600">更新时间：</span>
-                <span class="text-gray-900">{{ formatDate(pageDetail.updatedAt) }}</span>
-              </div>
-              <div>
-                <span class="text-gray-600">浏览次数：</span>
-                <span class="text-gray-900">{{ pageDetail.viewCount }} 次</span>
-              </div>
-            </div>
+            </template>
 
             <!-- 保存按钮 -->
             <div class="space-y-4">

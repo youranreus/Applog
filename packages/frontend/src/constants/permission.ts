@@ -33,6 +33,7 @@ export const ROUTE_NAMES = {
 
   // 管理员相关
   USER_PAGE_LIST: 'userPageList',
+  USER_PAGE_CREATE: 'userPageCreate',
   USER_PAGE_EDIT: 'userPageEdit',
   USER_COMMENT_LIST: 'userCommentList',
 
@@ -51,6 +52,7 @@ export const ROUTE_PERMISSIONS: Record<string, RouteMeta> = {
   [ROUTE_NAMES.USER_POST_LIST]: { requiresAuth: true, roles: ['admin'] },
   [ROUTE_NAMES.USER_POST_EDIT]: { requiresAuth: true, roles: ['admin'] },
   [ROUTE_NAMES.USER_PAGE_LIST]: { requiresAuth: true, roles: ['admin'] },
+  [ROUTE_NAMES.USER_PAGE_CREATE]: { requiresAuth: true, roles: ['admin'] },
   [ROUTE_NAMES.USER_PAGE_EDIT]: { requiresAuth: true, roles: ['admin'] },
   [ROUTE_NAMES.USER_COMMENT_LIST]: { requiresAuth: true, roles: ['admin'] },
 };
