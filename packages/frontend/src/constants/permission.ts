@@ -29,6 +29,7 @@ export const ROUTE_NAMES = {
   USER_CALLBACK: 'userCallback',
   USER_DASHBOARD: 'userDashboard',
   USER_POST_LIST: 'userPostList',
+  USER_POST_CREATE: 'userPostCreate',
   USER_POST_EDIT: 'userPostEdit',
 
   // 管理员相关
@@ -50,6 +51,7 @@ import type { RouteMeta } from 'vue-router';
 export const ROUTE_PERMISSIONS: Record<string, RouteMeta> = {
   [ROUTE_NAMES.USER_DASHBOARD]: { requiresAuth: true },
   [ROUTE_NAMES.USER_POST_LIST]: { requiresAuth: true, roles: ['admin'] },
+  [ROUTE_NAMES.USER_POST_CREATE]: { requiresAuth: true, roles: ['admin'] },
   [ROUTE_NAMES.USER_POST_EDIT]: { requiresAuth: true, roles: ['admin'] },
   [ROUTE_NAMES.USER_PAGE_LIST]: { requiresAuth: true, roles: ['admin'] },
   [ROUTE_NAMES.USER_PAGE_CREATE]: { requiresAuth: true, roles: ['admin'] },

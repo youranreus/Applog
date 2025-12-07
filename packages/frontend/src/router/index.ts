@@ -73,13 +73,19 @@ const routes: RouteRecordRaw[] = [
           {
             path: '',
             name: ROUTE_NAMES.USER_POST_LIST,
-            component: () => import('@/pages/user/PostList.vue'),
+            component: () => import('@/pages/user/PostList/PostList.vue'),
             meta: ROUTE_PERMISSIONS[ROUTE_NAMES.USER_POST_LIST],
           },
           {
-            path: ':id',
+            path: 'create',
+            name: ROUTE_NAMES.USER_POST_CREATE,
+            component: () => import('@/pages/user/PostEdit/PostEdit.vue'),
+            meta: ROUTE_PERMISSIONS[ROUTE_NAMES.USER_POST_CREATE],
+          },
+          {
+            path: 'edit/:id',
             name: ROUTE_NAMES.USER_POST_EDIT,
-            component: () => import('@/pages/user/PostEdit.vue'),
+            component: () => import('@/pages/user/PostEdit/PostEdit.vue'),
             props: true,
             meta: ROUTE_PERMISSIONS[ROUTE_NAMES.USER_POST_EDIT],
           },
