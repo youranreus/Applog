@@ -9,6 +9,7 @@ import Input from '@/components/ui/input/index.vue';
 import Button from '@/components/ui/button/index.vue';
 import Card from '@/components/ui/card/index.vue';
 import Select from '@/components/ui/select/index.vue';
+import MarkdownEditor from '@/components/ui/markdown-editor/MarkdownEditor.vue';
 import type { PageStatus } from '@/types/page';
 
 /**
@@ -156,11 +157,11 @@ const formatDate = (date: Date | string): string => {
               <h3 class="block text-lg font-medium text-gray-900 mb-2">
                 页面内容
               </h3>
-              <textarea
+              <MarkdownEditor
                 v-model="formData.content"
-                class="content-textarea"
                 placeholder="请输入页面内容（支持 Markdown）"
-                rows="20"
+                :validation-status="saveError ? 'error' : 'normal'"
+                :validation-message="saveError || ''"
               />
             </div>
           </div>
@@ -359,24 +360,4 @@ const formatDate = (date: Date | string): string => {
   }
 }
 
-.content-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  resize: vertical;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-
-.content-textarea:focus {
-  outline: none;
-  border-color: #9ca3af;
-}
-
-.content-textarea::placeholder {
-  color: #9ca3af;
-}
 </style>
