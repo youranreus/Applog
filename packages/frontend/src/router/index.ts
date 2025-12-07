@@ -92,7 +92,7 @@ const routes: RouteRecordRaw[] = [
           {
             path: '',
             name: ROUTE_NAMES.USER_PAGE_LIST,
-            component: () => import('@/pages/user/PageList.vue'),
+            component: () => import('@/pages/user/PageList/PageList.vue'),
             meta: ROUTE_PERMISSIONS[ROUTE_NAMES.USER_PAGE_LIST],
           },
           {

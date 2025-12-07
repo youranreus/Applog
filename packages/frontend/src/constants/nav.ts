@@ -23,6 +23,11 @@ export const NAV_GROUPS: Record<string, INavItemSource[]> = {
     },
     {
       type: 'route',
+      route: { name: ROUTE_NAMES.USER_PAGE_LIST },
+      title: '页面管理',
+    },
+    {
+      type: 'route',
       route: { name: ROUTE_NAMES.USER_COMMENT_LIST },
       title: '评论管理',
     },
