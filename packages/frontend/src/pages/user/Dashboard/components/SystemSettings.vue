@@ -163,13 +163,8 @@ async function handleSave(): Promise<void> {
       </p>
     </div>
 
-    <!-- 加载中 -->
-    <div v-if="systemStore.loading" class="text-center text-gray-600 py-12">
-      <p>加载中...</p>
-    </div>
-
     <!-- 错误状态 -->
-    <div v-else-if="systemStore.error" class="text-center text-red-600 py-12">
+    <div v-if="systemStore.error" class="text-center text-red-600 py-12">
       <p>加载失败，请稍后重试</p>
     </div>
 

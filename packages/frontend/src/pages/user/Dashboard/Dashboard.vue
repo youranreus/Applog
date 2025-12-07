@@ -86,7 +86,7 @@ function switchTab(tab: TabType): void {
       />
 
       <!-- 正常内容 -->
-      <div v-else-if="!systemStore.loading" class="dashboard-main">
+      <div v-else class="dashboard-main">
         <div class="dashboard-layout">
           <!-- 左侧栏 -->
           <aside class="dashboard-sidebar">
@@ -133,11 +133,6 @@ function switchTab(tab: TabType): void {
             <SystemSettings v-else-if="activeTab === 'settings'" />
           </main>
         </div>
-      </div>
-
-      <!-- 加载中 -->
-      <div v-else class="text-center text-gray-600 py-12">
-        <p>加载中...</p>
       </div>
     </div>
   </div>

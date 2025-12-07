@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { kApp } from 'konsta/vue';
 import Header from '@/components/Layout/Header.vue';
 import Footer from '@/components/Layout/Footer.vue';
+import GlobalLoading from '@/components/GlobalLoading.vue';
 
 /**
  * 路由实例
@@ -32,5 +33,7 @@ const showLayout = computed<boolean>(() => {
       <router-view v-else />
       <Footer v-if="showLayout" />
     </div>
+    <!-- 全局加载状态 -->
+    <GlobalLoading />
   </k-app>
 </template>
