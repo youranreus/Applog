@@ -17,6 +17,9 @@ import type { IRestfulResponse } from '@/types/api';
 export const getNavPages = ()=> {
   return alovaInstance.Get<IPageNavItem[]>(
     '/page/nav',
+    {
+      cacheFor: null
+    }
   );
 };
 

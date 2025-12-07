@@ -5,6 +5,7 @@ import { kApp } from 'konsta/vue';
 import Header from '@/components/Layout/Header.vue';
 import Footer from '@/components/Layout/Footer.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
+import GlobalNotification from '@/components/GlobalNotification.vue';
 import { useSystemStore } from '@/stores/useSystemStore';
 
 /**
@@ -50,5 +51,7 @@ watchEffect(() => {
     </div>
     <!-- 全局加载状态 -->
     <GlobalLoading />
+    <!-- 全局通知 -->
+    <GlobalNotification />
   </k-app>
 </template>

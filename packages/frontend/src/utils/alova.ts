@@ -67,5 +67,6 @@ export const alovaInstance = createAlova({
     // 非 Restful 结构直接返回原始数据
     return json;
   },
+  cacheFor: null,
 });
 

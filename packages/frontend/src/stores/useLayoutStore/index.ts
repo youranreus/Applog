@@ -1,10 +1,11 @@
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useRequest } from 'alova/client';
 import { getNavPages } from '@/api/page/getNavPages';
 import { NAV_GROUPS } from '@/constants/nav';
 import type { IPageNavItem, INavItemSource, INavItem } from '@/types/layout';
+import type { INotification, INotificationOptions } from '@/types/notification';
 
 /**
  * 布局 Store
@@ -131,6 +132,79 @@ export const useLayoutStore = defineStore('layout', () => {
     return allPages.value || [];
   });
 
+  /**
+   * 通知队列
+   */
+  const notifications = ref<INotification[]>([]);
+
+  /**
+   * 生成唯一通知 ID
+   * @returns 唯一标识字符串
+   */
+  function generateNotificationId(): string {
+    return `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * 显示通知
+   * @param options - 通知配置选项
+   * @returns 通知 ID
+   * 
+   * 逻辑说明：
+   * 1. 生成唯一 ID
+   * 2. 设置默认值（closable: true, duration: 3000, type: 'info'）
+   * 3. 将通知添加到队列
+   * 4. 如果设置了 duration 且大于 0，自动在指定时间后移除
+   */
+  function notify(options: INotificationOptions): string {
+    const id = generateNotificationId();
+    const notification: INotification = {
+      id,
+      title: options.title,
+      subtitle: options.subtitle,
+      content: options.content,
+      closable: options.closable ?? true,
+      duration: options.duration ?? 3000,
+      type: options.type ?? 'info',
+    };
+
+    notifications.value.push(notification);
+
+    // 如果设置了 duration 且大于 0，自动移除
+    const duration = notification.duration ?? 3000;
+    if (duration > 0) {
+      setTimeout(() => {
+        removeNotification(id);
+      }, duration);
+    }
+
+    return id;
+  }
+
+  /**
+   * 移除指定通知
+   * @param id - 通知 ID
+   * 
+   * 逻辑说明：
+   * 1. 从通知队列中查找并移除指定 ID 的通知
+   */
+  function removeNotification(id: string): void {
+    const index = notifications.value.findIndex((n) => n.id === id);
+    if (index > -1) {
+      notifications.value.splice(index, 1);
+    }
+  }
+
+  /**
+   * 清空所有通知
+   * 
+   * 逻辑说明：
+   * 1. 清空通知队列
+   */
+  function clearNotifications(): void {
+    notifications.value = [];
+  }
+
   return {
     // 只读的页面列表
     navPages,
@@ -142,6 +216,14 @@ export const useLayoutStore = defineStore('layout', () => {
     error,
     // 刷新方法，手动触发重新请求
     refresh,
+    // 通知队列
+    notifications,
+    // 显示通知
+    notify,
+    // 移除通知
+    removeNotification,
+    // 清空所有通知
+    clearNotifications,
   };
 });
 
