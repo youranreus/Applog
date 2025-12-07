@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { useLayoutStore } from '@/stores/useLayoutStore';
+import { useSystemStore } from '@/stores/useSystemStore';
 
 const router = useRouter();
 const layoutStore = useLayoutStore();
+const systemStore = useSystemStore();
 
 /**
  * 导航到指定路由
@@ -22,7 +24,7 @@ const navigateTo = (name: string) => {
           class="text-xl font-medium text-gray-900 select-none cursor-pointer"
           @click="navigateTo('postList')"
         >
-          AppLog
+          {{ systemStore.config?.title || 'AppLog' }}
         </h1>
         <nav class="flex items-center gap-1">
           <!-- 动态渲染从 store 获取的导航页面 -->

@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import { kLink } from 'konsta/vue'
 import { useLayoutStore } from '@/stores/useLayoutStore'
+import { useSystemStore } from '@/stores/useSystemStore'
 import { ROUTE_NAMES } from '@/constants/permission'
 
 const currentYear = computed(() => new Date().getFullYear())
 const layoutStore = useLayoutStore()
+const systemStore = useSystemStore()
 </script>
 
 <template>
@@ -13,7 +15,7 @@ const layoutStore = useLayoutStore()
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center h-16 gap-x-10">
         <p class="text-xs text-gray-600">
-          Copyright © {{ currentYear }} AppLog.
+          Copyright © {{ currentYear }} {{ systemStore.config?.title || 'AppLog' }}.
         </p>
         <!-- showInFooter 页面链接 -->
         <div class="flex items-center gap-x-3">
