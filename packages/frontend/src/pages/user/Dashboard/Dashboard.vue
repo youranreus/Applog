@@ -209,7 +209,9 @@ function switchTab(tab: TabType): void {
 .dashboard-content-area {
   flex: 1;
   min-width: 0;
+  width: 100%;
 }
+
 :deep(.k-list-item) a {
   margin: 0;
 }

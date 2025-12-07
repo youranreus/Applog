@@ -245,6 +245,7 @@ async function handleSave(): Promise<void> {
       <div class="flex justify-end">
         <Button
           :disabled="saving || systemStore.loading"
+          rounded
           @click="handleSave"
         >
           {{ saving ? '保存中...' : '保存' }}
