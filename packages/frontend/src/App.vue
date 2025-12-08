@@ -4,9 +4,11 @@ import { useRoute } from 'vue-router';
 import { kApp } from 'konsta/vue';
 import Header from '@/components/Layout/Header.vue';
 import Footer from '@/components/Layout/Footer.vue';
+import UserHeader from '@/components/Layout/UserHeader.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
 import GlobalNotification from '@/components/GlobalNotification.vue';
 import { useSystemStore } from '@/stores/useSystemStore';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 
 /**
  * 路由实例
@@ -17,6 +19,11 @@ const route = useRoute();
  * 系统配置 Store
  */
 const systemStore = useSystemStore();
+
+/**
+ * 布局 Store
+ */
+const layoutStore = useLayoutStore();
 
 /**
  * 是否显示布局（Header/Footer）
@@ -39,7 +46,10 @@ watchEffect(() => {
 <template>
   <k-app theme="ios">
     <div class="min-h-screen flex flex-col">
-      <Header v-if="showLayout" />
+      <template v-if="showLayout">
+        <Header v-if="layoutStore.currentNavGroup === 'default'" />
+        <UserHeader v-else />
+      </template>
       <main
         v-if="showLayout"
         class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"

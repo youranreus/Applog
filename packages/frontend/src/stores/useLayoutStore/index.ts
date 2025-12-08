@@ -46,6 +46,10 @@ export const useLayoutStore = defineStore('layout', () => {
     return undefined;
   };
 
+  const currentNavGroup = computed<string | undefined>(() => {
+    return getNavGroupFromRoute();
+  });
+
   /**
    * 将导航项源转换为导航项
    * @param source - 导航项源
@@ -89,7 +93,7 @@ export const useLayoutStore = defineStore('layout', () => {
     }
 
     // 获取当前路由的 navGroup
-    const navGroup = getNavGroupFromRoute();
+    const navGroup = currentNavGroup.value;
 
     // 如果有 navGroup 且配置了对应页面组
     if (navGroup && NAV_GROUPS[navGroup]) {
@@ -210,6 +214,8 @@ export const useLayoutStore = defineStore('layout', () => {
     navPages,
     footerPages,
     allPages: pages,
+    // 当前导航组
+    currentNavGroup,
     // 加载状态
     loading,
     // 错误信息
