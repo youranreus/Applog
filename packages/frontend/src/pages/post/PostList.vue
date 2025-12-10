@@ -1,7 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div class="post-list-page">
+  <div class="post-list-page common-page-container">
     <div class="page-header mb-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">文章列表</h1>
       <p class="text-gray-600">探索所有精彩内容</p>

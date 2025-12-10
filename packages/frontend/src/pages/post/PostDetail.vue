@@ -16,7 +16,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="post-detail-page">
+  <div class="post-detail-page common-page-container">
     <div class="post-header mb-8">
       <k-button
         @click="$router.back()"

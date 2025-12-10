@@ -34,7 +34,7 @@ function handlePageChange(page: number): void {
 </script>
 
 <template>
-  <div class="post-list-page">
+  <div class="post-list-page common-page-container">
     <!-- 页面头部 -->
     <div class="page-header mb-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">文章管理</h1>

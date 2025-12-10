@@ -1,7 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div class="comment-list-page">
+  <div class="comment-list-page common-page-container">
     <div class="page-header mb-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">评论管理</h1>
       <p class="text-gray-600">管理系统评论内容</p>

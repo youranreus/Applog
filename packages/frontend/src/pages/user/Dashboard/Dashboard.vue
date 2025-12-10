@@ -71,7 +71,7 @@ function switchTab(tab: TabType): void {
 </script>
 
 <template>
-  <div class="dashboard-page">
+  <div class="dashboard-page common-page-container">
     <div class="page-header mb-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">用户中心</h1>
       <p class="text-gray-600">欢迎来到用户控制面板</p>

@@ -108,7 +108,7 @@ const formatDate = (date: Date | string): string => {
 </script>
 
 <template>
-  <div class="post-edit-page">
+  <div class="post-edit-page common-page-container">
     <!-- 加载文章详情状态 -->
     <div v-if="isEditMode && loadingPostDetail" class="text-center text-gray-600 py-12">
       <p>加载中...</p>
