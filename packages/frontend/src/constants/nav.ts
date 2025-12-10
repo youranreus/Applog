@@ -41,7 +41,7 @@ export const NAV_GROUPS: Record<string, INavItemSource[]> = {
   default: [
     {
       type: 'route',
-      route: { name: ROUTE_NAMES.POST_LIST },
+      route: { name: ROUTE_NAMES.LANDING },
       title: '首页',
     },
     {

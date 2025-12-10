@@ -20,6 +20,7 @@ export const PERMISSION_ROUTES = {
  */
 export const ROUTE_NAMES = {
   // 公开页面
+  LANDING: 'landing',
   POST_LIST: 'postList',
   POST_DETAIL: 'postDetail',
   PAGE_DETAIL: 'pageDetail',

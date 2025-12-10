@@ -6,7 +6,12 @@ import { ROUTE_NAMES, ROUTE_PERMISSIONS } from '@/constants/permission';
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: { name: ROUTE_NAMES.POST_LIST },
+    redirect: { name: ROUTE_NAMES.LANDING },
+  },
+  {
+    path: '/landing',
+    name: ROUTE_NAMES.LANDING,
+    component: () => import('@/pages/Landing.vue'),
   },
   // /posts 路由组
   {
