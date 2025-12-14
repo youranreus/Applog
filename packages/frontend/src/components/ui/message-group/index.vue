@@ -9,7 +9,12 @@ const props = defineProps<IMessageGroupProps>()
 </script>
 
 <template>
-  <div class="message-group">
+  <div
+    class="message-group"
+    v-motion
+    :initial="{ opacity: 0, y: 50 }"
+    :visible="{ opacity: 1, y: 0, transition: { duration: 600, ease: 'easeOut' } }"
+  >
     <!-- 头像区域（可选） -->
     <div v-if="props.avatar" class="avatar-container">
       <img :src="props.avatar" alt="avatar" class="avatar-image" />
@@ -18,9 +23,20 @@ const props = defineProps<IMessageGroupProps>()
     <!-- 消息列表区域 -->
     <div class="messages-container">
       <MessageBubble
-        v-for="message in props.messages"
+        v-for="(message, index) in props.messages"
         :key="message.id"
         :content="message.content"
+        v-motion
+        :initial="{ opacity: 0, y: 30 }"
+        :visible="{
+          opacity: 1,
+          y: 0,
+          transition: {
+            delay: index * 100,
+            duration: 500,
+            ease: 'easeOut',
+          },
+        }"
       />
 
       <!-- 状态文本（可选） -->

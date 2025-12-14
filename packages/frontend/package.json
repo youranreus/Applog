@@ -29,6 +29,7 @@
     "@tiptap/markdown": "^3.13.0",
     "@tiptap/starter-kit": "^3.13.0",
     "@tiptap/vue-3": "^3.13.0",
+    "@vueuse/motion": "^3.0.3",
     "alova": "^3.3.4",
     "konsta": "^5.0.6",
     "localforage": "^1.10.0",
