@@ -6,7 +6,10 @@ import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import { isNil } from 'lodash';
 import type { UserJwtPayload } from '@reus-able/types';
 import type { ISystemBaseConfig } from '@applog/common';
-import { SYSTEM_CONFIG_KEYS, SYSTEM_CONFIG_PREFIX_DEFAULT } from '@applog/common';
+import {
+  SYSTEM_CONFIG_KEYS,
+  SYSTEM_CONFIG_PREFIX_DEFAULT,
+} from '@applog/common';
 import { SystemConfigEntity } from '@/entities';
 import type {
   BatchConfigDto,
@@ -61,11 +64,17 @@ export class SystemConfigService {
       return;
     }
 
+    // 读取操作：允许所有用户读取 SYSTEM_ 配置
+    if (action === 'read') {
+      return;
+    }
+
+    // 写入操作：仅允许管理员
     if (!this.isAdmin(user)) {
       this.warn(
         `非管理员尝试 ${action} 系统级配置: ${configKey}, user=${user?.id ?? 'anonymous'}`,
       );
-      throw new BusinessException('SYSTEM_ 配置仅允许管理员访问');
+      throw new BusinessException('SYSTEM_ 配置仅允许管理员修改');
     }
   }
 
@@ -129,11 +138,11 @@ export class SystemConfigService {
   /**
    * 获取单个配置项
    * @param configKey 配置 key
-   * @param user 当前用户（SYSTEM_ 配置需要 admin）
+   * @param user 当前用户（可选，SYSTEM_ 配置所有用户可读）
    * @returns 配置数据或 null
    *
    * 逻辑说明：
-   * 1. 校验 SYSTEM_ 配置读取权限
+   * 1. SYSTEM_ 配置允许所有用户读取
    * 2. 查询数据库，记录不存在返回 null
    * 3. 返回配置数据
    */
@@ -160,11 +169,11 @@ export class SystemConfigService {
   /**
    * 批量获取配置项
    * @param payload 包含配置 key 列表的 DTO
-   * @param user 当前用户（SYSTEM_ 配置需要 admin）
+   * @param user 当前用户（可选，SYSTEM_ 配置所有用户可读）
    * @returns 配置记录 Map（不存在的 key 返回 null）
    *
    * 逻辑说明：
-   * 1. 校验所有 key 的 SYSTEM_ 访问权限
+   * 1. SYSTEM_ 配置允许所有用户读取
    * 2. 去重后批量查询
    * 3. 将结果映射回请求顺序
    */
