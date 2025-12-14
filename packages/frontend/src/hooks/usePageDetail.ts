@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue';
-import { useRequest } from 'alova/client';
+import { useWatcher } from 'alova/client';
 import { getPageBySlug } from '@/api/page/getPageBySlug';
 import type { IPageDetail } from '@/types/page';
 
@@ -24,7 +24,7 @@ export function usePageDetail(slug: Ref<string> | string) {
     : slug;
 
   /**
-   * 使用 alova 的 useRequest 获取页面详情
+   * 使用 alova 的 useWatcher 获取页面详情
    * 传入函数形式，alova 会自动追踪 slugRef 的变化
    * 当 slugRef.value 变化时，会自动重新请求数据
    */
@@ -33,11 +33,12 @@ export function usePageDetail(slug: Ref<string> | string) {
     data: pageDetail,
     error,
     send: refresh,
-  } = useRequest(
+  } = useWatcher(
     () => getPageBySlug(slugRef.value),
+    [slugRef],
     {
       immediate: true, // 立即请求
-    }
+    },
   );
 
   /**
