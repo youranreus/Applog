@@ -31,7 +31,7 @@ const displayMessages = computed(() => {
 
 <template>
   <div v-if="!loading" class="landing-page">
-    <div class="landing-background"></div>
+    <!-- <div class="landing-background"></div> -->
     <div class="landing-scroll-content">
       <div class="h-[50vh] w-full"></div>
       <div class="mx-auto w-full flex flex-col gap-4 px-4 sm:px-6 sm:max-w-[640px] md:max-w-[720px] lg:px-8 lg:max-w-[800px]">
