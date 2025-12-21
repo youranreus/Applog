@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { kChip, kDialog, kDialogButton } from 'konsta/vue';
 import { usePostEdit } from './hooks/usePostEdit';
+import { useTagEditor } from './hooks/useTagEditor';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { ROUTE_NAMES } from '@/constants/permission';
 import Input from '@/components/ui/input/index.vue';
@@ -54,6 +56,23 @@ const {
 } = usePostEdit({
   isEditMode,
   postId,
+});
+
+/**
+ * 使用标签编辑 Hook
+ */
+const {
+  showAddTagDialog,
+  newTagInput,
+  handleAddTag,
+  handleDeleteTag,
+  handleOpenAddTagDialog,
+  handleCloseAddTagDialog,
+} = useTagEditor({
+  getTags: () => formData.value.tags || [],
+  setTags: (tags: string[]) => {
+    formData.value.tags = tags;
+  },
 });
 
 /**
@@ -138,20 +157,6 @@ const formatDate = (date: Date | string): string => {
                 :validation-message="saveError || ''"
               />
             </div>
-            <div class="mb-4">
-              <h3 class="block text-lg font-medium text-gray-900 mb-2">
-                文章摘要
-              </h3>
-              <Input
-                v-model="formData.summary"
-                type="text"
-                placeholder="请输入文章摘要（可选）"
-                :validation-status="saveError ? 'error' : 'normal'"
-              />
-              <p class="text-xs text-gray-500 mt-1">
-                文章的简短描述，用于列表展示和 SEO
-              </p>
-            </div>
             <div>
               <h3 class="block text-lg font-medium text-gray-900 mb-2">
                 文章内容
@@ -192,6 +197,91 @@ const formatDate = (date: Date | string): string => {
               </p>
             </div>
           </Card>
+
+          <!-- 文章样式 -->
+          <Card outline>
+            <h4 class="text-sm font-semibold text-gray-900 mb-4">元数据</h4>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-900 mb-2">
+                文章封面
+              </label>
+              <Input
+                v-model="formData.cover"
+                type="text"
+                placeholder="请输入文章封面 URL"
+                :validation-status="saveError ? 'error' : 'normal'"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                输入文章封面的图片 URL 地址
+              </p>
+            </div>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-900 mb-2">
+                文章摘要
+              </label>
+              <Input
+                v-model="formData.summary"
+                type="text"
+                placeholder="请输入文章摘要"
+                :validation-status="saveError ? 'error' : 'normal'"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                文章的简短描述，用于列表展示和 SEO
+              </p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-900 mb-2">
+                文章标签
+              </label>
+              <!-- 标签展示区域 -->
+              <div v-if="formData.tags && formData.tags.length > 0" class="flex flex-wrap gap-2 mb-2">
+                <k-chip
+                  v-for="(tag, index) in formData.tags"
+                  :key="index"
+                  delete-button
+                  @delete="handleDeleteTag(index)"
+                >
+                  {{ tag }}
+                </k-chip>
+              </div>
+              <!-- 新增标签按钮 -->
+              <Button
+                small
+                rounded
+                class="w-full"
+                @click="handleOpenAddTagDialog"
+              >
+                添加标签
+              </Button>
+              <p class="text-xs text-gray-500 mt-1">
+                为文章添加标签，方便分类和检索
+              </p>
+            </div>
+          </Card>
+
+          <!-- 新增标签对话框 -->
+          <k-dialog
+            :opened="showAddTagDialog"
+            @backdrop-click="handleCloseAddTagDialog"
+          >
+            <template #title>添加标签</template>
+            <div class="p-4">
+              <Input
+                v-model="newTagInput"
+                type="text"
+                placeholder="请输入标签名称"
+                @keyup.enter="handleAddTag"
+              />
+            </div>
+            <template #buttons>
+              <k-dialog-button @click="handleCloseAddTagDialog">
+                取消
+              </k-dialog-button>
+              <k-dialog-button strong @click="handleAddTag">
+                确定
+              </k-dialog-button>
+            </template>
+          </k-dialog>
 
           <!-- 文章统计信息（仅编辑模式显示） -->
           <Card outline>
