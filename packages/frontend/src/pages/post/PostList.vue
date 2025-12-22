@@ -31,7 +31,7 @@ function goToPostDetail(postId: number): void {
       <article
         v-for="post in posts"
         :key="post.id"
-        class="post-item py-3 px-3 sm:py-4 sm:px-4 cursor-pointer hover:bg-gray-50 transition-colors relative"
+        class="post-item py-3 px-3 sm:py-4 sm:px-4 cursor-pointer transition-colors relative"
         @click="goToPostDetail(post.id)"
       >
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 relative">

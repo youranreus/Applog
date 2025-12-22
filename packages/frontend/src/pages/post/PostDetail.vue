@@ -2,7 +2,7 @@
 import { useRouter } from 'vue-router';
 import { usePostDetail } from './hooks/usePostDetail';
 import MarkdownRenderer from '@/components/ui/markdown-renderer/MarkdownRenderer.vue';
-import { kButton } from 'konsta/vue';
+import { kButton, kChip } from 'konsta/vue';
 
 const router = useRouter();
 const { post, loading, error, formatDate } = usePostDetail();
@@ -38,17 +38,13 @@ const { post, loading, error, formatDate } = usePostDetail();
       </div>
 
       <!-- 文章标题 -->
-      <h1 class="post-title mb-4 sm:mb-6">
+      <h1 class="post-title mb-4 sm:mb-2">
         {{ post.title }}
       </h1>
 
       <!-- 元信息区 -->
       <div class="post-meta mb-6 sm:mb-8">
         <div class="meta-info flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-gray-500 mb-3">
-          <span v-if="post.author" class="author-name">
-            {{ post.author.name }}
-          </span>
-          <span v-if="post.author && post.createdAt" class="separator">•</span>
           <span v-if="post.createdAt" class="publish-date">
             {{ formatDate(post.createdAt) }}
           </span>
@@ -56,25 +52,24 @@ const { post, loading, error, formatDate } = usePostDetail();
           <span v-if="post.viewCount !== undefined" class="view-count">
             {{ post.viewCount }} 次浏览
           </span>
-        </div>
-
-        <!-- 标签 -->
-        <div v-if="post.tags && post.tags.length > 0" class="tags flex flex-wrap gap-2">
-          <span
-            v-for="tag in post.tags"
-            :key="tag"
-            class="tag"
-          >
-            {{ tag }}
-          </span>
-        </div>
+          <span v-if="post.tags && post.tags.length > 0 && post.viewCount !== undefined" class="separator">•</span>
+          <div v-if="post.tags && post.tags.length > 0" class="tags flex flex-wrap gap-2">
+            <kChip
+              v-for="tag in post.tags"
+              :key="tag"
+            >
+              {{ tag }}
+            </kChip>
+          </div>
+        </div>  
       </div>
 
-      <!-- 分隔线 -->
-      <div class="divider mb-6 sm:mb-8"></div>
+      <div v-if="post.summary" class="post-abstract">
+        <p class="post-abstract-content">{{ post.summary }}</p>
+      </div>
 
       <!-- 文章内容 -->
-      <div class="post-content">
+      <div class="post-content article-content">
         <MarkdownRenderer :content="post.content" class="markdown-content" />
       </div>
     </article>
@@ -159,15 +154,6 @@ const { post, loading, error, formatDate } = usePostDetail();
   @apply text-gray-500;
 }
 
-/* 标签样式 */
-.tags {
-  @apply mt-2;
-}
-
-.tag {
-  @apply px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded;
-}
-
 /* 分隔线 */
 .divider {
   @apply border-t border-gray-200;
@@ -175,84 +161,19 @@ const { post, loading, error, formatDate } = usePostDetail();
 
 /* 内容区域样式 */
 .post-content {
-  @apply mt-6;
+  @apply my-6 min-h-[50vh];
 }
 
-.markdown-content {
-  @apply text-gray-900 leading-relaxed;
-  line-height: 1.8;
+.post-abstract {
+  @apply my-6 p-6 bg-gray-100 rounded-3xl relative overflow-hidden;
+  &::before {
+    content: '“';
+    @apply absolute top-1 left-2 opacity-10 text-5xl;
+  }
 }
 
-/* Markdown 内容样式优化 */
-.markdown-content :deep(h1),
-.markdown-content :deep(h2),
-.markdown-content :deep(h3),
-.markdown-content :deep(h4),
-.markdown-content :deep(h5),
-.markdown-content :deep(h6) {
-  @apply font-bold text-gray-900 mt-6 mb-4;
-}
-
-.markdown-content :deep(h1) {
-  @apply text-3xl;
-}
-
-.markdown-content :deep(h2) {
-  @apply text-2xl;
-}
-
-.markdown-content :deep(h3) {
-  @apply text-xl;
-}
-
-.markdown-content :deep(p) {
-  @apply mb-4;
-}
-
-.markdown-content :deep(ul),
-.markdown-content :deep(ol) {
-  @apply mb-4 pl-6;
-}
-
-.markdown-content :deep(li) {
-  @apply mb-2;
-}
-
-.markdown-content :deep(blockquote) {
-  @apply border-l-4 border-gray-300 pl-4 italic text-gray-700 my-4;
-}
-
-.markdown-content :deep(code) {
-  @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;
-}
-
-.markdown-content :deep(pre) {
-  @apply bg-gray-100 p-4 rounded overflow-x-auto mb-4;
-}
-
-.markdown-content :deep(pre code) {
-  @apply bg-transparent p-0;
-}
-
-.markdown-content :deep(a) {
-  @apply text-blue-600 underline hover:text-blue-800;
-}
-
-.markdown-content :deep(img) {
-  @apply max-w-full h-auto rounded my-4;
-}
-
-.markdown-content :deep(table) {
-  @apply w-full border-collapse border border-gray-300 mb-4;
-}
-
-.markdown-content :deep(th),
-.markdown-content :deep(td) {
-  @apply border border-gray-300 px-4 py-2;
-}
-
-.markdown-content :deep(th) {
-  @apply bg-gray-100 font-bold;
+.post-abstract-content {
+  @apply text-gray-500 italic;
 }
 </style>
 
