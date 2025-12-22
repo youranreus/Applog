@@ -10,11 +10,12 @@ import {
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
 import { SystemConfigService } from './system-config.service';
-import { BatchConfigDto, SetConfigDto } from './dto';
+import { BatchConfigDto, SetConfigDto, MigrateDataDto } from './dto';
 import type {
   ConfigBatchRecord,
   IConfigResponseDto,
   IInitResponseDto,
+  IMigrationResultDto,
 } from './dto';
 
 @Controller({
@@ -87,5 +88,22 @@ export class SystemConfigController {
   ): Promise<IInitResponseDto> {
     const message = await this.systemConfigService.initializeSystem(user);
     return { message };
+  }
+
+  /**
+   * 执行数据迁移
+   * - 需要管理员权限
+   * - 支持从其他博客系统（如 Typecho）迁移数据
+   * @param payload 迁移请求数据（包含源数据库连接信息）
+   * @param user 当前管理员
+   * @returns 迁移结果统计信息
+   */
+  @Post('migrate')
+  @AuthRoles('admin')
+  async migrateData(
+    @Body() payload: MigrateDataDto,
+    @UserParams() user: UserJwtPayload,
+  ): Promise<IMigrationResultDto> {
+    return this.systemConfigService.migrateData(payload, user);
   }
 }

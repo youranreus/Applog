@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import { isNil } from 'lodash';
@@ -16,7 +16,10 @@ import type {
   ConfigBatchRecord,
   IConfigResponseDto,
   SetConfigDto,
+  MigrateDataDto,
+  IMigrationResultDto,
 } from './dto';
+import { MigrationAdapterFactory } from './migration';
 
 type AccessAction = 'read' | 'write';
 
@@ -31,7 +34,10 @@ export class SystemConfigService {
   private readonly systemKeyPrefix: string;
   private readonly adminRoleValue: number;
 
-  public constructor(private config: ConfigService) {
+  public constructor(
+    private config: ConfigService,
+    private dataSource: DataSource,
+  ) {
     this.systemKeyPrefix = this.config.get<string>(
       'SYSTEM_CONFIG_PREFIX',
       SYSTEM_CONFIG_PREFIX_DEFAULT,
@@ -270,6 +276,103 @@ export class SystemConfigService {
       }
       this.error(`系统配置初始化失败: ${err.message}`);
       throw new BusinessException('系统初始化失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 执行数据迁移
+   * @param payload 迁移请求数据
+   * @param user 当前操作用户（需要 admin 权限）
+   * @returns 迁移结果
+   *
+   * 逻辑说明：
+   * 1. 验证管理员权限
+   * 2. 根据迁移源类型创建对应的适配器
+   * 3. 验证源数据库连接
+   * 4. 执行数据迁移
+   * 5. 返回迁移结果统计
+   * @throws {BusinessException} 如果验证失败或迁移失败
+   */
+  async migrateData(
+    payload: MigrateDataDto,
+    user: UserJwtPayload,
+  ): Promise<IMigrationResultDto> {
+    this.log(`准备执行数据迁移，源类型: ${payload.sourceType}`);
+
+    // 校验管理员权限
+    if (!this.isAdmin(user)) {
+      this.warn(
+        `非管理员尝试执行数据迁移，user=${user?.id ?? 'anonymous'}`,
+      );
+      throw new BusinessException('数据迁移仅允许管理员执行');
+    }
+
+    try {
+      // 创建迁移适配器
+      const adapter = MigrationAdapterFactory.create(payload.sourceType);
+      this.log(`创建 ${payload.sourceType} 迁移适配器成功`);
+
+      // 构建源数据库配置
+      const sourceConfig = {
+        host: payload.host,
+        port: payload.port,
+        username: payload.username,
+        password: payload.password,
+        database: payload.database,
+        tablePrefix: payload.tablePrefix,
+      };
+
+      // 验证源数据库
+      this.log('开始验证源数据库连接...');
+      const isValid = await adapter.validateSource(sourceConfig);
+
+      if (!isValid) {
+        this.error('源数据库验证失败');
+        throw new BusinessException('源数据库连接失败或表结构不正确');
+      }
+
+      this.log('源数据库验证成功，开始执行迁移...');
+
+      // 执行迁移
+      const result = await adapter.migrate(
+        sourceConfig,
+        this.dataSource,
+        this.logger,
+      );
+
+      if (result.success) {
+        this.log(
+          `数据迁移成功完成: 用户 ${result.usersCount}, 文章 ${result.postsCount}, 页面 ${result.pagesCount}, 评论 ${result.commentsCount}`,
+        );
+
+        return {
+          success: true,
+          message: '数据迁移成功完成',
+          usersCount: result.usersCount,
+          postsCount: result.postsCount,
+          pagesCount: result.pagesCount,
+          commentsCount: result.commentsCount,
+          duration: result.duration,
+        };
+      } else {
+        this.error(`数据迁移失败: ${result.error}`);
+        return {
+          success: false,
+          message: '数据迁移失败',
+          usersCount: 0,
+          postsCount: 0,
+          pagesCount: 0,
+          commentsCount: 0,
+          duration: result.duration,
+          error: result.error,
+        };
+      }
+    } catch (err) {
+      if (err instanceof BusinessException) {
+        throw err;
+      }
+      this.error(`数据迁移异常: ${err.message}`);
+      throw new BusinessException(`数据迁移失败: ${err.message}`);
     }
   }
 }
