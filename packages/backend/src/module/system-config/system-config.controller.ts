@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   Post,
   Put,
@@ -10,11 +11,13 @@ import {
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
 import { SystemConfigService } from './system-config.service';
-import { BatchConfigDto, SetConfigDto } from './dto';
+import { MigrationService } from './migration.service';
+import { BatchConfigDto, SetConfigDto, MigrateDataDto } from './dto';
 import type {
   ConfigBatchRecord,
   IConfigResponseDto,
   IInitResponseDto,
+  IMigrationResultDto,
 } from './dto';
 
 @Controller({
@@ -22,7 +25,10 @@ import type {
   version: [VERSION_NEUTRAL, '1'],
 })
 export class SystemConfigController {
-  constructor(private readonly systemConfigService: SystemConfigService) {}
+  constructor(
+    private readonly systemConfigService: SystemConfigService,
+    private readonly migrationService: MigrationService,
+  ) {}
 
   /**
    * 读取单个配置项
@@ -87,5 +93,23 @@ export class SystemConfigController {
   ): Promise<IInitResponseDto> {
     const message = await this.systemConfigService.initializeSystem(user);
     return { message };
+  }
+
+  /**
+   * 数据迁移接口
+   * - 需要管理员权限
+   * - 支持从不同的博客系统迁移数据到 AppLog
+   * @param payload 迁移请求参数（包含数据源类型、数据库配置等）
+   * @param user 当前管理员
+   * @returns 迁移结果（包含导入统计信息）
+   */
+  @Post('migrate')
+  @HttpCode(200)
+  @AuthRoles('admin')
+  async migrateData(
+    @Body() payload: MigrateDataDto,
+    @UserParams() user: UserJwtPayload,
+  ): Promise<IMigrationResultDto> {
+    return this.migrationService.migrate(payload, user);
   }
 }
