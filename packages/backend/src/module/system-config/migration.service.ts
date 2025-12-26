@@ -12,6 +12,7 @@ import type {
   IMigrationStats,
   IRawPost,
   IRawPage,
+  IFieldMapping,
 } from './dto/migration.dto';
 
 /**
@@ -99,10 +100,19 @@ export class MigrationService {
 
       // 导入文章
       if (rawPosts.length > 0) {
-        const postResult = await this.importPosts(rawPosts, user.id);
+        if (dto.fieldMapping) {
+          this.log(`字段映射配置: ${JSON.stringify(dto.fieldMapping)}`);
+        }
+        const postResult = await this.importPosts(
+          rawPosts,
+          user.id,
+          dto.fieldMapping,
+        );
         stats.postsImported = postResult.success;
         stats.postsFailed = postResult.failed;
-        this.log(`文章导入完成：成功 ${postResult.success}，失败 ${postResult.failed}`);
+        this.log(
+          `文章导入完成：成功 ${postResult.success}，失败 ${postResult.failed}`,
+        );
       }
 
       // 导入页面
@@ -110,7 +120,9 @@ export class MigrationService {
         const pageResult = await this.importPages(rawPages, user.id);
         stats.pagesImported = pageResult.success;
         stats.pagesFailed = pageResult.failed;
-        this.log(`页面导入完成：成功 ${pageResult.success}，失败 ${pageResult.failed}`);
+        this.log(
+          `页面导入完成：成功 ${pageResult.success}，失败 ${pageResult.failed}`,
+        );
       }
 
       // 7. 计算耗时
@@ -196,18 +208,21 @@ export class MigrationService {
    * 导入文章数据
    * @param rawPosts 原始文章数据列表
    * @param defaultAuthorId 默认作者 ID（找不到匹配用户时使用）
+   * @param fieldMapping 自定义字段映射配置（可选）
    * @returns Promise<{ success: number; failed: number }> 导入统计
    *
    * 逻辑说明：
    * 1. 批量处理文章（每批 50 条）
    * 2. 为每篇文章映射作者（根据邮箱匹配）
    * 3. 转换状态和时间戳
-   * 4. 将 slug 存入 extra 字段
-   * 5. 批量插入数据库
+   * 4. 应用自定义字段映射规则（如果配置了）
+   * 5. 将 slug 存入 extra 字段
+   * 6. 批量插入数据库
    */
   private async importPosts(
     rawPosts: IRawPost[],
     defaultAuthorId: number,
+    fieldMapping?: IFieldMapping,
   ): Promise<{ success: number; failed: number }> {
     let success = 0;
     let failed = 0;
@@ -234,6 +249,43 @@ export class MigrationService {
               const createdAt = new Date(rawPost.created * 1000);
               const updatedAt = new Date(rawPost.modified * 1000);
 
+              // 应用自定义字段映射
+              const postData: Partial<PostEntity> = {
+                title: rawPost.title || '无标题',
+                content: rawPost.text || '',
+                status,
+                authorId,
+                viewCount: 0,
+                tags: [],
+              };
+
+              // 如果配置了字段映射，应用映射规则
+              if (fieldMapping && rawPost.customFields) {
+                for (const [typechoField, postField] of Object.entries(
+                  fieldMapping,
+                )) {
+                  const fieldValue = rawPost.customFields[typechoField];
+
+                  // 如果字段值为空，跳过
+                  if (!fieldValue) {
+                    continue;
+                  }
+
+                  // 目前只支持映射到 cover 字段
+                  if (postField === 'cover') {
+                    postData.cover = fieldValue;
+                    this.log(
+                      `文章 cid=${rawPost.cid}: 映射字段 ${typechoField} -> cover = ${fieldValue}`,
+                    );
+                  } else {
+                    // 不支持的目标字段，记录警告但不中断迁移
+                    this.warn(
+                      `不支持的目标字段映射: ${typechoField} -> ${postField}，已忽略`,
+                    );
+                  }
+                }
+              }
+
               // 构建 extra 对象，包含 slug
               const extra: Record<string, any> = {
                 slug: rawPost.slug || '',
@@ -242,12 +294,7 @@ export class MigrationService {
               };
 
               return this.postRepo.create({
-                title: rawPost.title || '无标题',
-                content: rawPost.text || '',
-                status,
-                authorId,
-                viewCount: 0,
-                tags: [],
+                ...postData,
                 extra,
                 createdAt,
                 updatedAt,
@@ -397,7 +444,9 @@ export class MigrationService {
         return user.id;
       }
 
-      this.warn(`未找到匹配用户: ${email}，使用默认作者 ID: ${defaultAuthorId}`);
+      this.warn(
+        `未找到匹配用户: ${email}，使用默认作者 ID: ${defaultAuthorId}`,
+      );
       return defaultAuthorId;
     } catch (error) {
       this.error(`查找用户失败: ${error.message}`);
@@ -452,4 +501,3 @@ export class MigrationService {
     this.logger.error(message, MigrationService.name);
   }
 }
-

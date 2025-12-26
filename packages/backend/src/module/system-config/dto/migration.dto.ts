@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsBoolean,
   ValidateNested,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -50,6 +51,15 @@ export class DatabaseConfigDto implements IDatabaseConfig {
 export type MigrationSource = 'typecho';
 
 /**
+ * 字段映射接口
+ * key: Typecho 自定义字段名（如 'imgurl'）
+ * value: AppLog Post 实体字段名（如 'cover'）
+ */
+export interface IFieldMapping {
+  [typechoField: string]: string;
+}
+
+/**
  * 迁移数据请求 DTO
  */
 export class MigrateDataDto {
@@ -72,6 +82,15 @@ export class MigrateDataDto {
   @IsOptional()
   @IsBoolean()
   clearExisting?: boolean;
+
+  /**
+   * 自定义字段映射配置（可选）
+   * 格式：{ typechoFieldName: postFieldName }
+   * 例如：{ imgurl: 'cover' } 表示将 Typecho 的 imgurl 字段映射到 Post 的 cover 字段
+   */
+  @IsOptional()
+  @IsObject()
+  fieldMapping?: IFieldMapping;
 }
 
 /**
@@ -108,6 +127,11 @@ export interface IRawPost {
   status: string;
   authorId: number;
   authorEmail?: string;
+  /**
+   * 自定义字段数据
+   * key: 字段名，value: 字段值（字符串）
+   */
+  customFields?: Record<string, string>;
 }
 
 /**
@@ -125,4 +149,3 @@ export interface IRawPage {
   authorId: number;
   authorEmail?: string;
 }
-

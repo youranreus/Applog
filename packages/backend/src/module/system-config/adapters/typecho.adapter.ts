@@ -1,11 +1,7 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import type { HLogger } from '@reus-able/nestjs';
 import type { IMigrationAdapter } from './migration-adapter.interface';
-import type {
-  IDatabaseConfig,
-  IRawPost,
-  IRawPage,
-} from '../dto/migration.dto';
+import type { IDatabaseConfig, IRawPost, IRawPage } from '../dto/migration.dto';
 
 /**
  * Typecho 数据库原始数据接口
@@ -22,9 +18,16 @@ interface ITypechoContent {
   authorId: number;
 }
 
-interface ITypechoUser {
-  uid: number;
-  mail: string;
+/**
+ * Typecho fields 表数据结构
+ */
+interface ITypechoField {
+  cid: number;
+  name: string;
+  type: string;
+  str_value: string;
+  int_value: number;
+  float_value: number;
 }
 
 /**
@@ -51,7 +54,9 @@ export class TypechoAdapter implements IMigrationAdapter {
    * 3. 初始化连接
    */
   async connect(config: IDatabaseConfig): Promise<void> {
-    this.log(`正在连接到 Typecho 数据库: ${config.host}:${config.port}/${config.database}`);
+    this.log(
+      `正在连接到 Typecho 数据库: ${config.host}:${config.port}/${config.database}`,
+    );
 
     try {
       this.config = config;
@@ -108,13 +113,94 @@ export class TypechoAdapter implements IMigrationAdapter {
   }
 
   /**
+   * 获取文章的自定义字段数据
+   * @param cids 文章 cid 列表
+   * @returns Promise<Map<number, Record<string, string>>> 自定义字段数据
+   *          key: 文章 cid，value: 该文章的自定义字段对象（字段名 -> 字段值）
+   *
+   * 逻辑说明：
+   * 1. 查询 {tablePrefix}_fields 表，筛选 cid 在指定列表中
+   * 2. 只处理 str_value（字符串类型字段），因为目前只映射 cover（URL 字符串）
+   * 3. 按 cid 分组，返回 Map 结构
+   */
+  async fetchFields(
+    cids: number[],
+  ): Promise<Map<number, Record<string, string>>> {
+    if (!this.connection || !this.connection.isInitialized) {
+      throw new Error('数据库连接未初始化');
+    }
+
+    if (cids.length === 0) {
+      return new Map();
+    }
+
+    try {
+      const tablePrefix = this.config?.tablePrefix || 'typecho_';
+      const fieldsTable = `${tablePrefix}fields`;
+
+      this.log(
+        `开始获取 Typecho 自定义字段数据，表: ${fieldsTable}，文章数量: ${cids.length}`,
+      );
+
+      // 构建 IN 查询（直接拼接数字，因为 cids 都是数字，不会有 SQL 注入风险）
+      const cidsStr = cids.join(',');
+
+      // 查询自定义字段数据
+      const query = `
+        SELECT 
+          cid,
+          name,
+          type,
+          str_value,
+          int_value,
+          float_value
+        FROM \`${fieldsTable}\`
+        WHERE cid IN (${cidsStr})
+        AND str_value IS NOT NULL
+        AND str_value != ''
+      `;
+
+      const results: ITypechoField[] = await this.connection.query(query);
+
+      this.log(`成功获取 ${results.length} 条自定义字段数据`);
+
+      // 按 cid 分组，构建 Map
+      const fieldsMap = new Map<number, Record<string, string>>();
+
+      for (const field of results) {
+        if (!fieldsMap.has(field.cid)) {
+          fieldsMap.set(field.cid, {});
+        }
+
+        const postFields = fieldsMap.get(field.cid)!;
+        postFields[field.name] = field.str_value;
+      }
+
+      this.log(`成功构建 ${fieldsMap.size} 篇文章的自定义字段映射`);
+
+      return fieldsMap;
+    } catch (error) {
+      this.error(`获取自定义字段数据失败: ${error.message}`);
+      // 如果 fields 表不存在，返回空 Map，不中断迁移流程
+      if (
+        error.message.includes("doesn't exist") ||
+        error.message.includes('Unknown table')
+      ) {
+        this.warn('fields 表不存在，跳过自定义字段获取');
+        return new Map();
+      }
+      throw new Error(`获取自定义字段数据失败: ${error.message}`);
+    }
+  }
+
+  /**
    * 获取所有文章数据
    * @returns Promise<IRawPost[]> 原始文章数据列表
    *
    * 逻辑说明：
    * 1. 查询 typecho_contents 表，筛选 type = 'post'
    * 2. 关联 typecho_users 表获取作者邮箱
-   * 3. 转换时间戳为 Date 对象
+   * 3. 查询自定义字段数据并附加到每篇文章
    * 4. 返回文章数据列表
    */
   async fetchPosts(): Promise<IRawPost[]> {
@@ -165,6 +251,23 @@ export class TypechoAdapter implements IMigrationAdapter {
         authorId: row.authorId,
         authorEmail: (row as any).authorEmail || undefined,
       }));
+
+      // 获取自定义字段数据
+      if (posts.length > 0) {
+        const cids = posts.map((post) => post.cid);
+        const fieldsMap = await this.fetchFields(cids);
+
+        // 将自定义字段附加到每篇文章
+        for (const post of posts) {
+          const customFields = fieldsMap.get(post.cid);
+          if (customFields && Object.keys(customFields).length > 0) {
+            post.customFields = customFields;
+          }
+        }
+
+        const postsWithFields = posts.filter((post) => post.customFields);
+        this.log(`其中 ${postsWithFields.length} 篇文章包含自定义字段`);
+      }
 
       return posts;
     } catch (error) {
@@ -274,4 +377,3 @@ export class TypechoAdapter implements IMigrationAdapter {
     this.logger.error(message, TypechoAdapter.name);
   }
 }
-
