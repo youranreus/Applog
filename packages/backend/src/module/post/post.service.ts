@@ -52,19 +52,33 @@ export class PostService {
    *
    * 逻辑说明：
    * 1. 使用 JWT 中的用户数据库 ID 作为 authorId
-   * 2. 创建文章实体
-   * 3. 保存文章到数据库
-   * 4. 返回文章数据
+   * 2. 检查 slug 是否已存在
+   * 3. 创建文章实体
+   * 4. 保存文章到数据库
+   * 5. 返回文章数据
    */
   async create(
     createData: CreatePostDto,
     userId: number,
   ): Promise<IPostResponseDto> {
-    this.log(`用户 #${userId} 开始创建文章，标题: ${createData.title}`);
+    this.log(
+      `用户 #${userId} 开始创建文章，标题: ${createData.title}，slug: ${createData.slug}`,
+    );
 
     try {
+      // 检查 slug 是否已存在
+      const existingPost = await this.postRepo.findOne({
+        where: { slug: createData.slug },
+      });
+
+      if (existingPost) {
+        this.warn(`slug "${createData.slug}" 已存在`);
+        throw new BusinessException(`slug "${createData.slug}" 已被使用`);
+      }
+
       // 创建文章实体，直接使用 JWT 中的用户数据库 ID
       const post = this.postRepo.create({
+        slug: createData.slug,
         title: createData.title,
         content: createData.content,
         summary: createData.summary,
@@ -78,11 +92,14 @@ export class PostService {
       // 保存到数据库
       const savedPost = await this.postRepo.save(post);
       this.log(
-        `文章创建成功，文章ID: ${savedPost.id}，作者: ${userId}，状态: ${savedPost.status}`,
+        `文章创建成功，文章ID: ${savedPost.id}，slug: ${savedPost.slug}，作者: ${userId}，状态: ${savedPost.status}`,
       );
 
       return savedPost.getData();
     } catch (error) {
+      if (error instanceof BusinessException) {
+        throw error;
+      }
       this.error(`创建文章失败: ${error.message}`);
       throw new BusinessException('创建文章失败，请稍后重试');
     }
@@ -90,70 +107,86 @@ export class PostService {
 
   /**
    * 更新文章
-   * @param id 文章ID
+   * @param slug 文章 slug
    * @param updateData 更新数据
    * @returns 更新后的文章信息
    *
    * 逻辑说明：
-   * 1. 查询文章是否存在
-   * 2. 逐个更新提供的字段（只更新传入的字段）
-   * 3. 保存更新后的文章
-   * 4. 返回更新后的文章数据
+   * 1. 通过 slug 查询文章是否存在
+   * 2. 如果要更新 slug，检查新 slug 是否已被占用
+   * 3. 逐个更新提供的字段（只更新传入的字段）
+   * 4. 保存更新后的文章
+   * 5. 返回更新后的文章数据
    */
   async update(
-    id: number,
+    slug: string,
     updateData: UpdatePostDto,
   ): Promise<IPostResponseDto> {
-    this.log(`开始更新文章 #${id}`);
+    this.log(`开始更新文章，slug: ${slug}`);
 
     try {
       // 查询文章是否存在
-      const post = await this.postRepo.findOne({ where: { id } });
+      const post = await this.postRepo.findOne({ where: { slug } });
 
       if (isNil(post)) {
-        this.warn(`文章 #${id} 不存在`);
+        this.warn(`文章 slug "${slug}" 不存在`);
         throw new BusinessException('文章不存在');
+      }
+
+      // 如果要更新 slug，检查新 slug 是否已被占用
+      if (updateData.slug !== undefined && updateData.slug !== slug) {
+        const existingPost = await this.postRepo.findOne({
+          where: { slug: updateData.slug },
+        });
+
+        if (existingPost) {
+          this.warn(`slug "${updateData.slug}" 已存在`);
+          throw new BusinessException(`slug "${updateData.slug}" 已被使用`);
+        }
+
+        post.slug = updateData.slug;
+        this.log(`更新文章 slug: ${updateData.slug}`);
       }
 
       // 逐个更新提供的字段（局部更新）
       if (updateData.title !== undefined) {
         post.title = updateData.title;
-        this.log(`更新文章 #${id} 标题: ${updateData.title}`);
+        this.log(`更新文章标题: ${updateData.title}`);
       }
 
       if (updateData.content !== undefined) {
         post.content = updateData.content;
-        this.log(`更新文章 #${id} 内容`);
+        this.log(`更新文章内容`);
       }
 
       if (updateData.summary !== undefined) {
         post.summary = updateData.summary;
-        this.log(`更新文章 #${id} 摘要`);
+        this.log(`更新文章摘要`);
       }
 
       if (updateData.cover !== undefined) {
         post.cover = updateData.cover;
-        this.log(`更新文章 #${id} 封面`);
+        this.log(`更新文章封面`);
       }
 
       if (updateData.status !== undefined) {
         post.status = updateData.status;
-        this.log(`更新文章 #${id} 状态: ${updateData.status}`);
+        this.log(`更新文章状态: ${updateData.status}`);
       }
 
       if (updateData.tags !== undefined) {
         post.tags = updateData.tags;
-        this.log(`更新文章 #${id} 标签: ${updateData.tags.join(', ')}`);
+        this.log(`更新文章标签: ${updateData.tags.join(', ')}`);
       }
 
       if (updateData.extra !== undefined) {
         post.extra = updateData.extra;
-        this.log(`更新文章 #${id} 额外数据`);
+        this.log(`更新文章额外数据`);
       }
 
       // 保存更新
       const savedPost = await this.postRepo.save(post);
-      this.log(`文章 #${id} 更新成功`);
+      this.log(`文章更新成功，slug: ${savedPost.slug}，ID: ${savedPost.id}`);
 
       return savedPost.getData();
     } catch (error) {
@@ -167,25 +200,25 @@ export class PostService {
 
   /**
    * 获取文章详情
-   * @param id 文章ID
+   * @param slug 文章 slug
    * @returns 文章详细信息（包含完整内容和作者信息）
    */
-  async findOne(id: number): Promise<IPostResponseDto> {
-    this.log(`查询文章详情，文章ID: ${id}`);
+  async findOne(slug: string): Promise<IPostResponseDto> {
+    this.log(`查询文章详情，slug: ${slug}`);
 
     try {
       // 查询文章，关联作者信息
       const post = await this.postRepo.findOne({
-        where: { id },
+        where: { slug },
         relations: ['author'],
       });
 
       if (isNil(post)) {
-        this.warn(`文章 #${id} 不存在`);
+        this.warn(`文章 slug "${slug}" 不存在`);
         throw new BusinessException('文章不存在');
       }
 
-      this.log(`成功获取文章 #${id} 详情`);
+      this.log(`成功获取文章详情，slug: ${slug}，ID: ${post.id}`);
       return post.getData(true); // 包含作者信息
     } catch (error) {
       if (error instanceof BusinessException) {
@@ -215,6 +248,7 @@ export class PostService {
         .leftJoinAndSelect('post.author', 'author')
         .select([
           'post.id',
+          'post.slug',
           'post.title',
           'post.summary',
           'post.cover',
@@ -279,6 +313,7 @@ export class PostService {
       // 转换为列表项 DTO
       const items: IPostListItemDto[] = paginationResult.items.map((post) => ({
         id: post.id,
+        slug: post.slug,
         title: post.title,
         summary: post.summary,
         cover: post.cover,
@@ -314,25 +349,27 @@ export class PostService {
 
   /**
    * 删除文章
-   * @param id 文章ID
+   * @param slug 文章 slug
    */
-  async remove(id: number): Promise<void> {
-    this.log(`开始删除文章，文章ID: ${id}`);
+  async remove(slug: string): Promise<void> {
+    this.log(`开始删除文章，slug: ${slug}`);
 
     try {
       // 检查文章是否存在
-      const post = await this.postRepo.findOne({ where: { id } });
+      const post = await this.postRepo.findOne({ where: { slug } });
 
       if (isNil(post)) {
-        this.warn(`文章 #${id} 不存在`);
+        this.warn(`文章 slug "${slug}" 不存在`);
         throw new BusinessException('文章不存在');
       }
 
       // 检查文章是否有评论（通过 CommentService 检查）
-      const commentCount = await this.commentService.countByPostId(id);
+      const commentCount = await this.commentService.countByPostId(post.id);
 
       if (commentCount > 0) {
-        this.warn(`文章 #${id} 存在 ${commentCount} 条评论，无法删除`);
+        this.warn(
+          `文章 slug "${slug}" (ID: ${post.id}) 存在 ${commentCount} 条评论，无法删除`,
+        );
         throw new BusinessException(
           `该文章存在 ${commentCount} 条评论，无法删除`,
         );
@@ -340,7 +377,7 @@ export class PostService {
 
       // 删除文章
       await this.postRepo.remove(post);
-      this.log(`文章 #${id} 删除成功`);
+      this.log(`文章删除成功，slug: ${slug}，ID: ${post.id}`);
     } catch (error) {
       if (error instanceof BusinessException) {
         throw error;

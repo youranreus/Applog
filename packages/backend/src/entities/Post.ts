@@ -13,6 +13,7 @@ import { CommentEntity } from './Comment';
 
 export interface PostExportData {
   id: number;
+  slug: string;
   title: string;
   content: string;
   summary?: string;
@@ -37,6 +38,14 @@ export interface PostExportData {
 export class PostEntity {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column({
+    nullable: false,
+    type: 'varchar',
+    length: 255,
+    unique: true,
+  })
+  slug: string;
 
   @Column({
     nullable: false,
@@ -117,6 +126,7 @@ export class PostEntity {
   public getData(includeAuthor = false): PostExportData {
     const data: PostExportData = {
       id: this.id,
+      slug: this.slug,
       title: this.title,
       content: this.content,
       summary: this.summary,

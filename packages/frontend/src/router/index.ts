@@ -23,7 +23,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/post/PostList.vue'),
       },
       {
-        path: ':id',
+        path: ':slug',
         name: ROUTE_NAMES.POST_DETAIL,
         component: () => import('@/pages/post/PostDetail.vue'),
         props: true,
@@ -88,7 +88,7 @@ const routes: RouteRecordRaw[] = [
             meta: ROUTE_PERMISSIONS[ROUTE_NAMES.USER_POST_CREATE],
           },
           {
-            path: 'edit/:id',
+            path: 'edit/:slug',
             name: ROUTE_NAMES.USER_POST_EDIT,
             component: () => import('@/pages/user/PostEdit/PostEdit.vue'),
             props: true,

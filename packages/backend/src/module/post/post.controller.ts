@@ -37,12 +37,12 @@ export class PostController {
 
   /**
    * 获取文章详情
-   * @param id 文章ID
+   * @param slug 文章 slug
    * @returns 文章详细信息（包含完整内容）
    */
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<IPostResponseDto> {
-    return this.postService.findOne(Number(id));
+  @Get(':slug')
+  async findOne(@Param('slug') slug: string): Promise<IPostResponseDto> {
+    return this.postService.findOne(slug);
   }
 
   /**
@@ -62,28 +62,28 @@ export class PostController {
 
   /**
    * 更新文章（局部更新）
-   * @param id 文章ID
+   * @param slug 文章 slug
    * @param updateDto 更新数据
    * @returns 更新后的文章信息
    */
-  @Patch(':id')
+  @Patch(':slug')
   @AuthRoles('admin')
   async update(
-    @Param('id') id: string,
+    @Param('slug') slug: string,
     @Body() updateDto: UpdatePostDto,
   ): Promise<IPostResponseDto> {
-    return this.postService.update(Number(id), updateDto);
+    return this.postService.update(slug, updateDto);
   }
 
   /**
    * 删除文章
-   * @param id 文章ID
+   * @param slug 文章 slug
    * @returns 删除成功的消息
    */
-  @Delete(':id')
+  @Delete(':slug')
   @AuthRoles('admin')
-  async remove(@Param('id') id: string): Promise<{ message: string }> {
-    await this.postService.remove(Number(id));
+  async remove(@Param('slug') slug: string): Promise<{ message: string }> {
+    await this.postService.remove(slug);
     return { message: '文章删除成功' };
   }
 }

@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsArray,
   IsObject,
+  Matches,
 } from 'class-validator';
 
 /**
@@ -17,6 +18,14 @@ type PostStatus = 'draft' | 'published' | 'archived';
  * 创建文章 DTO
  */
 export class CreatePostDto {
+  @IsString()
+  @IsNotEmpty({ message: 'slug 不能为空' })
+  @MaxLength(255, { message: 'slug 最多 255 个字符' })
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'slug 只能包含小写字母、数字和连字符',
+  })
+  slug: string;
+
   @IsString()
   @IsNotEmpty({ message: '文章标题不能为空' })
   @MaxLength(255, { message: '文章标题最多 255 个字符' })

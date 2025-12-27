@@ -4,6 +4,7 @@
  */
 export interface IPostListItemDto {
   id: number;
+  slug: string;
   title: string;
   summary?: string;
   cover?: string;

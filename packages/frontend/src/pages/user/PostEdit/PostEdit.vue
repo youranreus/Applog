@@ -27,12 +27,12 @@ const isEditMode = computed(() => {
 });
 
 /**
- * 文章 ID（从路由参数获取）
- * 仅在编辑模式下获取 id
+ * 文章 slug（从路由参数获取）
+ * 仅在编辑模式下获取 slug
  */
-const postId = computed(() => {
+const postSlug = computed(() => {
   if (isEditMode.value) {
-    return String(route.params.id || '');
+    return String(route.params.slug || '');
   }
   return '';
 });
@@ -55,7 +55,7 @@ const {
   handleSave,
 } = usePostEdit({
   isEditMode,
-  postId,
+  postSlug,
 });
 
 /**
@@ -145,6 +145,21 @@ const formatDate = (date: Date | string): string => {
         <div class="edit-main">
           <!-- 标题编辑 -->
           <div outline class="mb-4">
+            <div class="mb-4">
+              <h3 class="block text-lg font-medium text-gray-900 mb-2">
+                Slug
+              </h3>
+              <Input
+                v-model="formData.slug"
+                type="text"
+                placeholder="请输入文章 slug（只能包含小写字母、数字和连字符）"
+                :validation-status="saveError ? 'error' : 'normal'"
+                :validation-message="saveError || ''"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                文章的 URL 友好标识符，只能包含小写字母、数字和连字符
+              </p>
+            </div>
             <div class="mb-4">
               <h3 class="block text-lg font-medium text-gray-900 mb-2">
                 文章标题

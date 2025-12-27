@@ -9,12 +9,12 @@ const { posts, pagination, loading, handlePageChange, formatDate } = usePostList
 
 /**
  * 跳转到文章详情页
- * @param postId - 文章 ID
+ * @param slug - 文章 slug
  */
-function goToPostDetail(postId: number): void {
+function goToPostDetail(slug: string): void {
   router.push({
     name: ROUTE_NAMES.POST_DETAIL,
-    params: { id: postId },
+    params: { slug },
   });
 }
 </script>
@@ -32,7 +32,7 @@ function goToPostDetail(postId: number): void {
         v-for="post in posts"
         :key="post.id"
         class="post-item py-3 px-3 sm:py-4 sm:px-4 cursor-pointer transition-colors relative"
-        @click="goToPostDetail(post.id)"
+        @click="goToPostDetail(post.slug)"
       >
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 relative">
           <!-- 左侧：标题 -->

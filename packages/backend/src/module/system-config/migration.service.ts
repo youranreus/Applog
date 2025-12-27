@@ -221,7 +221,7 @@ export class MigrationService {
    * 2. 为每篇文章映射作者（根据邮箱匹配）
    * 3. 转换状态和时间戳
    * 4. 应用自定义字段映射规则（如果配置了）
-   * 5. 将 slug 存入 extra 字段
+   * 5. 将 Typecho 的 slug 映射到 Post 的 slug 字段（如果为空则从标题生成，确保唯一性）
    * 6. 批量插入数据库
    */
   private async importPosts(
@@ -298,9 +298,52 @@ export class MigrationService {
                 );
               }
 
-              // 构建 extra 对象，包含 slug
+              // 处理 slug：从 Typecho 的 slug 映射到 Post 的 slug 字段
+              let slug = rawPost.slug || '';
+              if (!slug) {
+                // 如果 slug 为空，从标题生成
+                slug = this.generateSlugFromTitle(rawPost.title || '无标题');
+              } else {
+                // 确保 slug 符合格式要求（只包含小写字母、数字和连字符）
+                slug = slug
+                  .toLowerCase()
+                  .replace(/[^a-z0-9-]/g, '') // 移除不符合要求的字符
+                  .replace(/-+/g, '-') // 多个连字符合并为一个
+                  .replace(/^-|-$/g, '') // 移除开头和结尾的连字符
+                  .trim();
+
+                // 如果处理后为空，从标题生成
+                if (!slug) {
+                  slug = this.generateSlugFromTitle(rawPost.title || '无标题');
+                }
+              }
+
+              // 检查 slug 是否已存在，如果存在则添加后缀
+              let finalSlug = slug;
+              let suffix = 1;
+              while (true) {
+                const existingPost = await this.postRepo.findOne({
+                  where: { slug: finalSlug },
+                });
+                if (!existingPost) {
+                  break;
+                }
+                finalSlug = `${slug}-${suffix}`;
+                suffix++;
+              }
+
+              // 如果最终 slug 与原始不同，记录日志
+              if (finalSlug !== slug) {
+                this.log(
+                  `文章 cid=${rawPost.cid}: slug "${slug}" 已存在，使用 "${finalSlug}"`,
+                );
+              }
+
+              // 将 slug 添加到 postData
+              postData.slug = finalSlug;
+
+              // 构建 extra 对象（不再包含 slug）
               const extra: Record<string, any> = {
-                slug: rawPost.slug || '',
                 migratedFrom: 'typecho',
                 originalId: rawPost.cid,
               };

@@ -1,7 +1,7 @@
 import { ref, computed, watch, type Ref, type ComputedRef, unref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useRequest } from 'alova/client';
-import { getPostById } from '@/api/post/getPostById';
+import { getPostBySlug } from '@/api/post/getPostById';
 import { createPost } from '@/api/post/createPost';
 import { updatePost } from '@/api/post/updatePost';
 import type { IPostDetail, ICreatePostDto, IUpdatePostDto } from '@/types/post';
@@ -14,8 +14,8 @@ import { useLayoutStore } from '@/stores/useLayoutStore';
 interface IUsePostEditOptions {
   /** 是否为编辑模式（可以是响应式引用） */
   isEditMode: boolean | Ref<boolean> | ComputedRef<boolean>;
-  /** 文章 ID（编辑模式时使用，可以是响应式引用） */
-  postId?: string | Ref<string> | ComputedRef<string>;
+  /** 文章 slug（编辑模式时使用，可以是响应式引用） */
+  postSlug?: string | Ref<string> | ComputedRef<string>;
 }
 
 /**
@@ -26,7 +26,7 @@ interface IUsePostEditOptions {
  * 
  * 逻辑说明：
  * 1. 通过传入的 isEditMode 判断是创建模式还是编辑模式
- * 2. 编辑模式：先通过 id 获取文章详情，初始化表单数据
+ * 2. 编辑模式：先通过 slug 获取文章详情，初始化表单数据
  * 3. 创建模式：使用默认值初始化表单数据
  * 4. 提供保存方法，根据模式调用不同的 API
  * 5. 保存成功后跳转到文章列表
@@ -50,16 +50,17 @@ export function usePostEdit(options: IUsePostEditOptions) {
   });
 
   /**
-   * 文章 ID（响应式）
+   * 文章 slug（响应式）
    */
-  const postId = computed(() => {
-    return unref(options.postId);
+  const postSlug = computed(() => {
+    return unref(options.postSlug);
   });
 
   /**
    * 表单数据（响应式）
    */
   const formData = ref<ICreatePostDto>({
+    slug: '',
     title: '',
     content: '',
     summary: '',
@@ -70,13 +71,13 @@ export function usePostEdit(options: IUsePostEditOptions) {
   });
 
   /**
-   * 当前编辑的文章 ID（编辑模式时使用）
+   * 当前编辑的文章 slug（编辑模式时使用）
    */
-  const currentPostId = ref<number | null>(null);
+  const currentPostSlug = ref<string | null>(null);
 
   /**
    * 使用 useRequest 获取文章详情（编辑模式）
-   * 当 isEditMode 为 true 且 postId 存在时，自动获取文章详情
+   * 当 isEditMode 为 true 且 postSlug 存在时，自动获取文章详情
    */
   const {
     loading: loadingPostDetail,
@@ -84,18 +85,14 @@ export function usePostEdit(options: IUsePostEditOptions) {
     error: postDetailError,
   } = useRequest(
     () => {
-      const idValue = postId.value;
-      if (!idValue) {
-        throw new Error('文章 ID 无效');
+      const slugValue = postSlug.value;
+      if (!slugValue || typeof slugValue !== 'string' || slugValue.trim() === '') {
+        throw new Error('文章 slug 无效');
       }
-      const id = Number(idValue);
-      if (isNaN(id) || id <= 0) {
-        throw new Error('文章 ID 无效');
-      }
-      return getPostById(id);
+      return getPostBySlug(slugValue);
     },
     {
-      immediate: isEditMode.value && !!postId.value,
+      immediate: isEditMode.value && !!postSlug.value,
     }
   );
 
@@ -107,8 +104,9 @@ export function usePostEdit(options: IUsePostEditOptions) {
     () => postDetail.value,
     (detail) => {
       if (detail) {
-        currentPostId.value = detail.id;
+        currentPostSlug.value = detail.slug;
         formData.value = {
+          slug: detail.slug,
           title: detail.title,
           content: detail.content,
           summary: detail.summary || '',
@@ -147,11 +145,12 @@ export function usePostEdit(options: IUsePostEditOptions) {
     send: updatePostRequest,
   } = useRequest(
     () => {
-      if (!currentPostId.value) {
-        throw new Error('文章 ID 不存在');
+      if (!currentPostSlug.value) {
+        throw new Error('文章 slug 不存在');
       }
       // 构建更新数据，只包含修改的字段
       const updateDto: IUpdatePostDto = {
+        slug: formData.value.slug,
         title: formData.value.title,
         content: formData.value.content,
         summary: formData.value.summary,
@@ -160,7 +159,7 @@ export function usePostEdit(options: IUsePostEditOptions) {
         tags: formData.value.tags,
         extra: formData.value.extra,
       };
-      return updatePost(currentPostId.value, updateDto);
+      return updatePost(currentPostSlug.value, updateDto);
     },
     {
       immediate: false,
@@ -207,8 +206,8 @@ export function usePostEdit(options: IUsePostEditOptions) {
       
       if (isEditMode.value) {
         // 编辑模式：更新文章
-        if (!currentPostId.value) {
-          const errorMsg = '文章 ID 不存在，无法更新';
+        if (!currentPostSlug.value) {
+          const errorMsg = '文章 slug 不存在，无法更新';
           onError?.(errorMsg);
           throw new Error(errorMsg);
         }

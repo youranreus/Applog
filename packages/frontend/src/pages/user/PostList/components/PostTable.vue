@@ -75,12 +75,12 @@ function getStatusText(status: 'draft' | 'published' | 'archived'): string {
 
 /**
  * 跳转到编辑页面
- * @param id - 文章 ID
+ * @param slug - 文章 slug
  */
-function handleRowClick(id: number): void {
+function handleRowClick(slug: string): void {
   router.push({
     name: ROUTE_NAMES.USER_POST_EDIT,
-    params: { id: id.toString() },
+    params: { slug },
   });
 }
 </script>
@@ -110,7 +110,7 @@ function handleRowClick(id: number): void {
             v-for="post in posts"
             :key="post.id"
             class="table-row"
-            @click="handleRowClick(post.id)"
+            @click="handleRowClick(post.slug)"
           >
             <td class="table-cell table-cell-title">
               <div class="cell-title-wrapper">

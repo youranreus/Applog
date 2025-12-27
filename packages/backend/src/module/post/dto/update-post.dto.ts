@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsArray,
   IsObject,
+  Matches,
 } from 'class-validator';
 
 /**
@@ -16,6 +17,14 @@ type PostStatus = 'draft' | 'published' | 'archived';
  * 更新文章 DTO（所有字段都是可选的，支持局部更新）
  */
 export class UpdatePostDto {
+  @IsString()
+  @IsOptional()
+  @MaxLength(255, { message: 'slug 最多 255 个字符' })
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'slug 只能包含小写字母、数字和连字符',
+  })
+  slug?: string;
+
   @IsString()
   @IsOptional()
   @MaxLength(255, { message: '文章标题最多 255 个字符' })

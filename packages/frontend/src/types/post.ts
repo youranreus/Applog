@@ -4,6 +4,7 @@
  */
 export interface IPostListItem {
   id: number;
+  slug: string;
   title: string;
   summary?: string;
   cover?: string;
@@ -71,6 +72,8 @@ export type PostStatus = 'draft' | 'published' | 'archived';
 export interface IPostDetail {
   /** 文章 ID */
   id: number;
+  /** 文章 slug */
+  slug: string;
   /** 文章标题 */
   title: string;
   /** 文章内容 */
@@ -106,6 +109,8 @@ export interface IPostDetail {
  * 对应后端的 CreatePostDto
  */
 export interface ICreatePostDto {
+  /** 文章 slug */
+  slug: string;
   /** 文章标题 */
   title: string;
   /** 文章内容 */
@@ -127,6 +132,8 @@ export interface ICreatePostDto {
  * 对应后端的 UpdatePostDto
  */
 export interface IUpdatePostDto {
+  /** 文章 slug */
+  slug?: string;
   /** 文章标题 */
   title?: string;
   /** 文章内容 */
