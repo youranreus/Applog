@@ -194,6 +194,81 @@ export class TypechoAdapter implements IMigrationAdapter {
   }
 
   /**
+   * 获取文章的分类和标签
+   * @param cids 文章 cid 列表
+   * @returns Promise<Map<number, string[]>>
+   *          key: 文章 cid，value: 该文章的分类和标签名称数组
+   *
+   * 逻辑说明：
+   * 1. 通过 relationships 表关联 metas 表
+   * 2. 筛选 type 为 category 或 tag 的元数据
+   * 3. 按 cid 分组，返回每篇文章的分类和标签名称列表
+   */
+  async fetchTagsAndCategories(cids: number[]): Promise<Map<number, string[]>> {
+    if (!this.connection || !this.connection.isInitialized) {
+      throw new Error('数据库连接未初始化');
+    }
+
+    if (cids.length === 0) {
+      return new Map();
+    }
+
+    try {
+      const tablePrefix = this.config?.tablePrefix || 'typecho_';
+      const relationshipsTable = `${tablePrefix}relationships`;
+      const metasTable = `${tablePrefix}metas`;
+
+      this.log(`开始获取 Typecho 分类和标签数据，文章数量: ${cids.length}`);
+
+      // 构建 IN 查询（直接拼接数字，因为 cids 都是数字，不会有 SQL 注入风险）
+      const cidsStr = cids.join(',');
+
+      // 查询分类和标签数据
+      const query = `
+        SELECT 
+          r.cid,
+          m.name,
+          m.type
+        FROM \`${relationshipsTable}\` r
+        INNER JOIN \`${metasTable}\` m ON r.mid = m.mid
+        WHERE r.cid IN (${cidsStr})
+          AND m.type IN ('category', 'tag')
+        ORDER BY r.cid, m.type, m.name
+      `;
+
+      const results: Array<{ cid: number; name: string; type: string }> =
+        await this.connection.query(query);
+
+      this.log(`成功获取 ${results.length} 条分类和标签数据`);
+
+      // 按 cid 分组，构建 Map
+      const tagsMap = new Map<number, string[]>();
+
+      for (const row of results) {
+        if (!tagsMap.has(row.cid)) {
+          tagsMap.set(row.cid, []);
+        }
+        tagsMap.get(row.cid)!.push(row.name);
+      }
+
+      this.log(`成功构建 ${tagsMap.size} 篇文章的分类和标签映射`);
+
+      return tagsMap;
+    } catch (error) {
+      this.error(`获取分类和标签数据失败: ${error.message}`);
+      // 如果表不存在，返回空 Map，不中断迁移流程
+      if (
+        error.message.includes("doesn't exist") ||
+        error.message.includes('Unknown table')
+      ) {
+        this.warn('metas 或 relationships 表不存在，跳过分类和标签获取');
+        return new Map();
+      }
+      throw new Error(`获取分类和标签数据失败: ${error.message}`);
+    }
+  }
+
+  /**
    * 获取所有文章数据
    * @returns Promise<IRawPost[]> 原始文章数据列表
    *
@@ -257,16 +332,27 @@ export class TypechoAdapter implements IMigrationAdapter {
         const cids = posts.map((post) => post.cid);
         const fieldsMap = await this.fetchFields(cids);
 
-        // 将自定义字段附加到每篇文章
+        // 获取分类和标签数据
+        const tagsMap = await this.fetchTagsAndCategories(cids);
+
+        // 将自定义字段和标签附加到每篇文章
         for (const post of posts) {
           const customFields = fieldsMap.get(post.cid);
           if (customFields && Object.keys(customFields).length > 0) {
             post.customFields = customFields;
           }
+
+          // 附加分类和标签
+          const tags = tagsMap.get(post.cid);
+          if (tags && tags.length > 0) {
+            post.tags = tags;
+          }
         }
 
         const postsWithFields = posts.filter((post) => post.customFields);
+        const postsWithTags = posts.filter((post) => post.tags);
         this.log(`其中 ${postsWithFields.length} 篇文章包含自定义字段`);
+        this.log(`其中 ${postsWithTags.length} 篇文章包含分类或标签`);
       }
 
       return posts;

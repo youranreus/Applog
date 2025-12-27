@@ -173,6 +173,7 @@ export class MigrationService {
    * 逻辑说明：
    * 1. 使用事务确保原子性
    * 2. 使用 QueryBuilder 删除所有文章和页面数据（delete 方法不允许空条件 {}）
+   * 3. 重置自增索引，使导入的数据 ID 从 1 开始
    */
   private async clearExistingData(): Promise<void> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -193,8 +194,12 @@ export class MigrationService {
         .from(PageEntity)
         .execute();
 
+      // 重置自增索引，使导入的 ID 从 1 开始
+      await queryRunner.query('ALTER TABLE posts AUTO_INCREMENT = 1');
+      await queryRunner.query('ALTER TABLE pages AUTO_INCREMENT = 1');
+
       await queryRunner.commitTransaction();
-      this.log('已清空现有数据');
+      this.log('已清空现有数据并重置索引');
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.error(`清空数据失败: ${error.message}`);
@@ -256,7 +261,7 @@ export class MigrationService {
                 status,
                 authorId,
                 viewCount: 0,
-                tags: [],
+                tags: rawPost.tags || [],
               };
 
               // 如果配置了字段映射，应用映射规则
@@ -284,6 +289,13 @@ export class MigrationService {
                     );
                   }
                 }
+              }
+
+              // 记录 tags 迁移信息
+              if (rawPost.tags && rawPost.tags.length > 0) {
+                this.log(
+                  `文章 cid=${rawPost.cid}: 迁移 ${rawPost.tags.length} 个分类/标签: ${rawPost.tags.join(', ')}`,
+                );
               }
 
               // 构建 extra 对象，包含 slug

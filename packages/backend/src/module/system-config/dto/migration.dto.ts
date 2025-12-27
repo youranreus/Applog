@@ -132,6 +132,11 @@ export interface IRawPost {
    * key: 字段名，value: 字段值（字符串）
    */
   customFields?: Record<string, string>;
+  /**
+   * 文章的分类和标签名称列表
+   * 从 Typecho 的 metas 表中查询得到（type 为 'category' 或 'tag'）
+   */
+  tags?: string[];
 }
 
 /**
