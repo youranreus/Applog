@@ -108,7 +108,7 @@ function handlePageClick(page: number): void {
       v-for="page in visiblePages"
       :key="page"
       :class="[
-        'px-3 py-1 rounded transition-colors min-w-[2.5rem]',
+        'px-3 py-1 rounded transition-colors min-w-[2.5rem] cursor-pointer',
         page === currentPage
           ? 'bg-gray-900 text-white font-medium'
           : 'text-gray-700 hover:bg-gray-100',

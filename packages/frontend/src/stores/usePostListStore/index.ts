@@ -81,6 +81,7 @@ export const usePostListStore = defineStore('postList', () => {
       ...queryParams.value,
       page,
     };
+    refresh();
   }
 
   /**
@@ -96,6 +97,7 @@ export const usePostListStore = defineStore('postList', () => {
       limit,
       page: 1, // 切换每页数量时重置到第一页
     };
+    refresh();
   }
 
   /**
@@ -108,6 +110,7 @@ export const usePostListStore = defineStore('postList', () => {
       keyword: keyword || undefined,
       page: 1, // 搜索时重置到第一页
     };
+    refresh();
   }
 
   /**
@@ -120,6 +123,7 @@ export const usePostListStore = defineStore('postList', () => {
       tags: tags.length > 0 ? tags : undefined,
       page: 1, // 筛选时重置到第一页
     };
+    refresh();
   }
 
   /**
@@ -131,6 +135,7 @@ export const usePostListStore = defineStore('postList', () => {
       page: 1,
       limit: 10,
     };
+    refresh();
   }
 
   return {
