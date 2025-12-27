@@ -31,13 +31,13 @@ function goToPostDetail(slug: string): void {
       <article
         v-for="post in posts"
         :key="post.id"
-        class="post-item py-3 px-3 sm:py-4 sm:px-4 cursor-pointer transition-colors relative"
+        class="post-item group/article"
         @click="goToPostDetail(post.slug)"
       >
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 relative">
           <!-- 左侧：标题 -->
-          <div class="flex-1 min-w-0 relative z-10">
-            <h2 class="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+          <div class="flex-1 min-w-0 relative z-10 transition-all group-hover/article:text-blue-500">
+            <h2 class="text-base sm:text-lg font-bold leading-snug">
               {{ post.title }}
             </h2>
           </div>
@@ -83,11 +83,11 @@ function goToPostDetail(slug: string): void {
 }
 
 .post-list {
-  margin-top: 0;
+  @apply mt-0 flex flex-col gap-8;
 }
 
 .post-item {
-  position: relative;
+  @apply cursor-pointer relative;
 }
 </style>
 
