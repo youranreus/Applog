@@ -231,6 +231,9 @@ importers:
       unified:
         specifier: ^11.0.5
         version: 11.0.5
+      unist-util-visit:
+        specifier: ^5.0.0
+        version: 5.0.0
       vue:
         specifier: ^3.5.22
         version: 3.5.22(typescript@5.9.2)
@@ -244,6 +247,9 @@ importers:
       '@tsconfig/node22':
         specifier: ^22.0.2
         version: 22.0.2
+      '@types/hast':
+        specifier: ^3.0.4
+        version: 3.0.4
       '@types/node':
         specifier: ^22.18.11
         version: 22.18.13

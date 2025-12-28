@@ -44,12 +44,14 @@
     "tailwindcss": "^4.1.16",
     "tailwindcss-animate": "^1.0.7",
     "unified": "^11.0.5",
+    "unist-util-visit": "^5.0.0",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
     "@prettier/plugin-oxc": "^0.0.4",
     "@tsconfig/node22": "^22.0.2",
+    "@types/hast": "^3.0.4",
     "@types/node": "^22.18.11",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/eslint-config-prettier": "^10.2.0",
