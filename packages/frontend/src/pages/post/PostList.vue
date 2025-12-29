@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router';
 import { usePostList } from './hooks/usePostList';
 import Pagination from '@/components/ui/pagination/index.vue';
+import Loading from '@/components/ui/loading/index.vue';
 import { ROUTE_NAMES } from '@/constants/permission';
 
 const router = useRouter();
@@ -23,7 +24,7 @@ function goToPostDetail(slug: string): void {
   <div class="post-list-page common-page-container">
     <!-- 加载状态 -->
     <div v-if="loading" class="flex justify-center items-center py-8 sm:py-12">
-      <p class="text-sm sm:text-base text-gray-600">加载中...</p>
+      <Loading />
     </div>
 
     <!-- 文章列表 -->

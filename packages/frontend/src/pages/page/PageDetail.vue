@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router';
 import { computed } from 'vue';
 import { usePageDetail } from '@/hooks/usePageDetail';
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue';
+import Loading from '@/components/ui/loading/index.vue';
 
 const route = useRoute();
 
@@ -36,7 +37,7 @@ const formatDate = (date: Date | string): string => {
     <!-- 加载状态 -->
     <template v-if="loading">
       <div class="text-center text-gray-600 py-12">
-        <p>加载中...</p>
+        <Loading />
       </div>
     </template>
 

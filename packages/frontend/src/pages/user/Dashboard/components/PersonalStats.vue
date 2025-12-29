@@ -2,6 +2,7 @@
 import { kCard } from 'konsta/vue';
 import { useRequest } from 'alova/client';
 import { getUserOverview } from '@/api/user';
+import Loading from '@/components/ui/loading/index.vue';
 /**
  * 使用 alova 的 useRequest 获取用户创作概览信息
  * 接口路径: GET /user/overview
@@ -27,7 +28,7 @@ const {
 
     <!-- 加载中 -->
     <div v-if="loading" class="text-center text-gray-600 py-12">
-      <p>加载中...</p>
+      <Loading />
     </div>
 
     <!-- 错误状态 -->

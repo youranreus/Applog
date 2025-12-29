@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import type { IPostListItem } from '@/types/post';
+import Loading from '@/components/ui/loading/index.vue';
 import { ROUTE_NAMES } from '@/constants/permission';
 
 /**
@@ -89,7 +90,7 @@ function handleRowClick(slug: string): void {
   <div class="post-table">
     <!-- 加载状态 -->
     <div v-if="loading" class="table-loading">
-      <p class="loading-text">加载中...</p>
+      <Loading :size="48" />
     </div>
 
     <!-- 表格内容 -->

@@ -10,6 +10,7 @@ import Button from '@/components/ui/button/index.vue';
 import Card from '@/components/ui/card/index.vue';
 import Select from '@/components/ui/select/index.vue';
 import MarkdownEditor from '@/components/ui/markdown-editor/MarkdownEditor.vue';
+import Loading from '@/components/ui/loading/index.vue';
 import type { PageStatus } from '@/types/page';
 
 /**
@@ -112,7 +113,7 @@ const formatDate = (date: Date | string): string => {
   <div class="page-edit-page common-page-container">
     <!-- 加载页面详情状态 -->
     <div v-if="isEditMode && loadingPageDetail" class="text-center text-gray-600 py-12">
-      <p>加载中...</p>
+      <Loading />
     </div>
 
     <!-- 页面详情加载错误 -->

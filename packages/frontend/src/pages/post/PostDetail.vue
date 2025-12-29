@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router';
 import { usePostDetail } from './hooks/usePostDetail';
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue';
+import Loading from '@/components/ui/loading/index.vue';
 import { kButton, kChip } from 'konsta/vue';
 
 const router = useRouter();
@@ -12,7 +13,7 @@ const { post, loading, error, formatDate } = usePostDetail();
   <div class="post-detail-page common-page-container">
     <!-- 加载状态 -->
     <div v-if="loading" class="flex justify-center items-center py-8 sm:py-12">
-      <p class="text-sm sm:text-base text-gray-600">加载中...</p>
+      <Loading />
     </div>
 
     <!-- 错误状态 -->
