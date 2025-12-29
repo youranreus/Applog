@@ -11,6 +11,7 @@ import type {
   IPostResponseDto,
   QueryPostDto,
   IPostListItemDto,
+  IPostBasicInfoDto,
 } from './dto';
 import { isNil } from 'lodash';
 import {
@@ -226,6 +227,47 @@ export class PostService {
       }
       this.error(`查询文章详情失败: ${error.message}`);
       throw new BusinessException('查询文章详情失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 获取文章基础信息（轻量级，仅包含标题和发布日期）
+   * 用于 BBCode article 标签展示
+   * @param slug 文章 slug
+   * @returns 文章基础信息
+   *
+   * 逻辑说明：
+   * 1. 通过 slug 查询文章，只查询必要字段（slug、title、createdAt）
+   * 2. 文章不存在时抛出 BusinessException
+   * 3. 返回基础信息对象
+   */
+  async findBasicInfo(slug: string): Promise<IPostBasicInfoDto> {
+    this.log(`查询文章基础信息，slug: ${slug}`);
+
+    try {
+      // 查询文章，只选择必要字段
+      const post = await this.postRepo.findOne({
+        where: { slug },
+        select: ['slug', 'title', 'createdAt'],
+      });
+
+      if (isNil(post)) {
+        this.warn(`文章 slug "${slug}" 不存在`);
+        throw new BusinessException('文章不存在');
+      }
+
+      this.log(`成功获取文章基础信息，slug: ${slug}`);
+      return {
+        slug: post.slug,
+        title: post.title,
+        createdAt: post.createdAt,
+      };
+    } catch (error) {
+      if (error instanceof BusinessException) {
+        throw error;
+      }
+      this.error(`查询文章基础信息失败: ${error.message}`);
+      throw new BusinessException('查询文章基础信息失败，请稍后重试');
     }
   }
 

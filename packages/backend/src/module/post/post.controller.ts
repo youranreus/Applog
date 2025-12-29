@@ -13,7 +13,11 @@ import { PostService } from './post.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
 import { CreatePostDto, UpdatePostDto, QueryPostDto } from './dto';
-import type { IPostResponseDto, IPostListItemDto } from './dto';
+import type {
+  IPostResponseDto,
+  IPostListItemDto,
+  IPostBasicInfoDto,
+} from './dto';
 import type { Pagination } from 'nestjs-typeorm-paginate';
 
 @Controller({
@@ -33,6 +37,18 @@ export class PostController {
     @Query() queryDto: QueryPostDto,
   ): Promise<Pagination<IPostListItemDto>> {
     return this.postService.findAll(queryDto);
+  }
+
+  /**
+   * 获取文章基础信息（用于 BBCode article 标签）
+   * @param slug 文章 slug
+   * @returns 文章基础信息（标题、发布日期）
+   *
+   * 注意：此路由必须放在 GET :slug 之前，否则会被拦截
+   */
+  @Get(':slug/basic')
+  async findBasicInfo(@Param('slug') slug: string): Promise<IPostBasicInfoDto> {
+    return this.postService.findBasicInfo(slug);
   }
 
   /**

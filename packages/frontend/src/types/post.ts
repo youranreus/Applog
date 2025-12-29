@@ -150,3 +150,15 @@ export interface IUpdatePostDto {
   extra?: Record<string, unknown>;
 }
 
+/**
+ * 文章基础信息（用于 BBCode article 标签）
+ * 对应后端的 IPostBasicInfoDto
+ */
+export interface IPostBasicInfo {
+  /** 文章 slug */
+  slug: string;
+  /** 文章标题 */
+  title: string;
+  /** 发布日期 */
+  createdAt: string;
+}
