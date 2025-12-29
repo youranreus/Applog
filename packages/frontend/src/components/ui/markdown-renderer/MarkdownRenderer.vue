@@ -23,6 +23,10 @@ const renderedHtml = ref<string>('');
 
 /**
  * 更新渲染内容
+ *
+ * 逻辑说明：
+ * 1. 处理 markdown 内容并渲染为 HTML
+ * 2. 更新渲染后的 HTML 内容
  */
 const updateContent = async () => {
   if (props.content) {

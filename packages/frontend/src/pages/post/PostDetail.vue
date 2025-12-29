@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { usePostDetail } from './hooks/usePostDetail';
-import MarkdownRenderer from '@/components/ui/markdown-renderer/MarkdownRenderer.vue';
+import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue';
 import { kButton, kChip } from 'konsta/vue';
 
 const router = useRouter();
@@ -70,7 +70,7 @@ const { post, loading, error, formatDate } = usePostDetail();
 
       <!-- 文章内容 -->
       <div class="post-content article-content">
-        <MarkdownRenderer :content="post.content" class="markdown-content" />
+        <ArticleRenderer :content="post.content" class="markdown-content" />
       </div>
     </article>
 

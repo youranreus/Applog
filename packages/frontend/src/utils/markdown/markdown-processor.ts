@@ -6,7 +6,6 @@ import remarkRehype from 'remark-rehype';
 import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeStringify from 'rehype-stringify';
-import { rehypeBBCode } from './plugins/remark-bbcode';
 
 /**
  * 创建配置好的 unified markdown 处理器
@@ -19,11 +18,12 @@ import { rehypeBBCode } from './plugins/remark-bbcode';
  *    - remarkGfm: GitHub Flavored Markdown 支持
  *    - remarkBreaks: 支持换行
  *    - remarkRehype: 将 Markdown AST 转换为 HTML AST
- *    - rehypeBBCode: 处理 BBCode 自定义标签（在 HTML AST 阶段）
  *    - rehypeSlug: 为标题添加 id 属性
  *    - rehypeAutolinkHeadings: 为标题自动添加链接
  *    - rehypeStringify: 将 HTML AST 转换为 HTML 字符串
  * 3. 返回配置好的 processor
+ * 
+ * 注意：BBCode 处理已移至 ArticleRenderer 组件，在此不再处理
  */
 function createMarkdownProcessor() {
   return unified()
@@ -35,8 +35,6 @@ function createMarkdownProcessor() {
     .use(remarkBreaks)
     // 将 Markdown AST 转换为 HTML AST
     .use(remarkRehype)
-    // 处理 BBCode 自定义标签（在 HTML AST 阶段处理）
-    .use(rehypeBBCode)
     // 为标题添加 id 属性（用于锚点链接）
     .use(rehypeSlug)
     // 为标题自动添加链接

@@ -1,13 +1,14 @@
-import { registerBBCodeHandler } from './bbcode-registry';
-import { article } from './bbcode/article';
+import { registerBBCodeComponent } from './component-registry';
+import ArticleCard from '@/components/ui/article-card/ArticleCard.vue';
 
 export { processMarkdown } from './markdown-processor';
 export {
-  registerBBCodeHandler,
-  getBBCodeHandler,
-  hasBBCodeHandler,
-  type IBBCodeHandler,
-  type IBBCodeAttrs,
-} from './bbcode-registry';
+  registerBBCodeComponent,
+  getBBCodeComponent,
+  hasBBCodeComponent,
+  type IBBCodeComponentConfig,
+} from './component-registry';
+export { parseContent, type IContentFragment } from './content-parser';
 
-registerBBCodeHandler('art', article);
+// 注册 BBCode 组件
+registerBBCodeComponent('art', ArticleCard);
