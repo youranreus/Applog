@@ -112,7 +112,7 @@ const formatDate = (date: Date | string): string => {
 <template>
   <div class="page-edit-page common-page-container">
     <!-- 加载页面详情状态 -->
-    <div v-if="isEditMode && loadingPageDetail" class="text-center text-gray-600 py-12">
+    <div v-if="isEditMode && loadingPageDetail" class="text-center text-gray-600 py-12 min-h-[400px]">
       <Loading />
     </div>
 

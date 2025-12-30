@@ -36,7 +36,7 @@ const formatDate = (date: Date | string): string => {
   <div class="page-detail-page common-page-container">
     <!-- 加载状态 -->
     <template v-if="loading">
-      <div class="text-center text-gray-600 py-12">
+      <div class="text-center text-gray-600 py-12 min-h-[400px]">
         <Loading />
       </div>
     </template>

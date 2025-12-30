@@ -158,6 +158,7 @@ function handleRowClick(slug: string): void {
 .table-empty {
   padding: 3rem 1.5rem;
   text-align: center;
+  min-height: 400px;
 }
 
 .loading-text,

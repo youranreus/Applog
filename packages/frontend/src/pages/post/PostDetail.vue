@@ -12,7 +12,7 @@ const { post, loading, error, formatDate } = usePostDetail();
 <template>
   <div class="post-detail-page common-page-container">
     <!-- 加载状态 -->
-    <div v-if="loading" class="flex justify-center items-center py-8 sm:py-12">
+    <div v-if="loading" class="flex justify-center items-center py-8 sm:py-12 min-h-[400px]">
       <Loading />
     </div>
 

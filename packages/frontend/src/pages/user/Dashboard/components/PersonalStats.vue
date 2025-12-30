@@ -27,7 +27,7 @@ const {
     </div>
 
     <!-- 加载中 -->
-    <div v-if="loading" class="text-center text-gray-600 py-12">
+    <div v-if="loading" class="text-center text-gray-600 py-12 min-h-[400px]">
       <Loading />
     </div>
 
