@@ -85,6 +85,14 @@
     padding-left: 1.5rem;
   }
 
+  ul {
+    list-style-type: disc;
+  }
+
+  ol {
+    list-style-type: decimal;
+  }
+
   li {
     margin-bottom: 0.75rem;
     line-height: 1.8;
@@ -165,18 +173,8 @@
 
   /* 标题锚点链接样式 */
   .heading-anchor {
-    color: #0071e3;
     text-decoration: none;
     font-weight: normal;
-  }
-
-  h1:hover .heading-anchor,
-  h2:hover .heading-anchor,
-  h3:hover .heading-anchor,
-  h4:hover .heading-anchor,
-  h5:hover .heading-anchor,
-  h6:hover .heading-anchor {
-    opacity: 1;
   }
 
   /* 表格样式 - GFM 支持 */

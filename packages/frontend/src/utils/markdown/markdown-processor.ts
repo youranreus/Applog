@@ -37,13 +37,13 @@ function createMarkdownProcessor() {
     .use(remarkRehype)
     // 为标题添加 id 属性（用于锚点链接）
     .use(rehypeSlug)
-    // 为标题自动添加链接
-    .use(rehypeAutolinkHeadings, {
-      behavior: 'wrap',
-      properties: {
-        className: ['heading-anchor'],
-      },
-    })
+    // // 为标题自动添加链接
+    // .use(rehypeAutolinkHeadings, {
+    //   behavior: 'wrap',
+    //   properties: {
+    //     className: ['heading-anchor'],
+    //   },
+    // })
     // 将 HTML AST 转换为 HTML 字符串
     .use(rehypeStringify);
 }
