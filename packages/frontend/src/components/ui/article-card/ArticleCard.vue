@@ -99,11 +99,11 @@ function handleClick() {
         {{ postInfo.title }}
       </div>
       <div class="flex justify-between items-center text-sm text-gray-500">
+        <span class="article-card-view-count">
+          ID: {{ postInfo.slug }}
+        </span>
         <span class="article-card-date">
           {{ formattedDate }}
-        </span>
-        <span class="article-card-view-count">
-          {{ postInfo.slug }}
         </span>
       </div>
     </div>
