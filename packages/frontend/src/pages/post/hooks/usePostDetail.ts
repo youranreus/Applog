@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { useRequest } from 'alova/client';
+import { useWatcher } from 'alova/client';
 import { getPostBySlug } from '@/api/post/getPostById';
 import type { IPostDetail } from '@/types/post';
 
@@ -40,8 +40,9 @@ export function usePostDetail() {
     data: postDetail,
     error,
     send: refresh,
-  } = useRequest(
+  } = useWatcher(
     () => getPostBySlug(postSlug.value),
+    [postSlug],
     {
       immediate: true, // 立即请求
     },

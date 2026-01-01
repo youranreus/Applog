@@ -81,8 +81,7 @@ function handleClick() {
 
 <template>
   <div
-    class="bbcode-article-card border rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer p-4 bg-white"
-    @click="handleClick"
+    class="flex justify-center items-center w-full py-6"
   >
     <!-- 加载状态 -->
     <div v-if="loading" class="text-center text-gray-500 py-2">
@@ -95,19 +94,22 @@ function handleClick() {
     </div>
 
     <!-- 成功状态 -->
-    <div v-else-if="postInfo" class="space-y-2">
-      <h3 class="font-bold text-base text-gray-900 line-clamp-2">
+    <div v-else-if="postInfo" class="flex flex-col w-[320px] p-4 rounded-2xl bg-[#EFEFEF] gap-y-2 cursor-pointer" @click="handleClick">
+      <div class="article-card-title text-base font-bold text-[#0071e3]">
         {{ postInfo.title }}
-      </h3>
-      <p class="text-xs text-gray-500">
-        {{ formattedDate }}
-      </p>
+      </div>
+      <div class="flex justify-between items-center text-sm text-gray-500">
+        <span class="article-card-date">
+          {{ formattedDate }}
+        </span>
+        <span class="article-card-view-count">
+          {{ postInfo.slug }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.bbcode-article-card {
-  min-height: 60px;
-}
+@reference 'tailwindcss';
 </style>
