@@ -1,5 +1,5 @@
 import type { Component } from 'vue';
-import { getBBCodeComponent } from './component-registry';
+import { getBBCodeComponent, isPassthroughTag } from './component-registry';
 
 /**
  * 内容片段类型
@@ -57,10 +57,13 @@ function parseAttrs(attrsString: string): Record<string, string> {
  * 逻辑说明：
  * 1. 使用正则表达式查找所有 BBCode 标签
  * 2. 对于每个匹配的标签：
- *    - 提取标签名、属性和内容
- *    - 查找对应的注册组件
- *    - 如果找到组件，生成组件片段（props: { content, ...attrs }）
- *    - 如果未找到，保留为 markdown 文本
+ *    - 检查是否为放行标签（通过 isPassthroughTag 判断）
+ *    - 如果是放行标签，跳过处理，保留在 markdown 文本中
+ *    - 如果不是放行标签：
+ *      - 提取标签名、属性和内容
+ *      - 查找对应的注册组件
+ *      - 如果找到组件，生成组件片段（props: { content, ...attrs }）
+ *      - 如果未找到，保留为 markdown 文本
  * 3. 将内容拆分为 markdown 文本片段和组件片段
  * 4. 过滤空 markdown 片段
  * 5. 返回片段数组
@@ -86,6 +89,13 @@ export function parseContent(content: string): IContentFragment[] {
 
     const matchStart = match.index;
     const matchEnd = matchStart + fullMatch.length;
+
+    // 检查是否为放行标签
+    if (isPassthroughTag(tagName)) {
+      // 放行标签不分割，保留在 markdown 文本中
+      // 不更新 lastIndex，让标签包含在后续的 markdown 文本片段中
+      continue;
+    }
 
     // 添加匹配前的 markdown 文本片段
     if (matchStart > lastIndex) {
