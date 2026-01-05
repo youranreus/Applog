@@ -257,6 +257,48 @@
   .footnotes li {
     margin-bottom: 0.5rem;
   }
+
+  .applog-notice,
+  .applog-warn {
+    padding: 10px 15px;
+    border-left-width: 4px;
+    border-left-style: solid;
+    color: rgba(32, 32, 32, 0.6);
+  }
+
+  .applog-notice {
+    border-left-color: #0071e3;
+    background-color: #eef7fc;
+  }
+
+  .applog-warn {
+    border-left-color: #ff3b30;
+    background-color: #fdf2f1;
+  }
+
+  .applog-tag {
+    border-radius: 4px;
+    padding: 2px 4px;
+    border: 1px solid #07f;
+    color: #07f;
+    font-size: 0.875rem;
+    margin: 0 8px;
+
+    &.applog-tag--red {
+      border-color: #ff3b30;
+      color: #ff3b30;
+    }
+
+    &.applog-tag--black {
+      border-color: #000;
+      color: #000;
+    }
+
+    &.applog-tag--yellow {
+      border-color: #ffd166;
+      color: #ffd166;
+    }
+  }
 }
 
 /* 页面信息底部样式 - 模仿 Apple mod-date */

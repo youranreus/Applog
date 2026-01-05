@@ -30,7 +30,7 @@ registerBBCodeComponent('art', ArticleCard);
 registerBBCodeHandler('tag', ({ content, attrs }) => {
   console.log(attrs, content);
   return h('span', { 
-    class: 'applog-tag',
+    class: `applog-tag applog-tag--${attrs.type || 'blue'}`,
   }, content);
 });
 
