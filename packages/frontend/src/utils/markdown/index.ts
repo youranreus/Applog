@@ -3,6 +3,7 @@ import { registerBBCodeHandler } from './bbcode-handler-registry';
 import { h } from 'hastscript';
 import ArticleCard from '@/components/ui/article-card/ArticleCard.vue';
 import BiliVideo from '@/components/ui/bili-video/BiliVideo.vue';
+import Collapse from '@/components/ui/collapse/Collapse.vue';
 
 export { processMarkdown } from './markdown-processor';
 export {
@@ -24,13 +25,13 @@ export { parseContent, type IContentFragment } from './content-parser';
 // 注册 BBCode 组件
 registerBBCodeComponent('art', ArticleCard);
 registerBBCodeComponent('bili', BiliVideo);
+registerBBCodeComponent('collapse', Collapse);
 
 ['tag', 'warn', 'notice'].forEach(tag => {
   registerPassthroughTag(tag);
 });
 
 registerBBCodeHandler('tag', ({ content, attrs }) => {
-  console.log(attrs, content);
   return h('span', { 
     class: `applog-tag applog-tag--${attrs.type || 'blue'}`,
   }, content);
