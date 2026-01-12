@@ -2,6 +2,7 @@ import { registerBBCodeComponent, registerPassthroughTag } from './component-reg
 import { registerBBCodeHandler } from './bbcode-handler-registry';
 import { h } from 'hastscript';
 import ArticleCard from '@/components/ui/article-card/ArticleCard.vue';
+import BiliVideo from '@/components/ui/bili-video/BiliVideo.vue';
 
 export { processMarkdown } from './markdown-processor';
 export {
@@ -22,6 +23,7 @@ export { parseContent, type IContentFragment } from './content-parser';
 
 // 注册 BBCode 组件
 registerBBCodeComponent('art', ArticleCard);
+registerBBCodeComponent('bili', BiliVideo);
 
 ['tag', 'warn', 'notice'].forEach(tag => {
   registerPassthroughTag(tag);
