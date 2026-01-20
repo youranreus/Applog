@@ -4,6 +4,7 @@ import { h } from 'hastscript';
 import ArticleCard from '@/components/ui/article-card/ArticleCard.vue';
 import BiliVideo from '@/components/ui/bili-video/BiliVideo.vue';
 import Collapse from '@/components/ui/collapse/Collapse.vue';
+import Photos from '@/components/ui/photos/index.vue';
 
 export { processMarkdown } from './markdown-processor';
 export {
@@ -26,6 +27,7 @@ export { parseContent, type IContentFragment } from './content-parser';
 registerBBCodeComponent('art', ArticleCard);
 registerBBCodeComponent('bili', BiliVideo);
 registerBBCodeComponent('collapse', Collapse);
+registerBBCodeComponent('photos', Photos);
 
 ['tag', 'warn', 'notice'].forEach(tag => {
   registerPassthroughTag(tag);
