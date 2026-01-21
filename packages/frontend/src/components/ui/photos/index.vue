@@ -28,13 +28,16 @@ onMounted(() => {
       }"
     >
       <div
-        class="photo-wrapper"
+        class="photo-wrapper group"
       >
         <img
           :src="item.url"
           :alt="item.description"
           class="photo-image"
         />
+        <div class="photo-description group-hover:opacity-100 opacity-60 transition-opacity duration-300">
+          {{ item.description }}
+        </div>
       </div>
     </div>
   </div>
@@ -52,10 +55,15 @@ onMounted(() => {
 }
 
 .photo-wrapper {
-  @apply w-full overflow-hidden;
+  @apply w-full overflow-hidden relative;
 }
 
 .photo-image {
   @apply w-full h-full object-cover m-0;
+}
+
+.photo-description {
+  @apply absolute bottom-0 left-0 w-full text-center text-white text-sm p-2;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7);
 }
 </style>
