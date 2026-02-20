@@ -8,6 +8,7 @@ import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeStringify from 'rehype-stringify';
 import { remarkBBCode } from './remark-bbcode-plugin';
+import { remarkMeme } from './remark-meme-plugin';
 
 /**
  * 创建配置好的 unified markdown 处理器
@@ -18,6 +19,7 @@ import { remarkBBCode } from './remark-bbcode-plugin';
  * 2. 依次添加所有插件：
  *    - remarkParse: 解析 Markdown
  *    - remarkBBCode: 处理行内 BBCode 标签
+ *    - remarkMeme: 处理表情标签（@(xx)、::category:name::、#(xx)）
  *    - remarkGfm: GitHub Flavored Markdown 支持
  *    - remarkBreaks: 支持换行
  *    - remarkRehype: 将 Markdown AST 转换为 HTML AST（允许原始 HTML）
@@ -26,14 +28,22 @@ import { remarkBBCode } from './remark-bbcode-plugin';
  *    - rehypeAutolinkHeadings: 为标题自动添加链接
  *    - rehypeStringify: 将 HTML AST 转换为 HTML 字符串
  * 3. 返回配置好的 processor
- * 
+ *
  */
 function createMarkdownProcessor() {
+  const memeOptions = {
+    paopaoBase: import.meta.env.VITE_MEME_PAOPAO_BASE as string | undefined,
+    mirageBase: import.meta.env.VITE_MEME_MIRAGE_BASE as string | undefined,
+    aruCdn: import.meta.env.VITE_MEME_ARU_CDN as string | undefined,
+  };
+
   return unified()
     // 解析 Markdown
     .use(remarkParse)
     // 处理行内 BBCode 标签（在 GFM 之前处理，避免冲突）
     .use(remarkBBCode)
+    // 处理表情标签（在 GFM 之前处理）
+    .use(remarkMeme, memeOptions)
     // GitHub Flavored Markdown 支持（表格、任务列表、删除线等）
     .use(remarkGfm)
     // 支持换行（两个空格或反斜杠换行）
