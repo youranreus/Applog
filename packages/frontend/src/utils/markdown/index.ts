@@ -5,6 +5,7 @@ import ArticleCard from '@/components/ui/article-card/ArticleCard.vue';
 import BiliVideo from '@/components/ui/bili-video/BiliVideo.vue';
 import Collapse from '@/components/ui/collapse/Collapse.vue';
 import Photos from '@/components/ui/photos/index.vue';
+import VideoPlayer from '@/components/ui/video-player/VideoPlayer.vue';
 
 export { processMarkdown } from './markdown-processor';
 export {
@@ -28,6 +29,7 @@ registerBBCodeComponent('art', ArticleCard);
 registerBBCodeComponent('bili', BiliVideo);
 registerBBCodeComponent('collapse', Collapse);
 registerBBCodeComponent('photos', Photos);
+registerBBCodeComponent('dplayer', VideoPlayer);
 
 ['tag', 'warn', 'notice'].forEach(tag => {
   registerPassthroughTag(tag);
