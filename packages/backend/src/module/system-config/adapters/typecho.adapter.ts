@@ -316,7 +316,7 @@ export class TypechoAdapter implements IMigrationAdapter {
       // 转换为 IRawPost 格式
       const posts: IRawPost[] = results.map((row) => ({
         cid: row.cid,
-        title: row.title || '',
+        title: this.decodeHtmlEntities(row.title || ''),
         slug: row.slug || '',
         created: row.created,
         modified: row.modified,
@@ -410,7 +410,7 @@ export class TypechoAdapter implements IMigrationAdapter {
       // 转换为 IRawPage 格式
       const pages: IRawPage[] = results.map((row) => ({
         cid: row.cid,
-        title: row.title || '',
+        title: this.decodeHtmlEntities(row.title || ''),
         slug: row.slug || '',
         created: row.created,
         modified: row.modified,
@@ -461,5 +461,31 @@ export class TypechoAdapter implements IMigrationAdapter {
 
   private error(message: string) {
     this.logger.error(message, TypechoAdapter.name);
+  }
+
+  /**
+   * 将 Typecho 存储的 HTML 实体解码为普通字符
+   * @param text - 可能包含 HTML 实体的字符串（如 &amp;、&lt;、&#59; 等）
+   * @returns 解码后的纯文本
+   *
+   * 逻辑说明：
+   * 1. 先处理数字实体（&#十进制;、&#x十六进制;），避免 &amp; 被先替换导致二次解析错误
+   * 2. 再按顺序替换命名实体（&amp;、&lt;、&gt;、&quot;、&apos;、&#39;、&nbsp;）
+   */
+  private decodeHtmlEntities(text: string): string {
+    return text
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
+        String.fromCharCode(parseInt(hex, 16)),
+      )
+      .replace(/&#([0-9]+);/g, (_, dec) =>
+        String.fromCharCode(parseInt(dec, 10)),
+      )
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
   }
 }
