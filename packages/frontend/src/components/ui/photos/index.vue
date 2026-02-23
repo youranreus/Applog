@@ -47,7 +47,7 @@ onMounted(() => {
 @reference 'tailwindcss';
 
 .photos-container {
-  @apply flex my-4;
+  @apply flex my-4 gap-x-4;
 }
 
 .photo-item {
@@ -55,11 +55,11 @@ onMounted(() => {
 }
 
 .photo-wrapper {
-  @apply w-full overflow-hidden relative;
+  @apply w-full overflow-hidden relative rounded-lg border border-gray-100;
 }
 
 .photo-image {
-  @apply w-full h-full object-cover m-0;
+  @apply w-full h-full object-cover m-0 max-w-[unset];
 }
 
 .photo-description {
