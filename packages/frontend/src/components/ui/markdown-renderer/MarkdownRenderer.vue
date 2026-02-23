@@ -1,47 +1,41 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { processMarkdown } from '@/utils/markdown';
-import type { HTMLAttributes } from 'vue';
+import { ref } from 'vue';
+import { useMarkdownRenderer } from './hooks/useMarkdownRenderer';
+import type { IProps } from './types';
 import 'highlight.js/styles/github-dark.css';
 
-interface Props {
-  /**
-   * Markdown 内容字符串
-   */
-  content: string;
-  /**
-   * 自定义 class 类名
-   */
-  class?: HTMLAttributes['class'];
-}
+defineOptions({
+  name: 'MarkdownRenderer',
+});
 
-const props = defineProps<Props>();
+const props = defineProps<IProps>();
 
-/**
- * 渲染后的 HTML 内容
- */
-const renderedHtml = ref<string>('');
-
-/**
- * 更新渲染内容
- *
- * 逻辑说明：
- * 1. 处理 markdown 内容并渲染为 HTML
- * 2. 更新渲染后的 HTML 内容
- */
-const updateContent = async () => {
-  if (props.content) {
-    renderedHtml.value = await processMarkdown(props.content);
-  } else {
-    renderedHtml.value = '';
-  }
-};
-
-// 监听 content 变化，立即执行一次
-watch(() => props.content, updateContent, { immediate: true });
+const containerRef = ref<HTMLElement | null>(null);
+const { renderedHtml } = useMarkdownRenderer(props, containerRef);
 </script>
 
 <template>
-  <div :class="props.class" v-html="renderedHtml" />
+  <div ref="containerRef" :class="props.class" v-html="renderedHtml" />
 </template>
 
+<style scoped lang="scss">
+:deep(.lazy-image-wrapper) {
+  position: relative;
+  display: block;
+}
+
+:deep(.lazy-image-placeholder) {
+  @apply text-gray-600 text-sm py-4 text-center;
+}
+
+:deep(.lazy-image) {
+  opacity: 0;
+  filter: blur(8px);
+  transition: opacity 0.4s ease, filter 0.5s ease;
+
+  &.loaded {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+</style>
