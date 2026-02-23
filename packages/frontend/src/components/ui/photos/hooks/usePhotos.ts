@@ -1,4 +1,4 @@
-import { ref, readonly } from 'vue';
+import { ref, computed, readonly } from 'vue';
 import type { IProps, IPhotoItem } from '../types';
 import { parsePhotoContent, calculatePhotoStyle } from '../utils';
 import { LAYOUT_BASE } from '../constants';
@@ -19,6 +19,25 @@ export function usePhotos(props: IProps) {
    * 图片项列表
    */
   const photoItems = ref<IPhotoItem[]>([]);
+
+  /**
+   * 已加载完成的图片数量（用于 img @load 计数）
+   */
+  const loadedImageCount = ref<number>(0);
+
+  /**
+   * 图片总数（解析 content 后得到）
+   */
+  const totalImageCount = ref<number>(0);
+
+  /**
+   * 是否所有图片均已预加载完成（通过 new Image() 预加载，图片已进入浏览器缓存）
+   */
+  const allImagesLoaded = computed<boolean>(
+    () =>
+      totalImageCount.value > 0 &&
+      loadedImageCount.value >= totalImageCount.value,
+  );
 
   /**
    * 更新图片项列表
@@ -73,6 +92,13 @@ export function usePhotos(props: IProps) {
         calculatedHeight,
       };
       setPhotoItems(newItems);
+
+      // 预加载完成计数：图片已进入浏览器缓存，可直接渲染
+      loadedImageCount.value += 1;
+    };
+    img.onerror = () => {
+      // 加载失败也计数，避免 allImagesLoaded 永远不触发
+      loadedImageCount.value += 1;
     };
   };
 
@@ -85,6 +111,8 @@ export function usePhotos(props: IProps) {
    */
   const handleAllPhotosLoad = (): void => {
     const items = parseContent();
+    loadedImageCount.value = 0;
+    totalImageCount.value = items.length;
     setPhotoItems(items);
 
     // 为每张图片加载并计算样式
@@ -109,6 +137,7 @@ export function usePhotos(props: IProps) {
   return {
     // 状态（readonly）
     photoItems: readonly(photoItems),
+    allImagesLoaded,
     // 业务逻辑
     handleMounted,
   };
