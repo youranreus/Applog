@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { processMarkdown } from '@/utils/markdown';
 import type { HTMLAttributes } from 'vue';
+import 'highlight.js/styles/github-dark.css';
 
 interface Props {
   /**

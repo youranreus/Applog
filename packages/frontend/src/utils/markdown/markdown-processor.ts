@@ -5,6 +5,7 @@ import remarkBreaks from 'remark-breaks';
 import remarkRehype from 'remark-rehype';
 import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
+import rehypeHighlight from 'rehype-highlight';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeStringify from 'rehype-stringify';
 import { remarkBBCode } from './remark-bbcode-plugin';
@@ -25,7 +26,7 @@ import { remarkMeme } from './remark-meme-plugin';
  *    - remarkRehype: 将 Markdown AST 转换为 HTML AST（允许原始 HTML）
  *    - rehypeRaw: 解析原始 HTML 节点为 HAST 节点
  *    - rehypeSlug: 为标题添加 id 属性
- *    - rehypeAutolinkHeadings: 为标题自动添加链接
+ *    - rehypeHighlight: 为代码块添加 highlight.js 语法高亮
  *    - rehypeStringify: 将 HTML AST 转换为 HTML 字符串
  * 3. 返回配置好的 processor
  *
@@ -54,13 +55,8 @@ function createMarkdownProcessor() {
     .use(rehypeRaw)
     // 为标题添加 id 属性（用于锚点链接）
     .use(rehypeSlug)
-    // // 为标题自动添加链接
-    // .use(rehypeAutolinkHeadings, {
-    //   behavior: 'wrap',
-    //   properties: {
-    //     className: ['heading-anchor'],
-    //   },
-    // })
+    // 为代码块添加 hljs 语法高亮
+    .use(rehypeHighlight)
     // 将 HTML AST 转换为 HTML 字符串
     .use(rehypeStringify);
 }
