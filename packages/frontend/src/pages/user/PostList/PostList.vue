@@ -12,6 +12,7 @@ const {
   pagination,
   loading,
   error,
+  keyword,
   setPage,
   setKeyword,
 } = usePostList();
@@ -44,6 +45,7 @@ function handlePageChange(page: number): void {
     <!-- 搜索区域 -->
     <PostSearch
       :loading="loading"
+      :keyword="keyword"
       @search="handleSearch"
     />
 
