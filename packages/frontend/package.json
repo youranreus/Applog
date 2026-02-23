@@ -36,6 +36,7 @@
     "hastscript": "^9.0.1",
     "konsta": "^5.0.6",
     "localforage": "^1.10.0",
+    "marked": "^15.0.12",
     "pinia": "^3.0.3",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-raw": "^7.0.0",

@@ -3,8 +3,22 @@ import { watch, onBeforeUnmount, computed, onMounted } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from '@tiptap/markdown';
+import { Marked, marked } from 'marked';
 import EditorToolbar from './EditorToolbar.vue';
 import type { IMarkdownEditorProps } from './types';
+
+/**
+ * 自定义 marked 实例：禁用 GFM 裸 URL 自动转链接
+ * 使纯文本如 https://www.baidu.com 保持原样，不被解析为 [url](url)
+ * 使用类型断言以兼容 @tiptap/markdown 的 marked 类型（实际仅使用 parse/setOptions）
+ */
+const markedNoAutolink = new Marked({
+  tokenizer: {
+    url() {
+      return undefined;
+    },
+  },
+}) as unknown as typeof marked;
 
 /**
  * MarkdownEditor 组件的 Props
@@ -30,10 +44,11 @@ const emit = defineEmits<IMarkdownEditorEmits>();
 /**
  * 初始化 Tiptap 编辑器
  * 使用 StarterKit 提供基础编辑功能，Markdown 扩展支持 markdown 双向转换
+ * 使用自定义 marked 实例禁用裸 URL 自动转链接，保留用户原始 markdown
  * 注意：初始化时 content 设为空，后续通过 setContent 方法以 markdown 格式设置内容
  */
 const editor = useEditor({
-  extensions: [StarterKit, Markdown],
+  extensions: [StarterKit, Markdown.configure({ marked: markedNoAutolink })],
   content: '',
   editorProps: {
     attributes: {
