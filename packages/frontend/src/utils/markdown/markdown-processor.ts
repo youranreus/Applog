@@ -18,7 +18,7 @@ import { remarkMeme } from './remark-meme-plugin';
  * 1. 创建 unified processor
  * 2. 依次添加所有插件：
  *    - remarkParse: 解析 Markdown
- *    - remarkBBCode: 处理行内 BBCode 标签
+ *    - remarkBBCode: 包装 parser，解析前将 BBCode 替换为 HTML（多行支持，换行转为 <br>）
  *    - remarkMeme: 处理表情标签（@(xx)、::category:name::、#(xx)）
  *    - remarkGfm: GitHub Flavored Markdown 支持
  *    - remarkBreaks: 支持换行
@@ -40,7 +40,7 @@ function createMarkdownProcessor() {
   return unified()
     // 解析 Markdown
     .use(remarkParse)
-    // 处理行内 BBCode 标签（在 GFM 之前处理，避免冲突）
+    // 包装 parser，解析前替换 BBCode（多行支持，换行保留为 <br>）
     .use(remarkBBCode)
     // 处理表情标签（在 GFM 之前处理）
     .use(remarkMeme, memeOptions)
