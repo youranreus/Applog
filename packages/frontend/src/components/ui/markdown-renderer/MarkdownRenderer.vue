@@ -21,11 +21,17 @@ const { renderedHtml } = useMarkdownRenderer(props, containerRef);
 <style scoped lang="scss">
 :deep(.lazy-image-wrapper) {
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
 }
 
-:deep(.lazy-image-placeholder) {
-  @apply text-gray-600 text-sm py-4 text-center;
+:global(.lazy-image-placeholder) {
+  color: black;
+  opacity: 0.5;
+  font-size: 24px;
 }
 
 :deep(.lazy-image) {
