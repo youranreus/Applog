@@ -44,4 +44,13 @@ const { renderedHtml } = useMarkdownRenderer(props, containerRef);
     filter: blur(0);
   }
 }
+
+:deep(.image-caption) {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: black;
+  opacity: 0.5;
+  margin-top: 4px;
+}
 </style>

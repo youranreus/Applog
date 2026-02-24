@@ -37,6 +37,10 @@ function setupLazyLoad(container: HTMLElement, observerRef: { current: Intersect
           if (placeholder instanceof HTMLElement) {
             placeholder.style.display = 'none';
           }
+          const caption = wrapper?.querySelector('.image-caption');
+          if (caption instanceof HTMLElement) {
+            caption.style.display = 'block';
+          }
         };
       });
     },
