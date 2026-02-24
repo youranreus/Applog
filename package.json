@@ -1,7 +1,7 @@
 {
   "name": "applog",
   "version": "1.0.0",
-  "description": "a simple BI platform",
+  "description": "a simple blog",
   "scripts": {
     "fe": "pnpm --filter @applog/frontend run dev",
     "be": "pnpm --filter @applog/backend run dev",
