@@ -25,7 +25,7 @@ const { renderedHtml } = useMarkdownRenderer(props, containerRef);
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 20px 0;
+  margin: 20px 0;
 }
 
 :global(.lazy-image-placeholder) {

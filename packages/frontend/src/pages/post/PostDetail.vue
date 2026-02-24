@@ -62,7 +62,7 @@ const { post, loading, error, formatDate } = usePostDetail();
               {{ tag }}
             </kChip>
           </div>
-        </div>  
+        </div>
       </div>
 
       <div v-if="post.summary" class="post-abstract">
@@ -72,6 +72,10 @@ const { post, loading, error, formatDate } = usePostDetail();
       <!-- 文章内容 -->
       <div class="post-content article-content">
         <ArticleRenderer :content="post.content" class="markdown-content" />
+      </div>
+
+      <div class="post-footer">
+        もう終わりだよ。
       </div>
     </article>
 
@@ -163,6 +167,10 @@ const { post, loading, error, formatDate } = usePostDetail();
 /* 内容区域样式 */
 .post-content {
   @apply my-6 min-h-[50vh];
+}
+
+.post-footer {
+  @apply my-20 text-center opacity-10 text-2xl;
 }
 
 .post-abstract {
