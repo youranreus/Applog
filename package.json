@@ -6,9 +6,8 @@
     "fe": "pnpm --filter @applog/frontend run dev",
     "be": "pnpm --filter @applog/backend run dev",
     "dev": "pnpm --filter @applog/* run dev",
-    "build:fe": "pnpm  --filter @applog/frontend run build",
-    "build:be": "pnpm  --filter @applog/backend run build",
-    "build:finder": "pnpm  --filter @applog/finder run build",
+    "build:fe": "pnpm --filter @applog/common run build && pnpm --filter @applog/frontend run build",
+    "build:be": "pnpm --filter @applog/common run build && pnpm --filter @applog/backend run build",
     "build": "pnpm  --filter @applog/* run build",
     "c": "git-cz"
   },
