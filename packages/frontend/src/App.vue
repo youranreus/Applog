@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import { kApp } from 'konsta/vue';
 import Header from '@/components/Layout/Header.vue';
 import Footer from '@/components/Layout/Footer.vue';
-import UserHeader from '@/components/Layout/UserHeader.vue';
+import UserHeader from '@/components/Layout/UserHeader/index.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
 import GlobalNotification from '@/components/GlobalNotification.vue';
 import { useSystemStore } from '@/stores/useSystemStore';
