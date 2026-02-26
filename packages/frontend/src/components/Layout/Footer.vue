@@ -8,6 +8,10 @@ import { ROUTE_NAMES } from '@/constants/permission'
 const currentYear = computed(() => new Date().getFullYear())
 const layoutStore = useLayoutStore()
 const systemStore = useSystemStore()
+
+const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_COMMIT
+  ? `${import.meta.env.VITE_GIT_BRANCH}@${import.meta.env.VITE_GIT_COMMIT}`
+  : null
 </script>
 
 <template>
@@ -47,6 +51,9 @@ const systemStore = useSystemStore()
           </router-link>
         </div>
         <!-- admin entrance -->
+        <p v-if="buildInfo" class="text-xs text-gray-400 ml-auto">
+          {{ buildInfo }}
+        </p>
       </div>
     </div>
   </footer>
