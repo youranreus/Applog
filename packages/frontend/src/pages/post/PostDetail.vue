@@ -2,13 +2,23 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePostDetail } from './hooks/usePostDetail';
+import { useImagePreview } from '@/hooks/useImagePreview';
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue';
+import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue';
 import Loading from '@/components/ui/loading/index.vue';
 import { kButton, kChip } from 'konsta/vue';
 
 const router = useRouter();
 const { post, loading, error, formatDate } = usePostDetail();
 const coverLoaded = ref(false);
+
+const articleRef = ref<HTMLElement | null>(null);
+const {
+  previewVisible,
+  previewSrc,
+  previewAlt,
+  closePreview,
+} = useImagePreview(articleRef);
 </script>
 
 <template>
@@ -30,7 +40,7 @@ const coverLoaded = ref(false);
     </div>
 
     <!-- 文章内容 -->
-    <article v-else-if="post" class="post-article">
+    <article ref="articleRef" v-else-if="post" class="post-article">
       <!-- 封面图 -->
       <div v-if="post.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
         <img
@@ -93,6 +103,13 @@ const coverLoaded = ref(false);
         <span>← 返回</span>
       </k-button>
     </div>
+
+    <ImagePreview
+      :visible="previewVisible"
+      :src="previewSrc"
+      :alt="previewAlt"
+      @close="closePreview"
+    />
   </div>
 </template>
 

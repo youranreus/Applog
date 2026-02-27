@@ -2,7 +2,9 @@
 import { useRoute } from 'vue-router';
 import { computed, ref } from 'vue';
 import { usePageDetail } from '@/hooks/usePageDetail';
+import { useImagePreview } from '@/hooks/useImagePreview';
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue';
+import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue';
 import Loading from '@/components/ui/loading/index.vue';
 
 const route = useRoute();
@@ -18,6 +20,14 @@ const slug = computed(() => route.params.slug as string);
 const { page, loading, error } = usePageDetail(slug);
 
 const coverLoaded = ref(false);
+
+const contentRef = ref<HTMLElement | null>(null);
+const {
+  previewVisible,
+  previewSrc,
+  previewAlt,
+  closePreview,
+} = useImagePreview(contentRef);
 
 /**
  * 格式化日期
@@ -52,28 +62,29 @@ const formatDate = (date: Date | string): string => {
 
     <!-- 页面内容 -->
     <template v-else-if="page">
-      <!-- 封面图 -->
-      <div v-if="page.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
-        <img
-          :src="page.cover"
-          :alt="page.title"
-          class="cover-block-image"
-          :class="{ loaded: coverLoaded }"
-          @load="coverLoaded = true"
-        />
-      </div>
+      <div ref="contentRef">
+        <!-- 封面图 -->
+        <div v-if="page.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
+          <img
+            :src="page.cover"
+            :alt="page.title"
+            class="cover-block-image"
+            :class="{ loaded: coverLoaded }"
+            @load="coverLoaded = true"
+          />
+        </div>
 
-      <!-- 文章标题 -->
-      <h1 class="gb-header">{{ page.title }}</h1>
+        <!-- 文章标题 -->
+        <h1 class="gb-header">{{ page.title }}</h1>
 
-      <!-- 摘要 -->
-      <p v-if="page.summary" class="subheader gb-subheader">{{ page.summary }}</p>
+        <!-- 摘要 -->
+        <p v-if="page.summary" class="subheader gb-subheader">{{ page.summary }}</p>
 
-      <!-- 正文内容 -->
-      <ArticleRenderer :content="page.content" class="article-content" />
+        <!-- 正文内容 -->
+        <ArticleRenderer :content="page.content" class="article-content" />
 
-      <!-- 页面信息（底部） -->
-      <div class="mod-date">
+        <!-- 页面信息（底部） -->
+        <div class="mod-date">
         <div v-if="page.author" class="mb-2">
           <span class="text-gray-600">作者：</span>
           <span>{{ page.author.name }}</span>
@@ -100,6 +111,7 @@ const formatDate = (date: Date | string): string => {
             {{ tag }}
           </span>
         </div>
+        </div>
       </div>
     </template>
 
@@ -109,6 +121,13 @@ const formatDate = (date: Date | string): string => {
         <p>页面不存在</p>
       </div>
     </template>
+
+    <ImagePreview
+      :visible="previewVisible"
+      :src="previewSrc"
+      :alt="previewAlt"
+      @close="closePreview"
+    />
   </div>
 </template>
 

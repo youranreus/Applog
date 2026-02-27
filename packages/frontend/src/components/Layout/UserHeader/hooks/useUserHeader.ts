@@ -15,7 +15,7 @@ export function useUserHeader(_props: IProps, _emits: IEmits) {
   const layoutStore = useLayoutStore();
   const router = useRouter();
 
-  const navPages = layoutStore.navPages;
+  const navPages = computed(() => layoutStore.navPages);
 
   /**
    * 执行浏览器后退

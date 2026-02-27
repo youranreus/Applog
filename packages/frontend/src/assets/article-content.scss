@@ -167,6 +167,7 @@
     border-radius: 0.5rem;
     margin: 0 auto;
     display: block;
+    cursor: zoom-in;
 
     /* 大屏（≥786px）时限制最大宽度，避免过宽 */
     @media (min-width: 786px) {
