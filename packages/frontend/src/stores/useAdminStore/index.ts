@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { useAdminPostListService } from './useAdminPostListService';
+import { useAdminPostListService } from './composite/useAdminPostListService';
 
 /**
  * 后台管理 Store
