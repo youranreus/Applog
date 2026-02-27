@@ -25,8 +25,8 @@ pnpm dev         # Start all packages in dev mode
 ### Build
 
 ```bash
-pnpm build:fe    # Build common then frontend
-pnpm build:be    # Build common then backend
+pnpm build:fe    # Build frontend (turbo handles common dependency automatically)
+pnpm build:be    # Build backend (turbo handles common dependency automatically)
 pnpm build       # Build all packages
 ```
 
@@ -57,7 +57,7 @@ pnpm c   # Commitizen interactive commit (uses cz-customizable)
 
 ### `packages/common`
 
-Pure TypeScript library compiled to `dist/`. Exports shared types, constants, and utilities for system config (`ISystemBaseConfig`, `SYSTEM_CONFIG_KEYS`, etc.). Both frontend and backend depend on this as a workspace reference. **Must be built before frontend or backend.**
+Pure TypeScript library compiled to `dist/`. Exports shared types, constants, and utilities for system config (`ISystemBaseConfig`, `SYSTEM_CONFIG_KEYS`, etc.). Both frontend and backend depend on this as a workspace reference. Turbo's `"dependsOn": ["^build"]` ensures it is built before dependent packages automatically.
 
 ### `packages/backend`
 
