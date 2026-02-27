@@ -203,6 +203,19 @@
     font-weight: normal;
   }
 
+  /* 表格横向滚动容器 */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 1.5rem 0;
+
+    table {
+      margin: 0;
+      min-width: 100%;
+      width: max-content;
+    }
+  }
+
   /* 表格样式 - GFM 支持 */
   table {
     width: 100%;

@@ -10,6 +10,7 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeStringify from 'rehype-stringify';
 import { remarkBBCode } from './remark-bbcode-plugin';
 import { remarkMeme } from './remark-meme-plugin';
+import { rehypeTableWrapper } from './rehype-table-wrapper';
 
 /**
  * 创建配置好的 unified markdown 处理器
@@ -57,6 +58,8 @@ function createMarkdownProcessor() {
     .use(rehypeSlug)
     // 为代码块添加 hljs 语法高亮
     .use(rehypeHighlight)
+    // 为表格包裹横向滚动容器
+    .use(rehypeTableWrapper)
     // 将 HTML AST 转换为 HTML 字符串
     .use(rehypeStringify);
 }
