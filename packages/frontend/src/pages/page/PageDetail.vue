@@ -100,9 +100,17 @@ const formatDate = (date: Date | string): string => {
 </template>
 
 <style scoped>
+@reference 'tailwindcss';
+
 .page-detail-page {
   width: 100%;
-  margin: 0 auto;
+  margin-top: 5vh;
+}
+
+@media (min-width: 640px) {
+  .page-detail-page {
+    margin-top: 10vh;
+  }
 }
 </style>
 
