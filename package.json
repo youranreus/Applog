@@ -5,10 +5,10 @@
   "scripts": {
     "fe": "pnpm --filter @applog/frontend run dev",
     "be": "pnpm --filter @applog/backend run dev",
-    "dev": "pnpm --filter @applog/* run dev",
-    "build:fe": "pnpm --filter @applog/common run build && pnpm --filter @applog/frontend run build",
-    "build:be": "pnpm --filter @applog/common run build && pnpm --filter @applog/backend run build",
-    "build": "pnpm  --filter @applog/* run build",
+    "dev": "turbo run dev",
+    "build:fe": "turbo run build --filter=@applog/frontend",
+    "build:be": "turbo run build --filter=@applog/backend",
+    "build": "turbo run build",
     "c": "git-cz"
   },
   "private": true,
@@ -17,7 +17,8 @@
   "license": "ISC",
   "devDependencies": {
     "commitizen": "^4.3.0",
-    "cz-customizable": "^7.0.0"
+    "cz-customizable": "^7.0.0",
+    "turbo": "^2.8.11"
   },
   "config": {
     "commitizen": {
