@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { usePageDetail } from '@/hooks/usePageDetail';
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue';
 import Loading from '@/components/ui/loading/index.vue';
@@ -16,6 +16,8 @@ const slug = computed(() => route.params.slug as string);
  * 使用页面详情 Hook 获取页面数据
  */
 const { page, loading, error } = usePageDetail(slug);
+
+const coverLoaded = ref(false);
 
 /**
  * 格式化日期
@@ -50,6 +52,17 @@ const formatDate = (date: Date | string): string => {
 
     <!-- 页面内容 -->
     <template v-else-if="page">
+      <!-- 封面图 -->
+      <div v-if="page.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
+        <img
+          :src="page.cover"
+          :alt="page.title"
+          class="cover-block-image"
+          :class="{ loaded: coverLoaded }"
+          @load="coverLoaded = true"
+        />
+      </div>
+
       <!-- 文章标题 -->
       <h1 class="gb-header">{{ page.title }}</h1>
 

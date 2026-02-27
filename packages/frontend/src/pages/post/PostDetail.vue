@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePostDetail } from './hooks/usePostDetail';
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue';
@@ -7,6 +8,7 @@ import { kButton, kChip } from 'konsta/vue';
 
 const router = useRouter();
 const { post, loading, error, formatDate } = usePostDetail();
+const coverLoaded = ref(false);
 </script>
 
 <template>
@@ -30,11 +32,13 @@ const { post, loading, error, formatDate } = usePostDetail();
     <!-- 文章内容 -->
     <article v-else-if="post" class="post-article">
       <!-- 封面图 -->
-      <div v-if="post.cover" class="post-cover mb-6 sm:mb-8">
+      <div v-if="post.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
         <img
           :src="post.cover"
           :alt="post.title"
-          class="cover-image"
+          class="cover-block-image"
+          :class="{ loaded: coverLoaded }"
+          @load="coverLoaded = true"
         />
       </div>
 
@@ -108,22 +112,6 @@ const { post, loading, error, formatDate } = usePostDetail();
 
 .post-article {
   width: 100%;
-}
-
-/* 封面图样式 */
-.post-cover {
-  width: 100%;
-  overflow: hidden;
-  border-radius: 0.5rem;
-  box-shadow: 0 9px 20px 0 rgba(46,35,94,0.07);
-}
-
-.cover-image {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-  aspect-ratio: 16 / 9;
 }
 
 /* 文章标题样式 */

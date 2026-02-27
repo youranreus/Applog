@@ -1,0 +1,36 @@
+/* 封面大图：灰色底色占位 + shimmer 骨架屏 + 模糊渐入 */
+
+.cover-block {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  box-shadow: 0 9px 20px 0 rgba(46, 35, 94, 0.07);
+  background-color: #e5e7eb;
+}
+
+.cover-block.shimmer {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: cover-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes cover-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.cover-block-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 16 / 9;
+  opacity: 0;
+  filter: blur(12px);
+  transition: opacity 0.5s ease, filter 0.6s ease;
+}
+
+.cover-block-image.loaded {
+  opacity: 1;
+  filter: blur(0);
+}
