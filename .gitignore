@@ -28,3 +28,4 @@ coverage
 *.sw?
 
 .turbo
+.claude/*.local.json
