@@ -1,24 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { usePostDetail } from './hooks/usePostDetail';
-import { useImagePreview } from '@/hooks/useImagePreview';
-import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue';
-import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue';
-import Loading from '@/components/ui/loading/index.vue';
-import { kButton, kChip } from 'konsta/vue';
+import { ref } from 'vue'
+import { usePostDetail } from './hooks/usePostDetail'
+import { useImagePreview } from '@/hooks/useImagePreview'
+import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue'
+import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue'
+import Loading from '@/components/ui/loading/index.vue'
+import { kChip } from 'konsta/vue'
 
-const router = useRouter();
-const { post, loading, error, formatDate } = usePostDetail();
-const coverLoaded = ref(false);
+const { post, loading, error, formatDate } = usePostDetail()
+const coverLoaded = ref(false)
 
-const articleRef = ref<HTMLElement | null>(null);
-const {
-  previewVisible,
-  previewSrc,
-  previewAlt,
-  closePreview,
-} = useImagePreview(articleRef);
+const articleRef = ref<HTMLElement | null>(null)
+const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview(articleRef)
 </script>
 
 <template>
@@ -29,14 +22,9 @@ const {
     </div>
 
     <!-- 错误状态 -->
-    <div v-else-if="error" class="text-center text-gray-600 py-8 sm:py-12">
-      <p class="text-sm sm:text-base mb-4">加载文章失败，请稍后重试</p>
-      <k-button
-        @click="router.back()"
-        class="text-gray-600 hover:text-gray-900 inline-flex items-center"
-      >
-        <span>← 返回</span>
-      </k-button>
+    <div v-else-if="error" class="state-block">
+      <p class="state-label">无法加载文章</p>
+      <pre class="state-error-block">{{ error.message || '未知错误' }}</pre>
     </div>
 
     <!-- 文章内容 -->
@@ -46,7 +34,7 @@ const {
         <img
           :src="post.cover"
           :alt="post.title"
-          class="cover-block-image"
+          class="cover-block-image pointer-events-none"
           :class="{ loaded: coverLoaded }"
           @load="coverLoaded = true"
         />
@@ -59,7 +47,9 @@ const {
 
       <!-- 元信息区 -->
       <div class="post-meta mb-6 sm:mb-8">
-        <div class="meta-info flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-gray-500 mb-3">
+        <div
+          class="meta-info flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-gray-500 mb-3"
+        >
           <span v-if="post.createdAt" class="publish-date">
             {{ formatDate(post.createdAt) }}
           </span>
@@ -67,12 +57,13 @@ const {
           <span v-if="post.viewCount !== undefined" class="view-count">
             {{ post.viewCount }} 次浏览
           </span>
-          <span v-if="post.tags && post.tags.length > 0 && post.viewCount !== undefined" class="separator">•</span>
+          <span
+            v-if="post.tags && post.tags.length > 0 && post.viewCount !== undefined"
+            class="separator"
+            >•</span
+          >
           <div v-if="post.tags && post.tags.length > 0" class="tags flex flex-wrap gap-2">
-            <kChip
-              v-for="tag in post.tags"
-              :key="tag"
-            >
+            <kChip v-for="tag in post.tags" :key="tag">
               {{ tag }}
             </kChip>
           </div>
@@ -88,20 +79,12 @@ const {
         <ArticleRenderer :content="post.content" class="markdown-content" />
       </div>
 
-      <div class="post-footer">
-        もう終わりだよ。
-      </div>
+      <div class="post-footer">もう終わりだよ。</div>
     </article>
 
     <!-- 文章不存在 -->
-    <div v-else class="text-center text-gray-600 py-8 sm:py-12">
-      <p class="text-sm sm:text-base mb-4">文章不存在</p>
-      <k-button
-        @click="router.back()"
-        class="text-gray-600 hover:text-gray-900 inline-flex items-center"
-      >
-        <span>← 返回</span>
-      </k-button>
+    <div v-else class="state-block">
+      <p class="state-label">文章不存在。</p>
     </div>
 
     <ImagePreview
@@ -178,6 +161,22 @@ const {
   @apply my-20 text-center opacity-10 text-2xl;
 }
 
+.state-block {
+  @apply my-20 text-center;
+}
+
+.state-label {
+  @apply text-gray-400 text-xl mb-4;
+}
+
+.state-error-block {
+  @apply inline-block text-left text-sm text-gray-500 bg-gray-50 rounded-xl px-5 py-3 mb-6 font-mono;
+  max-width: 480px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+
 .post-abstract {
   @apply my-6 p-6 bg-gray-100 rounded-3xl relative overflow-hidden;
   &::before {
@@ -190,4 +189,3 @@ const {
   @apply text-gray-500 italic;
 }
 </style>
-
