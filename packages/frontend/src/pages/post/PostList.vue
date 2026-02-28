@@ -37,7 +37,7 @@ function goToPostDetail(slug: string): void {
       >
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 relative">
           <!-- 左侧：标题 -->
-          <div class="flex-1 min-w-0 relative z-10 transition-all group-hover/article:text-blue-500">
+          <div class="flex-1 min-w-0 relative z-10 transition-all group-hover/article:[color:rgb(0,102,204)]">
             <h2 class="text-base sm:text-lg font-bold leading-snug">
               {{ post.title }}
             </h2>
@@ -51,20 +51,20 @@ function goToPostDetail(slug: string): void {
           </div>
         </div>
       </article>
-
-      <!-- 分页组件 -->
-      <div v-if="pagination && pagination.totalPages > 1" class="mt-6 sm:mt-8">
-        <Pagination
-          :current-page="pagination.currentPage"
-          :total-pages="pagination.totalPages"
-          :on-change="handlePageChange"
-        />
-      </div>
     </div>
 
     <!-- 空状态 -->
-    <div v-else class="text-center text-gray-600 py-8 sm:py-12">
+    <div v-else-if="!loading" class="text-center text-gray-600 py-8 sm:py-12">
       <p class="text-sm sm:text-base">暂无文章</p>
+    </div>
+
+    <!-- 分页组件：有数据、总页数大于1 -->
+    <div v-if="pagination && pagination.totalItems > 0 && pagination.totalPages > 1" class="mt-6 sm:mt-8">
+      <Pagination
+        :current-page="pagination.currentPage"
+        :total-pages="pagination.totalPages"
+        :on-change="handlePageChange"
+      />
     </div>
   </div>
 </template>
