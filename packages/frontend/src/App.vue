@@ -54,9 +54,17 @@ watchEffect(() => {
         v-if="showLayout"
         class="flex-1 w-full"
       >
-        <router-view />
+        <RouterView v-slot="{ Component }">
+          <Transition name="page-fade" mode="out-in">
+            <component :is="Component" :key="route.path" />
+          </Transition>
+        </RouterView>
       </main>
-      <router-view v-else />
+      <RouterView v-else v-slot="{ Component }">
+        <Transition name="page-fade" mode="out-in">
+          <component :is="Component" :key="route.path" />
+        </Transition>
+      </RouterView>
       <Footer v-if="showLayout" />
     </div>
     <!-- 全局加载状态 -->
@@ -65,3 +73,15 @@ watchEffect(() => {
     <GlobalNotification />
   </k-app>
 </template>
+
+<style scoped>
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+</style>

@@ -5,7 +5,6 @@ import { usePageDetail } from '@/hooks/usePageDetail'
 import { useImagePreview } from '@/hooks/useImagePreview'
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue'
 import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue'
-import Loading from '@/components/ui/loading/index.vue'
 
 const route = useRoute()
 
@@ -41,24 +40,18 @@ const formatDate = (date: Date | string): string => {
 
 <template>
   <div class="page-detail-page common-page-container">
-    <!-- 加载状态 -->
-    <template v-if="loading">
-      <div class="text-center text-gray-600 py-12 min-h-[400px]">
-        <Loading />
-      </div>
-    </template>
+    <div class="content-wrapper" :class="{ 'is-loading': loading }">
+      <!-- 错误状态 -->
+      <template v-if="error">
+        <div class="state-block">
+          <p class="state-label">无法加载页面</p>
+          <pre class="state-error-block">{{ error.message || '未知错误' }}</pre>
+        </div>
+      </template>
 
-    <!-- 错误状态 -->
-    <template v-else-if="error">
-      <div class="state-block">
-        <p class="state-label">无法加载页面</p>
-        <pre class="state-error-block">{{ error.message || '未知错误' }}</pre>
-      </div>
-    </template>
-
-    <!-- 页面内容 -->
-    <template v-else-if="page">
-      <div ref="contentRef">
+      <!-- 页面内容 -->
+      <template v-else-if="page">
+        <div ref="contentRef">
         <!-- 封面图 -->
         <div v-if="page.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
           <img
@@ -112,11 +105,12 @@ const formatDate = (date: Date | string): string => {
     </template>
 
     <!-- 页面不存在 -->
-    <template v-else>
-      <div class="state-block">
-        <p class="state-label">页面不存在。</p>
-      </div>
-    </template>
+      <template v-else>
+        <div class="state-block">
+          <p class="state-label">页面不存在。</p>
+        </div>
+      </template>
+    </div>
 
     <ImagePreview
       :visible="previewVisible"
@@ -133,6 +127,15 @@ const formatDate = (date: Date | string): string => {
 .page-detail-page {
   width: 100%;
   margin-top: 5vh;
+}
+
+.content-wrapper {
+  transition: opacity 0.3s ease;
+}
+
+.content-wrapper.is-loading {
+  opacity: 0;
+  min-height: 100vh;
 }
 
 @media (min-width: 640px) {

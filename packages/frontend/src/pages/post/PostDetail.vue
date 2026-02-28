@@ -4,7 +4,6 @@ import { usePostDetail } from './hooks/usePostDetail'
 import { useImagePreview } from '@/hooks/useImagePreview'
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue'
 import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue'
-import Loading from '@/components/ui/loading/index.vue'
 import { kChip } from 'konsta/vue'
 
 const { post, loading, error, formatDate } = usePostDetail()
@@ -16,19 +15,15 @@ const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview
 
 <template>
   <div class="post-detail-page common-page-container">
-    <!-- 加载状态 -->
-    <div v-if="loading" class="flex justify-center items-center py-8 sm:py-12 min-h-[400px]">
-      <Loading />
-    </div>
+    <div class="content-wrapper" :class="{ 'is-loading': loading }">
+      <!-- 错误状态 -->
+      <div v-if="error" class="state-block">
+        <p class="state-label">无法加载文章</p>
+        <pre class="state-error-block">{{ error.message || '未知错误' }}</pre>
+      </div>
 
-    <!-- 错误状态 -->
-    <div v-else-if="error" class="state-block">
-      <p class="state-label">无法加载文章</p>
-      <pre class="state-error-block">{{ error.message || '未知错误' }}</pre>
-    </div>
-
-    <!-- 文章内容 -->
-    <article ref="articleRef" v-else-if="post" class="post-article">
+      <!-- 文章内容 -->
+      <article ref="articleRef" v-else-if="post" class="post-article">
       <!-- 封面图 -->
       <div v-if="post.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
         <img
@@ -83,8 +78,9 @@ const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview
     </article>
 
     <!-- 文章不存在 -->
-    <div v-else class="state-block">
-      <p class="state-label">文章不存在。</p>
+      <div v-else class="state-block">
+        <p class="state-label">文章不存在。</p>
+      </div>
     </div>
 
     <ImagePreview
@@ -102,6 +98,15 @@ const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview
 .post-detail-page {
   width: 100%;
   margin-top: 5vh;
+}
+
+.content-wrapper {
+  transition: opacity 0.3s ease;
+}
+
+.content-wrapper.is-loading {
+  opacity: 0;
+  min-height: 100vh;
 }
 
 @media (min-width: 640px) {
