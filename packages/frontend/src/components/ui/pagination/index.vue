@@ -91,7 +91,7 @@ function handlePageClick(page: number): void {
         class="prev-next-btn"
         @click="handlePrev"
       >
-        <span>←</span>
+        <ion-icon name="chevron-back-outline"></ion-icon>
         <span class="hidden sm:inline"> 上一页</span>
       </button>
     </div>
@@ -126,7 +126,7 @@ function handlePageClick(page: number): void {
         @click="handleNext"
       >
         <span class="hidden sm:inline">下一页 </span>
-        <span>→</span>
+        <ion-icon name="chevron-forward-outline"></ion-icon>
       </button>
     </div>
   </div>
