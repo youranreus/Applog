@@ -11,7 +11,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/landing',
     name: ROUTE_NAMES.LANDING,
-    component: () => import('@/pages/Landing.vue'),
+    component: () => import('@/pages/Landing/index.vue'),
   },
   // /posts 路由组
   {
