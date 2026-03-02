@@ -1,22 +1,55 @@
 .common-page-container {
   width: 100%;
-  max-width: var(--container-7xl);
+  max-width: 710px;
   margin: 0 auto;
   padding-left: 1rem;
   padding-right: 1rem;
   padding-top: 2rem;
 }
 
-@media (min-width: 640px) {
+/* 移动端稍宽 padding */
+@media (max-width: 767px) {
   .common-page-container {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
 }
 
-@media (min-width: 1024px) {
+/* 平板 */
+@media screen and (min-width: 768px) and (max-width: 1250px) {
   .common-page-container {
-    padding-left: 2rem;
-    padding-right: 2rem;
+    max-width: 654px;
+  }
+}
+
+/* 小桌面 */
+@media screen and (min-width: 1251px) and (max-width: 1599px) {
+  .common-page-container {
+    max-width: 710px;
+  }
+}
+
+/* 大桌面 */
+@media screen and (min-width: 1600px) and (max-width: 1799px) {
+  .common-page-container {
+    max-width: 768px;
+  }
+}
+
+@media screen and (min-width: 1800px) and (max-width: 1919px) {
+  .common-page-container {
+    max-width: 800px;
+  }
+}
+
+@media screen and (min-width: 1920px) and (max-width: 2399px) {
+  .common-page-container {
+    max-width: 848px;
+  }
+}
+
+@media screen and (min-width: 2400px) {
+  .common-page-container {
+    max-width: 898px;
   }
 }

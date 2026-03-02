@@ -20,16 +20,21 @@ function escapeHtml(raw: string): string {
  * 3. 为 img 添加 class="lazy-image"
  * 4. 用 span.lazy-image-wrapper 包裹，并插入占位文案 span
  * 5. 非 .bq 图片若有 alt，在图片后追加 span.image-caption（初始隐藏，懒加载完成后显示）
+ * 6. .bq、.friend-avatar 等装饰/小图不参与懒加载包裹，保持原样
  *
  * @param html - 原始 HTML 字符串
  * @returns 处理后的 HTML 字符串
  */
 export function wrapImagesForLazyLoad(html: string): string {
-  return html.replace(/<img(\s[^>]*?)>/gi, (_match, attrs: string) => {
+  return html.replace(/<img(\s[^>]*?)>/gi, (match, attrs: string) => {
+    const classMatch = attrs.match(/\bclass\s*=\s*(["'])([^"']*)\1/i);
+    const imgClass = classMatch?.[2]?.trim() ?? '';
+    const hasBq = /\bbq\b/.test(imgClass);
+    const hasFriendAvatar = /\bfriend-avatar\b/.test(imgClass);
+    if (hasFriendAvatar) return match;
+
     const altMatch = attrs.match(/\balt\s*=\s*(["'])([^"']*)\1/i);
     const alt = altMatch?.[2] ? altMatch[2] : '';
-    const classMatch = attrs.match(/\bclass\s*=\s*(["'])([^"']*)\1/i);
-    const hasBq = classMatch ? /\bbq\b/.test(classMatch[2]?.trim() ?? '') : false;
     const showCaption = !hasBq && alt.length > 0;
     const captionHtml = showCaption
       ? `<span class="image-caption" style="display:none">${escapeHtml(alt)}</span>`

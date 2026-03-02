@@ -10,12 +10,12 @@ import { hasBBCodeHandler, getBBCodeHandler } from './bbcode-handler-registry';
 const BBCODE_RAW_REGEX = /\[(\w+)([^\]]*)\]([\s\S]*?)\[\/\1\]/g;
 
 /**
- * 解析属性字符串
+ * 解析 BBCode 属性字符串
  * 支持格式: key="value" key2="value2"
  * @param attrsString - 属性字符串
  * @returns 属性对象
  */
-function parseAttrs(attrsString: string): Record<string, string> {
+export function parseBBCodeAttrs(attrsString: string): Record<string, string> {
   const attrs: Record<string, string> = {};
   const attrRegex = /(\w+)="([^"]*)"/g;
   let match: RegExpExecArray | null;
@@ -75,7 +75,7 @@ function replaceBBCodeInRawMarkdown(markdown: string): string {
       const handler = getBBCodeHandler(tagName);
       if (!handler) return fullMatch;
       try {
-        const attrs = parseAttrs(attrsString ?? '');
+        const attrs = parseBBCodeAttrs(attrsString ?? '');
         let hastNode = handler({
           content: content ?? '',
           attrs,

@@ -6,7 +6,7 @@ import { ref, readonly, watch, onUnmounted, type Ref } from 'vue';
  * @returns 若图片自身带 .bq 或在 .bq 祖先内则返回 true
  */
 function shouldExcludeImage(img: HTMLImageElement): boolean {
-  if (img.classList.contains('bq')) return true;
+  if (img.classList.contains('bq') || img.classList.contains('friend-avatar')) return true;
   return img.closest('.bq') !== null;
 }
 

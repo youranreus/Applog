@@ -93,9 +93,40 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
   @apply relative w-full min-h-full z-1 px-4 sm:px-6 lg:px-8;
 }
 
-/* 栅格区 */
+/* 栅格区 - 响应式容器宽度（较阅读页更宽以容纳三列网格） */
 .landing-grid-wrap {
-  @apply mx-auto max-w-6xl;
+  @apply mx-auto;
+  max-width: 1060px;
+}
+
+@media screen and (min-width: 768px) and (max-width: 1250px) {
+  .landing-grid-wrap {
+    max-width: 960px;
+  }
+}
+
+@media screen and (min-width: 1251px) and (max-width: 1599px) {
+  .landing-grid-wrap {
+    max-width: 1060px;
+  }
+}
+
+@media screen and (min-width: 1600px) and (max-width: 1799px) {
+  .landing-grid-wrap {
+    max-width: 1152px;
+  }
+}
+
+@media screen and (min-width: 1800px) and (max-width: 1919px) {
+  .landing-grid-wrap {
+    max-width: 1200px;
+  }
+}
+
+@media screen and (min-width: 1920px) {
+  .landing-grid-wrap {
+    max-width: 1280px;
+  }
 }
 
 .landing-grid {
