@@ -105,7 +105,7 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
 
 /* 标题区 */
 .landing-hero {
-  @apply mx-auto mb-10 max-w-4xl;
+  @apply mx-auto mb-10 max-w-6xl;
 }
 
 .landing-hero__title {
