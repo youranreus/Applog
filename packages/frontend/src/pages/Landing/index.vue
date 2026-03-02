@@ -31,7 +31,7 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
             "
             v-for="item in LANDING_GRID_ITEMS"
             :key="item.id"
-            :class="[getColSpanClass(item), getRowSpanClass(item), getCardThemeClass(item.theme)]"
+            :class="[getColSpanClass(item), getRowSpanClass(item), getCardThemeClass(item.theme), item.href ? 'cursor-pointer' : '']"
             :style="getCardBgStyle(item)"
             :href="getHrefType(item.href) === 'external' ? item.href : undefined"
             :to="getHrefType(item.href) === 'internal' ? item.href : undefined"
@@ -86,11 +86,11 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
 @reference "tailwindcss";
 
 .landing-page {
-  @apply w-full min-h-[calc(100vh-64px)] relative pt-[20vh];
+  @apply w-full min-h-[calc(100vh-64px)] relative py-[20vh];
 }
 
 .landing-scroll-content {
-  @apply relative w-full min-h-full z-1 overflow-y-auto py-6 px-4 sm:px-6 lg:px-8;
+  @apply relative w-full min-h-full z-1 px-4 sm:px-6 lg:px-8;
 }
 
 /* 栅格区 */
@@ -103,7 +103,7 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
 }
 
 .landing-card {
-  @apply relative rounded-xl p-5 aspect-square md:aspect-auto md:min-h-[400px] flex flex-col overflow-hidden;
+  @apply relative rounded-xl p-5 aspect-square md:aspect-auto md:min-h-[400px] flex flex-col overflow-hidden transition-transform duration-300 ease-out hover:-translate-y-2;
 }
 
 .landing-card--text {
@@ -143,15 +143,15 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
 }
 
 .landing-card__badge {
-  @apply absolute flex flex-col;
+  @apply absolute flex flex-col gap-2;
 }
 
 .landing-card__badge--bottom-left {
-  @apply bottom-3 left-3 items-start;
+  @apply bottom-5 left-5 items-start;
 }
 
 .landing-card__badge--bottom-right {
-  @apply bottom-3 right-3 items-end;
+  @apply bottom-5 right-5 items-end;
 }
 
 .landing-card__badge-emoji {
