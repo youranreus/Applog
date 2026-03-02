@@ -17,6 +17,7 @@ export const LANDING_GRID_ITEMS: ILandingGridItem[] = [
     description: '谁是季悠然？',
     colSpan: 2,
     rowSpan: 1,
+    iconColor: 'rgba(250, 250, 250, 0.8)',
     bgImage: 'https://cdn.exia.xyz/img/poster/self.png?x-oss-process=image/format,webp',
     badge: {
       emoji: '👦🏻',
