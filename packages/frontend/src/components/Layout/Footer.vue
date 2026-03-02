@@ -28,7 +28,7 @@ const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_CO
             </div>
             <k-link
               component="router-link"
-              :link-props="{ to: `/page/${page.slug}` }"
+              :link-props="{ to: `/${page.slug}.html` }"
               class="text-xs text-[#424245]! hover:underline"
             >
               {{ page.title }}

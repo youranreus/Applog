@@ -19,7 +19,7 @@ export const LANDING_GRID_ITEMS: ILandingGridItem[] = [
     rowSpan: 1,
     iconColor: 'rgba(250, 250, 250, 0.8)',
     bgImage: 'https://cdn.exia.xyz/img/poster/self.png?x-oss-process=image/format,webp',
-    href: '/page/about',
+    href: '/about.html',
     badge: {
       emoji: '👦🏻',
       label: '02年生少年',

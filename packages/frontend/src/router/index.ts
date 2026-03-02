@@ -13,34 +13,25 @@ const routes: RouteRecordRaw[] = [
     name: ROUTE_NAMES.LANDING,
     component: () => import('@/pages/Landing/index.vue'),
   },
-  // /posts 路由组
+  // /posts 文章列表
   {
     path: '/posts',
-    children: [
-      {
-        path: '',
-        name: ROUTE_NAMES.POST_LIST,
-        component: () => import('@/pages/post/PostList.vue'),
-      },
-      {
-        path: ':slug',
-        name: ROUTE_NAMES.POST_DETAIL,
-        component: () => import('@/pages/post/PostDetail.vue'),
-        props: true,
-      },
-    ],
+    name: ROUTE_NAMES.POST_LIST,
+    component: () => import('@/pages/post/PostList.vue'),
   },
-  // /page 路由组
+  // /archives/:slug.html 文章详情（须在 /:slug.html 之前）
   {
-    path: '/page',
-    children: [
-      {
-        path: ':slug',
-        name: ROUTE_NAMES.PAGE_DETAIL,
-        component: () => import('@/pages/page/PageDetail.vue'),
-        props: true,
-      },
-    ],
+    path: '/archives/:slug.html',
+    name: ROUTE_NAMES.POST_DETAIL,
+    component: () => import('@/pages/post/PostDetail.vue'),
+    props: true,
+  },
+  // /:slug.html 页面详情
+  {
+    path: '/:slug.html',
+    name: ROUTE_NAMES.PAGE_DETAIL,
+    component: () => import('@/pages/page/PageDetail.vue'),
+    props: true,
   },
   // /user 路由组
   {

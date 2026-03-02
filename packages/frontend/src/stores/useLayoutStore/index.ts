@@ -65,7 +65,7 @@ export const useLayoutStore = defineStore('layout', () => {
       return {
         id: `page-${page.id}`,
         title: source.title ?? page.title,
-        to: `/page/${page.slug}`,
+        to: `/${page.slug}.html`,
         type: 'page',
       };
     } else {
@@ -111,7 +111,7 @@ export const useLayoutStore = defineStore('layout', () => {
       .map((page: IPageNavItem) => ({
         id: `page-${page.id}`,
         title: page.title,
-        to: `/page/${page.slug}`,
+        to: `/${page.slug}.html`,
         type: 'page' as const,
       }))
     const defaultNavRoutePages = (NAV_GROUPS.default || []).map((source) => resolveNavItem(source)) as INavItem[]
