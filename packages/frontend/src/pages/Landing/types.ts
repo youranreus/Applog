@@ -48,6 +48,8 @@ export interface ILandingGridItem {
   icon?: string
   /** icon 颜色（CSS color 值） */
   iconColor?: string
+  /** description 颜色（CSS color 值），未设置时继承 iconColor */
+  descriptionColor?: string
   /** 卡片背景色（inline style，优先级高于 theme 背景） */
   bgColor?: string
   /** 卡片背景图 URL */

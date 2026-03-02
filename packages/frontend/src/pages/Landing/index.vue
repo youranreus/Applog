@@ -58,7 +58,7 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
               <span v-if="item.icon" class="landing-card__icon" :style="item.iconColor ? { color: item.iconColor } : undefined">
                 <ion-icon :name="item.icon" />
               </span>
-              <span v-if="item.description" class="landing-card__description">
+              <span v-if="item.description" class="landing-card__description" :style="(item.descriptionColor || item.iconColor) ? { color: item.descriptionColor ?? item.iconColor } : undefined">
                 {{ item.description }}
               </span>
             </div>

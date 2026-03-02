@@ -22,6 +22,7 @@ export const LANDING_GRID_ITEMS: ILandingGridItem[] = [
       emoji: '👦🏻',
       label: '02年生少年',
       position: 'bottom-left',
+      labelColor: 'rgba(250, 250, 250, 0.8)',
     },
   },
   {
