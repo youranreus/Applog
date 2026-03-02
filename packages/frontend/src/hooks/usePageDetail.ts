@@ -1,6 +1,7 @@
 import { computed, type Ref } from 'vue';
 import { useWatcher } from 'alova/client';
 import { getPageBySlug } from '@/api/page/getPageBySlug';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { IPageDetail } from '@/types/page';
 
 /**
@@ -47,6 +48,8 @@ export function usePageDetail(slug: Ref<string> | string) {
   const page = computed<IPageDetail | undefined>(() => {
     return pageDetail.value;
   });
+
+  useDocumentTitle(computed(() => page.value?.title));
 
   return {
     // 页面详情数据

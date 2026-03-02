@@ -1,7 +1,8 @@
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useWatcher } from 'alova/client';
 import { getPostBySlug } from '@/api/post/getPostById';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { IPostDetail } from '@/types/post';
 
 /**
@@ -54,6 +55,8 @@ export function usePostDetail() {
   const post = computed<IPostDetail | null>(() => {
     return postDetail.value;
   });
+
+  useDocumentTitle(computed(() => post.value?.title));
 
   /**
    * 格式化日期为 YYYY-MM-DD 格式
