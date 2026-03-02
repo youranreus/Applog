@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import type { IProps, IEmits } from './types'
-import { LANDING_GRID_ITEMS, LANDING_HERO_TITLE, LANDING_HERO_SUBTITLE } from './constants'
+import { LANDING_GRID_ITEMS } from './constants'
 import { useLanding } from './hooks/useLanding'
 
 defineOptions({
@@ -18,16 +18,6 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
 <template>
   <div class="landing-page">
     <div class="landing-scroll-content">
-      <!-- 标题区 -->
-      <section class="landing-hero">
-        <h1 class="landing-hero__title">
-          {{ LANDING_HERO_TITLE }}
-        </h1>
-        <p v-if="LANDING_HERO_SUBTITLE" class="landing-hero__subtitle">
-          {{ LANDING_HERO_SUBTITLE }}
-        </p>
-      </section>
-
       <!-- 栅格区 -->
       <section class="landing-grid-wrap">
         <div class="landing-grid">
@@ -103,19 +93,6 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
   @apply relative w-full min-h-full z-1 overflow-y-auto py-6 px-4 sm:px-6 lg:px-8;
 }
 
-/* 标题区 */
-.landing-hero {
-  @apply mx-auto mb-10 max-w-6xl;
-}
-
-.landing-hero__title {
-  @apply text-3xl sm:text-4xl lg:text-5xl font-bold text-black tracking-tight;
-}
-
-.landing-hero__subtitle {
-  @apply mt-2 text-sm text-gray-500;
-}
-
 /* 栅格区 */
 .landing-grid-wrap {
   @apply mx-auto max-w-6xl;
@@ -154,7 +131,7 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
 }
 
 .landing-card__description {
-  @apply text-sm opacity-90;
+  @apply text-sm opacity-90 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md;
 }
 
 .landing-card__image-wrap {
@@ -182,6 +159,6 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
 }
 
 .landing-card__badge-label {
-  @apply text-[32px] font-medium text-[#1d1d1f];
+  @apply text-[32px] font-medium text-[#1d1d1f] px-3 py-1 rounded-2xl bg-white/20 backdrop-blur-md;
 }
 </style>
