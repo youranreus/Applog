@@ -126,7 +126,7 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, get
 }
 
 .landing-card {
-  @apply relative rounded-xl p-5 min-h-[400px] flex flex-col overflow-hidden;
+  @apply relative rounded-xl p-5 aspect-square md:aspect-auto md:min-h-[400px] flex flex-col overflow-hidden;
 }
 
 .landing-card--text {
