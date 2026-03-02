@@ -3,6 +3,8 @@ import {
   getColSpanClass,
   getRowSpanClass,
   getCardThemeClass,
+  getCardBgStyle,
+  getHrefType,
 } from '../utils';
 
 /**
@@ -15,5 +17,7 @@ export function useLanding(_props: IProps, _emits: IEmits) {
     getColSpanClass,
     getRowSpanClass,
     getCardThemeClass,
+    getCardBgStyle,
+    getHrefType,
   };
 }

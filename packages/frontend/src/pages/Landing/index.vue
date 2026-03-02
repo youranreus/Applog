@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import type { IProps, IEmits } from './types'
 import { LANDING_GRID_ITEMS, LANDING_HERO_TITLE, LANDING_HERO_SUBTITLE } from './constants'
 import { useLanding } from './hooks/useLanding'
@@ -10,7 +11,8 @@ defineOptions({
 const props = defineProps<IProps>()
 const emits = defineEmits<IEmits>() as IEmits
 
-const { getColSpanClass, getRowSpanClass, getCardThemeClass } = useLanding(props, emits)
+const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, getHrefType } =
+  useLanding(props, emits)
 </script>
 
 <template>
@@ -30,31 +32,58 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass } = useLanding(props
       <section class="landing-grid-wrap">
         <div class="landing-grid">
           <component
-            :is="item.href ? 'a' : 'div'"
+            :is="
+              getHrefType(item.href) === 'external'
+                ? 'a'
+                : getHrefType(item.href) === 'internal'
+                  ? RouterLink
+                  : 'div'
+            "
             v-for="item in LANDING_GRID_ITEMS"
             :key="item.id"
             :class="[getColSpanClass(item), getRowSpanClass(item), getCardThemeClass(item.theme)]"
-            :href="item.href"
-            :target="item.href ? '_blank' : undefined"
-            :rel="item.href ? 'noopener noreferrer' : undefined"
+            :style="getCardBgStyle(item)"
+            :href="getHrefType(item.href) === 'external' ? item.href : undefined"
+            :to="getHrefType(item.href) === 'internal' ? item.href : undefined"
+            :target="getHrefType(item.href) === 'external' ? '_blank' : undefined"
+            :rel="getHrefType(item.href) === 'external' ? 'noopener noreferrer' : undefined"
           >
-            <span v-if="item.icon" class="landing-card__icon">
-              <ion-icon :name="item.icon" />
+            <!-- 右上角导航箭头 -->
+            <span v-if="item.href" class="landing-card__nav-arrow">
+              <ion-icon name="arrow-forward-outline" />
             </span>
-            <span v-if="item.title" class="landing-card__title">
-              {{ item.title }}
-            </span>
-            <p v-if="item.subtitle" class="landing-card__subtitle">
-              {{ item.subtitle }}
-            </p>
+
+            <!-- icon + description 横排行 -->
+            <div v-if="item.icon || item.description" class="landing-card__info-row">
+              <span v-if="item.icon" class="landing-card__icon" :style="item.iconColor ? { color: item.iconColor } : undefined">
+                <ion-icon :name="item.icon" />
+              </span>
+              <span v-if="item.description" class="landing-card__description">
+                {{ item.description }}
+              </span>
+            </div>
+
+            <!-- 图片区 -->
             <div v-if="item.image && item.theme === 'image'" class="landing-card__image-wrap">
-              <img
-                v-if="item.image"
-                :src="item.image"
-                :alt="item.title ?? ''"
-                class="landing-card__image"
-              />
-              <div v-else class="landing-card__image-placeholder">图片</div>
+              <img :src="item.image" alt="" class="landing-card__image" />
+            </div>
+
+            <!-- badge 浮层 -->
+            <div
+              v-if="item.badge && (item.badge.emoji || item.badge.label)"
+              :class="[
+                'landing-card__badge',
+                item.badge.position === 'bottom-right'
+                  ? 'landing-card__badge--bottom-right'
+                  : 'landing-card__badge--bottom-left',
+              ]"
+            >
+              <span v-if="item.badge.emoji" class="landing-card__badge-emoji">{{
+                item.badge.emoji
+              }}</span>
+              <span v-if="item.badge.label" class="landing-card__badge-label" :style="item.badge.labelColor ? { color: item.badge.labelColor } : undefined">{{
+                item.badge.label
+              }}</span>
             </div>
           </component>
         </div>
@@ -97,7 +126,7 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass } = useLanding(props
 }
 
 .landing-card {
-  @apply rounded-xl p-5 min-h-[140px] flex flex-col overflow-hidden;
+  @apply relative rounded-xl p-5 min-h-[400px] flex flex-col overflow-hidden;
 }
 
 .landing-card--text {
@@ -112,16 +141,20 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass } = useLanding(props
   @apply bg-amber-400 text-black;
 }
 
+.landing-card__nav-arrow {
+  @apply absolute top-3 right-3 text-base opacity-50;
+}
+
+.landing-card__info-row {
+  @apply flex flex-row items-center gap-2 mb-2;
+}
+
 .landing-card__icon {
-  @apply text-sm text-gray-500 mb-1;
+  @apply text-sm text-gray-500;
 }
 
-.landing-card__title {
-  @apply font-semibold text-lg mb-1;
-}
-
-.landing-card__subtitle {
-  @apply text-sm opacity-90 flex-1;
+.landing-card__description {
+  @apply text-sm opacity-90;
 }
 
 .landing-card__image-wrap {
@@ -132,7 +165,23 @@ const { getColSpanClass, getRowSpanClass, getCardThemeClass } = useLanding(props
   @apply w-full h-full object-cover;
 }
 
-.landing-card__image-placeholder {
-  @apply w-full h-full min-h-[120px] flex items-center justify-center bg-gray-300 text-gray-500 text-sm;
+.landing-card__badge {
+  @apply absolute flex flex-col;
+}
+
+.landing-card__badge--bottom-left {
+  @apply bottom-3 left-3 items-start;
+}
+
+.landing-card__badge--bottom-right {
+  @apply bottom-3 right-3 items-end;
+}
+
+.landing-card__badge-emoji {
+  @apply text-[64px] leading-none;
+}
+
+.landing-card__badge-label {
+  @apply text-[32px] font-medium text-[#1d1d1f];
 }
 </style>

@@ -22,10 +22,11 @@ export default defineConfigWithVueTs(
   ...pluginOxlint.configs['flat/recommended'],
   skipFormatting,
 
-  // 关闭组件名必须为多词的规则
+  // 关闭组件名必须为多词的规则；允许空 interface（预留扩展用）
   {
     rules: {
       'vue/multi-word-component-names': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
     },
   },
 )

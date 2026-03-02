@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
-
 /**
  * UserHeader 组件 Props 类型
  * 当前无 props，预留扩展
