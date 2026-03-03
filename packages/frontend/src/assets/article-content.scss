@@ -225,11 +225,6 @@
     margin: 0 auto;
     display: block;
     cursor: zoom-in;
-
-    /* 大屏（≥786px）时限制最大宽度，避免过宽 */
-    @media (min-width: 786px) {
-      max-width: 786px;
-    }
   }
 
   /* 链接样式 - 模仿 Apple gb-anchor */

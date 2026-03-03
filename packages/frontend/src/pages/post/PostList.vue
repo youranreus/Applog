@@ -9,7 +9,6 @@ const router = useRouter();
 const { posts, pagination, loading, handlePageChange, formatDate } = usePostList();
 
 useSeoHead({
-  title: '文章列表',
   canonicalPath: '/posts',
 });
 
@@ -89,6 +88,12 @@ function goToPostDetail(slug: string): void {
 
 .post-item {
   @apply cursor-pointer relative;
+}
+
+@media (max-width: 768px) {
+  .post-list {
+    @apply gap-6;
+  }
 }
 </style>
 

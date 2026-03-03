@@ -16,7 +16,7 @@ const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_CO
 
 <template>
   <footer class="bg-[#f5f5f7]">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="common-page-container footer-container">
       <div class="flex flex-col sm:flex-row items-start sm:items-center min-h-16 py-3 sm:py-0 gap-y-2 sm:gap-y-0">
         <!-- showInFooter 页面链接（移动端排首位） -->
         <div class="flex items-center gap-x-3 order-first sm:order-2 sm:ml-6">
@@ -50,7 +50,7 @@ const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_CO
 
         <!-- 版权 + 构建信息（移动端同行两端对齐，桌面端融入父级 flex） -->
         <div class="flex items-center w-full justify-between sm:contents gap-x-4 sm:gap-x-0">
-          <p class="text-xs text-gray-600 sm:ml-10 sm:order-1">
+          <p class="text-xs text-gray-600 sm:order-1">
             Copyright © {{ currentYear }} {{ systemStore.config?.title || 'AppLog' }}.
           </p>
           <p v-if="buildInfo" class="text-xs text-gray-400 sm:ml-auto sm:order-3">
@@ -62,3 +62,14 @@ const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_CO
   </footer>
 </template>
 
+<style scoped>
+.footer-container {
+  padding: 0;
+}
+
+@media screen and (max-width: 768px) {
+  .footer-container {
+    padding: 0 1.5rem;
+  }
+}
+</style>
