@@ -11,6 +11,7 @@ import {
   CommentModule,
   PageModule,
   SystemConfigModule,
+  SeoModule,
 } from '@/module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -42,6 +43,7 @@ import { ENTITY_LIST } from '@/entities';
     CommentModule,
     PageModule,
     SystemConfigModule,
+    SeoModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { useHead } from '@unhead/vue';
 import { kApp } from 'konsta/vue';
 import Header from '@/components/Layout/Header.vue';
 import Footer from '@/components/Layout/Footer.vue';
@@ -34,12 +35,21 @@ const showLayout = computed<boolean>(() => {
 });
 
 /**
- * 监听系统配置变化，动态设置页面标题
- * 当配置加载完成且有标题时，使用配置的标题；否则使用默认值 "AppLog"
+ * 全局 SEO head 配置
+ * 设置 titleTemplate、OG 标签、html lang 属性
  */
-watchEffect(() => {
-  const title = systemStore.config?.title || 'AppLog';
-  document.title = title;
+const siteTitle = computed(() => systemStore.config?.title || 'AppLog');
+const siteDescription = computed(() => systemStore.config?.description || '');
+
+useHead({
+  htmlAttrs: { lang: 'zh-CN' },
+  titleTemplate: (title) => title ? `${title} | ${siteTitle.value}` : siteTitle.value,
+  meta: [
+    { name: 'description', content: siteDescription },
+    { property: 'og:site_name', content: siteTitle },
+    { property: 'og:type', content: 'website' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+  ],
 });
 </script>
 

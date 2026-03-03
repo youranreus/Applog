@@ -2,7 +2,8 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useWatcher } from 'alova/client';
 import { getPostBySlug } from '@/api/post/getPostById';
-import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useSeoHead } from '@/hooks/useSeoHead';
+import { useArticleJsonLd } from '@/hooks/useJsonLd';
 import type { IPostDetail } from '@/types/post';
 
 /**
@@ -56,7 +57,30 @@ export function usePostDetail() {
     return postDetail.value;
   });
 
-  useDocumentTitle(computed(() => post.value?.title));
+  const SITE_URL = import.meta.env.VITE_SITE_URL || '';
+
+  useSeoHead({
+    title: computed(() => post.value?.title),
+    description: computed(() => post.value?.summary),
+    image: computed(() => post.value?.cover),
+    canonicalPath: computed(() => post.value?.slug ? `/archives/${post.value.slug}.html` : undefined),
+    type: 'article',
+    publishedTime: computed(() => post.value?.createdAt),
+    modifiedTime: computed(() => post.value?.updatedAt),
+    tags: computed(() => post.value?.tags),
+    authorName: computed(() => post.value?.author?.name),
+  });
+
+  useArticleJsonLd({
+    title: post.value?.title || '',
+    description: post.value?.summary,
+    url: post.value?.slug ? `${SITE_URL}/archives/${post.value.slug}.html` : undefined,
+    image: post.value?.cover,
+    datePublished: post.value?.createdAt ? new Date(post.value.createdAt).toISOString() : undefined,
+    dateModified: post.value?.updatedAt ? new Date(post.value.updatedAt).toISOString() : undefined,
+    authorName: post.value?.author?.name,
+    tags: post.value?.tags,
+  });
 
   /**
    * 格式化日期为 YYYY-MM-DD 格式

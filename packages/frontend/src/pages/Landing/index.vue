@@ -3,6 +3,9 @@ import { RouterLink } from 'vue-router'
 import type { IProps, IEmits } from './types'
 import { LANDING_GRID_ITEMS } from './constants'
 import { useLanding } from './hooks/useLanding'
+import { useSystemStore } from '@/stores/useSystemStore'
+import { useSeoHead } from '@/hooks/useSeoHead'
+import { useWebSiteJsonLd } from '@/hooks/useJsonLd'
 
 defineOptions({
   name: 'Landing',
@@ -13,6 +16,20 @@ const emits = defineEmits<IEmits>() as IEmits
 
 const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, getHrefType } =
   useLanding(props, emits)
+
+const systemStore = useSystemStore()
+const SITE_URL = import.meta.env.VITE_SITE_URL || ''
+
+useSeoHead({
+  description: () => systemStore.config?.description,
+  canonicalPath: '/landing',
+})
+
+useWebSiteJsonLd({
+  name: systemStore.config?.title || 'AppLog',
+  description: systemStore.config?.description,
+  url: SITE_URL,
+})
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 import { computed, type Ref } from 'vue';
 import { useWatcher } from 'alova/client';
 import { getPageBySlug } from '@/api/page/getPageBySlug';
-import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useSeoHead } from '@/hooks/useSeoHead';
 import type { IPageDetail } from '@/types/page';
 
 /**
@@ -49,7 +49,13 @@ export function usePageDetail(slug: Ref<string> | string) {
     return pageDetail.value;
   });
 
-  useDocumentTitle(computed(() => page.value?.title));
+  useSeoHead({
+    title: computed(() => page.value?.title),
+    description: computed(() => page.value?.summary),
+    image: computed(() => page.value?.cover),
+    canonicalPath: computed(() => page.value?.slug ? `/${page.value.slug}.html` : undefined),
+    tags: computed(() => page.value?.tags),
+  });
 
   return {
     // 页面详情数据

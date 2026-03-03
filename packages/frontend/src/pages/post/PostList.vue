@@ -3,9 +3,15 @@ import { useRouter } from 'vue-router';
 import { usePostList } from './hooks/usePostList';
 import Pagination from '@/components/ui/pagination/index.vue';
 import { ROUTE_NAMES } from '@/constants/permission';
+import { useSeoHead } from '@/hooks/useSeoHead';
 
 const router = useRouter();
 const { posts, pagination, loading, handlePageChange, formatDate } = usePostList();
+
+useSeoHead({
+  title: '文章列表',
+  canonicalPath: '/posts',
+});
 
 /**
  * 跳转到文章详情页

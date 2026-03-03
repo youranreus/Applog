@@ -23,4 +23,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    proxy: {
+      '/sitemap.xml': 'http://localhost:4000',
+      '/robots.txt': 'http://localhost:4000',
+    },
+  },
 })

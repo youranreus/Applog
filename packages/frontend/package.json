@@ -29,6 +29,7 @@
     "@tiptap/markdown": "^3.13.0",
     "@tiptap/starter-kit": "^3.13.0",
     "@tiptap/vue-3": "^3.13.0",
+    "@unhead/vue": "^2.1.10",
     "@vueuse/motion": "^3.0.3",
     "alova": "^3.3.4",
     "artplayer": "^5.3.0",
