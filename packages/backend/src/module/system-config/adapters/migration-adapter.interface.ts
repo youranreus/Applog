@@ -36,4 +36,3 @@ export interface IMigrationAdapter {
    */
   disconnect(): Promise<void>;
 }
-

@@ -58,4 +58,3 @@ export class UpdatePostDto {
   @IsOptional()
   extra?: Record<string, any>;
 }
-

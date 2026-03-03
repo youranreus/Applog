@@ -11,4 +11,3 @@ export interface ICommentResponseDto extends CommentExportData {
   };
   replies?: ICommentResponseDto[];
 }
-

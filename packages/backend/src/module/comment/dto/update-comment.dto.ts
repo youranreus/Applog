@@ -8,4 +8,3 @@ export class UpdateCommentDto {
   @IsNotEmpty({ message: '评论内容不能为空' })
   content: string;
 }
-

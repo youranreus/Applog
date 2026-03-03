@@ -9,4 +9,3 @@ export class ApproveCommentDto {
   })
   status: 'approved' | 'rejected';
 }
-

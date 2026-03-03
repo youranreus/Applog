@@ -4,4 +4,3 @@
  * 如果用户已点赞，则取消点赞；如果未点赞，则点赞
  */
 export class ReactCommentDto {}
-

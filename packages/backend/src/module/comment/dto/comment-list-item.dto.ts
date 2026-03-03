@@ -17,4 +17,3 @@ export interface ICommentListItemDto {
   createdAt: Date;
   updatedAt: Date;
 }
-
