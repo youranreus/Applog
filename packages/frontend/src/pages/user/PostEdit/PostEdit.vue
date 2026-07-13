@@ -339,6 +339,8 @@ const formatDate = (date: Date | string): string => {
 
 <style scoped>
 .post-edit-page {
+  /* 与顶导 UserHeader 内容区 max-w-7xl 对齐 */
+  max-width: 80rem;
   width: 100%;
   display: flex;
   flex-direction: column;

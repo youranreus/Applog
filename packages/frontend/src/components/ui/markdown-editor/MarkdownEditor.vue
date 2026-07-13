@@ -172,26 +172,31 @@ const showValidationMessage = computed(() => {
 }
 
 .editor-tab-button {
-  @apply px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 transition-colors duration-200;
+  @apply px-3 py-1.5 text-sm font-medium rounded-md text-gray-600 cursor-pointer;
+  @apply border border-transparent;
   @apply hover:bg-gray-100 hover:text-gray-900;
 }
 
 .editor-tab-button-active {
-  @apply bg-white text-gray-900 shadow-sm border border-gray-200;
+  @apply bg-white text-gray-900 shadow-sm border-gray-200;
 }
 
 .editor-content-wrapper {
-  @apply min-h-[200px] max-h-[600px] overflow-y-auto;
+  @apply h-[480px] overflow-hidden;
 }
 
 .editor-textarea {
-  @apply w-full min-h-[200px] max-h-[600px] overflow-y-auto px-4 py-3 text-sm font-mono leading-relaxed;
-  @apply resize-y outline-none bg-transparent text-gray-900;
+  @apply w-full h-full px-4 py-3 text-sm font-mono leading-relaxed;
+  @apply resize-none outline-none bg-transparent text-gray-900 overflow-y-auto;
   @apply placeholder:text-gray-400;
+  box-sizing: border-box;
 }
 
 .preview-content-wrapper {
-  @apply px-4 py-3;
+  @apply h-full px-4 py-3 overflow-y-auto;
+  /* 覆盖 article-content 的上下 margin，改为滚动区内的 padding */
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .preview-empty {
