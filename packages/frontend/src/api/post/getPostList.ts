@@ -4,7 +4,7 @@ import type { IPostListItem, IQueryPost, IPagination } from '@/types/post';
 /**
  * 获取文章列表（支持分页、搜索、标签筛选）
  * 接口路径: GET /post
- * @param queryParams - 查询参数（page, limit, keyword, tags）
+ * @param queryParams - 查询参数（page, limit, keyword, tags, includeUnpublished）
  * @returns Method 对象，用于 alova 的 useRequest
  * 
  * 类型说明：
@@ -34,10 +34,13 @@ export const getPostList = (queryParams: IQueryPost) => {
       params.append('tags', tag);
     });
   }
+
+  if (queryParams.includeUnpublished) {
+    params.append('includeUnpublished', 'true');
+  }
   
   const queryString = params.toString();
   const url = queryString ? `/post?${queryString}` : '/post';
   
   return alovaInstance.Get<IPagination<IPostListItem>>(url);
 };
-

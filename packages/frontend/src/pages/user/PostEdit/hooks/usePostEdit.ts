@@ -89,7 +89,7 @@ export function usePostEdit(options: IUsePostEditOptions) {
       if (!slugValue || typeof slugValue !== 'string' || slugValue.trim() === '') {
         throw new Error('文章 slug 无效');
       }
-      return getPostBySlug(slugValue);
+      return getPostBySlug(slugValue, { includeUnpublished: true });
     },
     {
       immediate: isEditMode.value && !!postSlug.value,

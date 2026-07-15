@@ -20,6 +20,7 @@ export function useAdminPostListService() {
   const queryParams = ref<IQueryPost>({
     page: 1,
     limit: 10,
+    includeUnpublished: true,
   });
 
   /**
@@ -138,6 +139,7 @@ export function useAdminPostListService() {
     queryParams.value = {
       page: 1,
       limit: 10,
+      includeUnpublished: true,
     };
     refresh();
   }

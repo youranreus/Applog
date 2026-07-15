@@ -87,7 +87,7 @@ export function usePageEdit(options: IUsePageEditOptions) {
     error: pageDetailError,
   } = useRequest(
     () => {
-      return getPageBySlug(pageSlug.value!);
+      return getPageBySlug(pageSlug.value!, { includeUnpublished: true });
     },
     {
       immediate: isEditMode.value && !!pageSlug.value,

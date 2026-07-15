@@ -12,7 +12,12 @@ import {
 import { PostService } from './post.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
-import { CreatePostDto, UpdatePostDto, QueryPostDto } from './dto';
+import {
+  CreatePostDto,
+  UpdatePostDto,
+  QueryPostDto,
+  IncludeUnpublishedQueryDto,
+} from './dto';
 import type {
   IPostResponseDto,
   IPostListItemDto,
@@ -29,18 +34,22 @@ export class PostController {
 
   /**
    * 获取文章列表（支持分页、搜索、标签筛选）
+   * 默认仅返回 published；admin + includeUnpublished=true 可查看全量
    * @param queryDto 查询参数
+   * @param user 可选的当前用户
    * @returns 分页的文章列表
    */
   @Get()
   async findAll(
     @Query() queryDto: QueryPostDto,
+    @UserParams() user?: UserJwtPayload,
   ): Promise<Pagination<IPostListItemDto>> {
-    return this.postService.findAll(queryDto);
+    return this.postService.findAll(queryDto, user);
   }
 
   /**
    * 获取文章基础信息（用于 BBCode article 标签）
+   * 仅返回 published 文章
    * @param slug 文章 slug
    * @returns 文章基础信息（标题、发布日期）
    *
@@ -53,12 +62,22 @@ export class PostController {
 
   /**
    * 获取文章详情
+   * 默认仅返回 published；admin + includeUnpublished=true 可查看草稿/归档
    * @param slug 文章 slug
+   * @param query 是否包含未发布内容
+   * @param user 可选的当前用户
    * @returns 文章详细信息（包含完整内容）
    */
   @Get(':slug')
-  async findOne(@Param('slug') slug: string): Promise<IPostResponseDto> {
-    return this.postService.findOne(slug);
+  async findOne(
+    @Param('slug') slug: string,
+    @Query() query: IncludeUnpublishedQueryDto,
+    @UserParams() user?: UserJwtPayload,
+  ): Promise<IPostResponseDto> {
+    return this.postService.findOne(slug, {
+      includeUnpublished: query.includeUnpublished,
+      user,
+    });
   }
 
   /**

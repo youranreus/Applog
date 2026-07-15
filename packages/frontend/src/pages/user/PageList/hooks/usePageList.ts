@@ -23,6 +23,7 @@ export function usePageList() {
   const queryParams = ref<IQueryPage>({
     page: 1,
     limit: 10,
+    includeUnpublished: true,
   });
 
   /**
@@ -138,6 +139,7 @@ export function usePageList() {
     queryParams.value = {
       page: 1,
       limit: 10,
+      includeUnpublished: true,
     };
   }
 

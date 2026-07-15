@@ -95,6 +95,8 @@ export interface IQueryPage {
   keyword?: string;
   /** 标签筛选 */
   tags?: string[];
+  /** 是否包含未发布内容（仅管理端 + admin 生效） */
+  includeUnpublished?: boolean;
 }
 
 /**

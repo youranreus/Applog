@@ -4,7 +4,7 @@ import type { IPageListItem, IQueryPage, IPagination } from '@/types/page';
 /**
  * 获取页面列表（支持分页、搜索、标签筛选）
  * 接口路径: GET /page
- * @param queryParams - 查询参数（page, limit, keyword, tags）
+ * @param queryParams - 查询参数（page, limit, keyword, tags, includeUnpublished）
  * @returns Method 对象，用于 alova 的 useRequest
  * 
  * 类型说明：
@@ -33,6 +33,10 @@ export const getPageList = (queryParams: IQueryPage) => {
     queryParams.tags.forEach((tag) => {
       params.append('tags', tag);
     });
+  }
+
+  if (queryParams.includeUnpublished) {
+    params.append('includeUnpublished', 'true');
   }
   
   const queryString = params.toString();

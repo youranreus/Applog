@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
+import type { UserJwtPayload } from '@reus-able/types';
 import { PostEntity } from '@/entities';
 import { CommentService } from '../comment/comment.service';
 import type {
@@ -28,10 +29,14 @@ export class PostService {
   @Inject(HLOGGER_TOKEN)
   private logger: HLogger;
 
+  private readonly adminRoleValue: number;
+
   constructor(
     private config: ConfigService,
     private commentService: CommentService,
-  ) {}
+  ) {
+    this.adminRoleValue = this.config.get<number>('SYSTEM_ADMIN_ROLE_VALUE', 0);
+  }
 
   private log(message: string) {
     this.logger.log(message, PostService.name);
@@ -43,6 +48,28 @@ export class PostService {
 
   private error(message: string) {
     this.logger.error(message, PostService.name);
+  }
+
+  /**
+   * 判断当前用户是否为管理员
+   * @param user - 可选的 JWT 用户信息
+   * @returns 是否为管理员
+   */
+  private isAdmin(user?: UserJwtPayload): boolean {
+    return user?.role === this.adminRoleValue;
+  }
+
+  /**
+   * 判断是否允许查看未发布内容（admin + 显式 includeUnpublished）
+   * @param user - 可选的 JWT 用户信息
+   * @param includeUnpublished - 是否请求包含未发布内容
+   * @returns 是否允许查看未发布内容
+   */
+  private canViewUnpublished(
+    user?: UserJwtPayload,
+    includeUnpublished?: boolean,
+  ): boolean {
+    return !!includeUnpublished && this.isAdmin(user);
   }
 
   /**
@@ -202,9 +229,21 @@ export class PostService {
   /**
    * 获取文章详情
    * @param slug 文章 slug
+   * @param options 查询选项（是否包含未发布、当前用户）
    * @returns 文章详细信息（包含完整内容和作者信息）
+   *
+   * 逻辑说明：
+   * 1. 通过 slug 查询文章
+   * 2. 非 admin 或未显式请求 includeUnpublished 时，仅允许 published
+   * 3. 未授权访问非 published 时返回「文章不存在」
    */
-  async findOne(slug: string): Promise<IPostResponseDto> {
+  async findOne(
+    slug: string,
+    options?: {
+      includeUnpublished?: boolean;
+      user?: UserJwtPayload;
+    },
+  ): Promise<IPostResponseDto> {
     this.log(`查询文章详情，slug: ${slug}`);
 
     try {
@@ -216,6 +255,15 @@ export class PostService {
 
       if (isNil(post)) {
         this.warn(`文章 slug "${slug}" 不存在`);
+        throw new BusinessException('文章不存在');
+      }
+
+      // 公开端仅允许已发布文章
+      if (
+        !this.canViewUnpublished(options?.user, options?.includeUnpublished) &&
+        post.status !== 'published'
+      ) {
+        this.warn(`文章 slug "${slug}" 未发布，拒绝公开访问`);
         throw new BusinessException('文章不存在');
       }
 
@@ -237,9 +285,9 @@ export class PostService {
    * @returns 文章基础信息
    *
    * 逻辑说明：
-   * 1. 通过 slug 查询文章，只查询必要字段（slug、title、createdAt）
-   * 2. 文章不存在时抛出 BusinessException
-   * 3. 返回基础信息对象
+   * 1. 通过 slug 查询文章，只查询必要字段（slug、title、createdAt、status）
+   * 2. 仅返回 published 文章；草稿/归档一律视为不存在
+   * 3. 文章不存在时抛出 BusinessException
    */
   async findBasicInfo(slug: string): Promise<IPostBasicInfoDto> {
     this.log(`查询文章基础信息，slug: ${slug}`);
@@ -248,11 +296,11 @@ export class PostService {
       // 查询文章，只选择必要字段
       const post = await this.postRepo.findOne({
         where: { slug },
-        select: ['slug', 'title', 'createdAt'],
+        select: ['slug', 'title', 'createdAt', 'status'],
       });
 
-      if (isNil(post)) {
-        this.warn(`文章 slug "${slug}" 不存在`);
+      if (isNil(post) || post.status !== 'published') {
+        this.warn(`文章 slug "${slug}" 不存在或未发布`);
         throw new BusinessException('文章不存在');
       }
 
@@ -274,13 +322,23 @@ export class PostService {
   /**
    * 获取文章列表（分页、搜索、筛选）
    * @param queryDto 查询参数
+   * @param user 可选的当前用户（用于判断是否可查看未发布内容）
    * @returns 分页的文章列表
+   *
+   * 逻辑说明：
+   * 1. 默认仅返回 published
+   * 2. 仅当 admin 且 includeUnpublished=true 时返回全量状态
    */
-  async findAll(queryDto: QueryPostDto): Promise<Pagination<IPostListItemDto>> {
-    const { page = 1, limit = 10, keyword, tags } = queryDto;
+  async findAll(
+    queryDto: QueryPostDto,
+    user?: UserJwtPayload,
+  ): Promise<Pagination<IPostListItemDto>> {
+    const { page = 1, limit = 10, keyword, tags, includeUnpublished } =
+      queryDto;
+    const allowUnpublished = this.canViewUnpublished(user, includeUnpublished);
 
     this.log(
-      `查询文章列表，页码: ${page}，每页: ${limit}，关键字: ${keyword || '无'}，标签: ${tags?.join(',') || '无'}`,
+      `查询文章列表，页码: ${page}，每页: ${limit}，关键字: ${keyword || '无'}，标签: ${tags?.join(',') || '无'}，含未发布: ${allowUnpublished}`,
     );
 
     try {
@@ -304,6 +362,13 @@ export class PostService {
           'author.name',
           'author.avatar',
         ]);
+
+      // 公开端强制只返回已发布文章
+      if (!allowUnpublished) {
+        queryBuilder.andWhere('post.status = :status', {
+          status: 'published',
+        });
+      }
 
       // 关键字搜索（模糊匹配标题和摘要）
       if (keyword) {

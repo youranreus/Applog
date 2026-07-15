@@ -30,6 +30,8 @@ export interface IQueryPost {
   limit?: number;
   keyword?: string;
   tags?: string[];
+  /** 是否包含未发布内容（仅管理端 + admin 生效） */
+  includeUnpublished?: boolean;
 }
 
 /**

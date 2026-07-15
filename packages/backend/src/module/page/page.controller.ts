@@ -12,7 +12,12 @@ import {
 import { PageService } from './page.service';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
-import { CreatePageDto, UpdatePageDto, QueryPageDto } from './dto';
+import {
+  CreatePageDto,
+  UpdatePageDto,
+  QueryPageDto,
+  IncludeUnpublishedQueryDto,
+} from './dto';
 import type {
   IPageResponseDto,
   IPageListItemDto,
@@ -29,14 +34,17 @@ export class PageController {
 
   /**
    * 获取页面列表（支持分页、搜索、标签筛选）
+   * 默认仅返回 published；admin + includeUnpublished=true 可查看全量
    * @param queryDto 查询参数
+   * @param user 可选的当前用户
    * @returns 分页的页面列表
    */
   @Get()
   async findAll(
     @Query() queryDto: QueryPageDto,
+    @UserParams() user?: UserJwtPayload,
   ): Promise<Pagination<IPageListItemDto>> {
-    return this.pageService.findAll(queryDto);
+    return this.pageService.findAll(queryDto, user);
   }
 
   /**
@@ -51,22 +59,42 @@ export class PageController {
 
   /**
    * 通过slug获取单个页面详情
+   * 默认仅返回 published；admin + includeUnpublished=true 可查看草稿/归档
    * @param slug 页面slug
+   * @param query 是否包含未发布内容
+   * @param user 可选的当前用户
    * @returns 页面详情
    */
   @Get('slug/:slug')
-  async findBySlug(@Param('slug') slug: string): Promise<IPageResponseDto> {
-    return this.pageService.findBySlug(slug);
+  async findBySlug(
+    @Param('slug') slug: string,
+    @Query() query: IncludeUnpublishedQueryDto,
+    @UserParams() user?: UserJwtPayload,
+  ): Promise<IPageResponseDto> {
+    return this.pageService.findBySlug(slug, {
+      includeUnpublished: query.includeUnpublished,
+      user,
+    });
   }
 
   /**
    * 通过ID获取单个页面详情
+   * 默认仅返回 published；admin + includeUnpublished=true 可查看草稿/归档
    * @param id 页面ID
+   * @param query 是否包含未发布内容
+   * @param user 可选的当前用户
    * @returns 页面详情
    */
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<IPageResponseDto> {
-    return this.pageService.findOne(Number(id));
+  async findOne(
+    @Param('id') id: string,
+    @Query() query: IncludeUnpublishedQueryDto,
+    @UserParams() user?: UserJwtPayload,
+  ): Promise<IPageResponseDto> {
+    return this.pageService.findOne(Number(id), {
+      includeUnpublished: query.includeUnpublished,
+      user,
+    });
   }
 
   /**

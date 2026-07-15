@@ -1,10 +1,11 @@
 import { IsString, IsOptional, IsInt, Min, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IncludeUnpublishedQueryDto } from './include-unpublished.dto';
 
 /**
  * 查询文章列表 DTO
  */
-export class QueryPostDto {
+export class QueryPostDto extends IncludeUnpublishedQueryDto {
   @IsInt()
   @Min(1, { message: '页码最小为 1' })
   @Type(() => Number)

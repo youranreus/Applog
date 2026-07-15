@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
+import type { UserJwtPayload } from '@reus-able/types';
 import { PageEntity } from '@/entities';
 import type {
   CreatePageDto,
@@ -27,7 +28,11 @@ export class PageService {
   @Inject(HLOGGER_TOKEN)
   private logger: HLogger;
 
-  constructor(private config: ConfigService) {}
+  private readonly adminRoleValue: number;
+
+  constructor(private config: ConfigService) {
+    this.adminRoleValue = this.config.get<number>('SYSTEM_ADMIN_ROLE_VALUE', 0);
+  }
 
   private log(message: string) {
     this.logger.log(message, PageService.name);
@@ -39,6 +44,28 @@ export class PageService {
 
   private error(message: string) {
     this.logger.error(message, PageService.name);
+  }
+
+  /**
+   * 判断当前用户是否为管理员
+   * @param user - 可选的 JWT 用户信息
+   * @returns 是否为管理员
+   */
+  private isAdmin(user?: UserJwtPayload): boolean {
+    return user?.role === this.adminRoleValue;
+  }
+
+  /**
+   * 判断是否允许查看未发布内容（admin + 显式 includeUnpublished）
+   * @param user - 可选的 JWT 用户信息
+   * @param includeUnpublished - 是否请求包含未发布内容
+   * @returns 是否允许查看未发布内容
+   */
+  private canViewUnpublished(
+    user?: UserJwtPayload,
+    includeUnpublished?: boolean,
+  ): boolean {
+    return !!includeUnpublished && this.isAdmin(user);
   }
 
   /**
@@ -210,13 +237,23 @@ export class PageService {
   /**
    * 获取页面列表（分页、搜索、筛选）
    * @param queryDto 查询参数
+   * @param user 可选的当前用户（用于判断是否可查看未发布内容）
    * @returns 分页的页面列表
+   *
+   * 逻辑说明：
+   * 1. 默认仅返回 published
+   * 2. 仅当 admin 且 includeUnpublished=true 时返回全量状态
    */
-  async findAll(queryDto: QueryPageDto): Promise<Pagination<IPageListItemDto>> {
-    const { page = 1, limit = 10, keyword, tags } = queryDto;
+  async findAll(
+    queryDto: QueryPageDto,
+    user?: UserJwtPayload,
+  ): Promise<Pagination<IPageListItemDto>> {
+    const { page = 1, limit = 10, keyword, tags, includeUnpublished } =
+      queryDto;
+    const allowUnpublished = this.canViewUnpublished(user, includeUnpublished);
 
     this.log(
-      `查询页面列表，页码: ${page}，每页: ${limit}，关键字: ${keyword || '无'}，标签: ${tags?.join(',') || '无'}`,
+      `查询页面列表，页码: ${page}，每页: ${limit}，关键字: ${keyword || '无'}，标签: ${tags?.join(',') || '无'}，含未发布: ${allowUnpublished}`,
     );
 
     try {
@@ -242,6 +279,13 @@ export class PageService {
           'author.name',
           'author.avatar',
         ]);
+
+      // 公开端强制只返回已发布页面
+      if (!allowUnpublished) {
+        queryBuilder.andWhere('page.status = :status', {
+          status: 'published',
+        });
+      }
 
       // 关键字搜索（模糊匹配标题和摘要）
       if (keyword) {
@@ -332,10 +376,23 @@ export class PageService {
   /**
    * 通过ID获取单个页面详情
    * @param id 页面ID
-   * @param includeAuthor 是否包含作者信息
+   * @param options 查询选项（是否包含作者、未发布内容、当前用户）
    * @returns 页面详情
+   *
+   * 逻辑说明：
+   * 1. 通过 id 查询页面
+   * 2. 非 admin 或未显式请求 includeUnpublished 时，仅允许 published
+   * 3. 仅对已发布页面增加浏览次数
    */
-  async findOne(id: number, includeAuthor = false): Promise<IPageResponseDto> {
+  async findOne(
+    id: number,
+    options?: {
+      includeAuthor?: boolean;
+      includeUnpublished?: boolean;
+      user?: UserJwtPayload;
+    },
+  ): Promise<IPageResponseDto> {
+    const includeAuthor = options?.includeAuthor ?? false;
     this.log(`查询页面详情，页面ID: ${id}`);
 
     try {
@@ -349,9 +406,20 @@ export class PageService {
         throw new BusinessException('页面不存在');
       }
 
-      // 增加浏览次数
-      page.viewCount += 1;
-      await this.pageRepo.save(page);
+      // 公开端仅允许已发布页面
+      if (
+        !this.canViewUnpublished(options?.user, options?.includeUnpublished) &&
+        page.status !== 'published'
+      ) {
+        this.warn(`页面 #${id} 未发布，拒绝公开访问`);
+        throw new BusinessException('页面不存在');
+      }
+
+      // 只对已发布的页面增加浏览次数
+      if (page.status === 'published') {
+        page.viewCount += 1;
+        await this.pageRepo.save(page);
+      }
 
       this.log(`页面 #${id} 查询成功，浏览次数: ${page.viewCount}`);
 
@@ -368,13 +436,23 @@ export class PageService {
   /**
    * 通过slug获取单个页面详情
    * @param slug 页面slug
-   * @param includeAuthor 是否包含作者信息
+   * @param options 查询选项（是否包含作者、未发布内容、当前用户）
    * @returns 页面详情
+   *
+   * 逻辑说明：
+   * 1. 通过 slug 查询页面
+   * 2. 非 admin 或未显式请求 includeUnpublished 时，仅允许 published
+   * 3. 仅对已发布页面增加浏览次数
    */
   async findBySlug(
     slug: string,
-    includeAuthor = false,
+    options?: {
+      includeAuthor?: boolean;
+      includeUnpublished?: boolean;
+      user?: UserJwtPayload;
+    },
   ): Promise<IPageResponseDto> {
+    const includeAuthor = options?.includeAuthor ?? false;
     this.log(`查询页面详情，页面slug: ${slug}`);
 
     try {
@@ -385,6 +463,15 @@ export class PageService {
 
       if (isNil(page)) {
         this.warn(`页面slug "${slug}" 不存在`);
+        throw new BusinessException('页面不存在');
+      }
+
+      // 公开端仅允许已发布页面
+      if (
+        !this.canViewUnpublished(options?.user, options?.includeUnpublished) &&
+        page.status !== 'published'
+      ) {
+        this.warn(`页面slug "${slug}" 未发布，拒绝公开访问`);
         throw new BusinessException('页面不存在');
       }
 
