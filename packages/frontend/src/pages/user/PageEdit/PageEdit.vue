@@ -110,7 +110,7 @@ const formatDate = (date: Date | string): string => {
 </script>
 
 <template>
-  <div class="page-edit-page common-page-container">
+  <div class="page-edit-page admin-page-container">
     <!-- 加载页面详情状态 -->
     <div v-if="isEditMode && loadingPageDetail" class="text-center text-gray-600 py-12 min-h-[400px]">
       <Loading />
@@ -301,8 +301,6 @@ const formatDate = (date: Date | string): string => {
 
 <style scoped>
 .page-edit-page {
-  /* 与顶导 UserHeader 内容区 max-w-7xl 对齐 */
-  max-width: 80rem;
   width: 100%;
   display: flex;
   flex-direction: column;

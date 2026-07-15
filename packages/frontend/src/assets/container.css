@@ -7,7 +7,34 @@
   padding-top: 2rem;
 }
 
-/* 移动端稍宽 padding */
+/**
+ * 管理端内容页容器
+ * 与顶导对齐：max-w-7xl + px-4 sm:px-6 lg:px-8
+ */
+.admin-page-container {
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 2rem;
+}
+
+@media (min-width: 640px) {
+  .admin-page-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-page-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* 移动端稍宽 padding（仅前台 common-page-container） */
 @media (max-width: 767px) {
   .common-page-container {
     padding-left: 1.5rem;

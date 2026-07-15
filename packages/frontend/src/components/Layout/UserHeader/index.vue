@@ -14,7 +14,7 @@ const { navPages, showBack, handleBack } = useUserHeader(props, emits);
 
 <template>
   <header class="header-container">
-    <div class="max-w-7xl mx-auto bg-[#f1f1f1df] backdrop-blur-sm px-5 py-3 rounded-full flex items-center">
+    <div class="max-w-7xl mx-auto bg-[#f1f1f1df] backdrop-blur-sm px-4 sm:px-6 lg:px-8 py-3 rounded-full flex items-center">
       <div
         class="header-back-wrapper"
         :class="{ 'is-visible': showBack }"
