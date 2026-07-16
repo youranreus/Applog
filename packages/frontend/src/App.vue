@@ -2,12 +2,13 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useHead } from '@unhead/vue';
-import { kApp } from 'konsta/vue';
+import 'vue-sonner/style.css';
 import Header from '@/components/Layout/Header.vue';
 import Footer from '@/components/Layout/Footer.vue';
 import UserHeader from '@/components/Layout/UserHeader/index.vue';
 import GlobalLoading from '@/components/GlobalLoading.vue';
 import GlobalNotification from '@/components/GlobalNotification.vue';
+import { Toaster } from '@/components/ui/sonner';
 import { useSystemStore } from '@/stores/useSystemStore';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 
@@ -54,34 +55,34 @@ useHead({
 </script>
 
 <template>
-  <k-app theme="ios">
-    <div class="min-h-screen flex flex-col">
-      <template v-if="showLayout">
-        <Header v-if="layoutStore.currentNavGroup === 'user'" />
-        <UserHeader v-else />
-      </template>
-      <main
-        v-if="showLayout"
-        class="flex-1 w-full"
-      >
-        <RouterView v-slot="{ Component }">
-          <Transition name="page-fade" mode="out-in">
-            <component :is="Component" :key="route.path" />
-          </Transition>
-        </RouterView>
-      </main>
-      <RouterView v-else v-slot="{ Component }">
+  <div class="min-h-screen flex flex-col">
+    <template v-if="showLayout">
+      <Header v-if="layoutStore.currentNavGroup === 'user'" />
+      <UserHeader v-else />
+    </template>
+    <main
+      v-if="showLayout"
+      class="flex-1 w-full"
+    >
+      <RouterView v-slot="{ Component }">
         <Transition name="page-fade" mode="out-in">
           <component :is="Component" :key="route.path" />
         </Transition>
       </RouterView>
-      <Footer v-if="showLayout" />
-    </div>
+    </main>
+    <RouterView v-else v-slot="{ Component }">
+      <Transition name="page-fade" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </Transition>
+    </RouterView>
+    <Footer v-if="showLayout" />
     <!-- 全局加载状态 -->
     <GlobalLoading />
-    <!-- 全局通知 -->
+    <!-- 全局通知适配层 -->
     <GlobalNotification />
-  </k-app>
+    <!-- Sonner 吐司容器 -->
+    <Toaster position="top-center" rich-colors close-button />
+  </div>
 </template>
 
 <style scoped>

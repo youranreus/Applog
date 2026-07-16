@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
-import { ref } from 'vue';
-import { kNotification } from 'konsta/vue';
+import { watch } from 'vue';
+import { toast } from 'vue-sonner';
 import { useLayoutStore } from '@/stores/useLayoutStore';
-import type { INotification } from '@/types/notification';
+import type { INotification, NotificationType } from '@/types/notification';
 
 /**
  * 布局 Store
@@ -11,104 +10,85 @@ import type { INotification } from '@/types/notification';
 const layoutStore = useLayoutStore();
 
 /**
- * 当前显示的通知
+ * 已通过 Sonner 展示过的通知 ID，避免重复 toast
  */
-const currentNotification = ref<INotification | null>(null);
+const shownNotificationIds = new Set<string>();
 
 /**
- * 通知是否打开
+ * 将通知类型映射为 Sonner toast 方法
+ * @param type - 通知类型
+ * @returns 对应的 toast 调用函数
  */
-const notificationOpened = ref(false);
-
-/**
- * 通知标题右侧文本映射
- */
-const titleRightTextMap: Record<string, string> = {
-  success: '成功',
-  error: '错误',
-  info: '信息',
-};
-
-/**
- * 当前通知的标题右侧文本
- */
-const titleRightText = computed(() => {
-  if (!currentNotification.value) {
-    return '';
+function getToastFn(type: NotificationType): typeof toast.success {
+  if (type === 'success') {
+    return toast.success;
   }
-  return titleRightTextMap[currentNotification.value.type] || '信息';
-});
+  if (type === 'error') {
+    return toast.error;
+  }
+  return toast.info;
+}
 
 /**
- * 监听通知队列变化，自动显示下一个通知
- * 
+ * 用 Sonner 展示单条通知
+ * @param notification - 通知数据
+ *
  * 逻辑说明：
- * 1. 当队列中有新通知且当前没有显示的通知时，显示队列中的第一个
- * 2. 当当前通知被关闭时，如果队列中还有通知，自动显示下一个
+ * 1. 标题作为主文案，副标题与内容拼成 description
+ * 2. duration 为 0 时不自动关闭
+ * 3. 关闭时从 layoutStore 队列移除，保持 API 一致
+ */
+function showToast(notification: INotification): void {
+  const descriptionParts = [notification.subtitle, notification.content].filter(Boolean);
+  const toastFn = getToastFn(notification.type);
+
+  toastFn(notification.title, {
+    id: notification.id,
+    description: descriptionParts.length > 0 ? descriptionParts.join(' · ') : undefined,
+    duration: notification.duration > 0 ? notification.duration : Infinity,
+    closeButton: notification.closable,
+    onDismiss: () => {
+      layoutStore.removeNotification(notification.id);
+      shownNotificationIds.delete(notification.id);
+    },
+    onAutoClose: () => {
+      layoutStore.removeNotification(notification.id);
+      shownNotificationIds.delete(notification.id);
+    },
+  });
+}
+
+/**
+ * 监听通知队列，将新增项同步到 Sonner
+ *
+ * 逻辑说明：
+ * 1. 对队列中尚未展示的通知调用 toast
+ * 2. 已被 store 移除但仍在 shown 集合中的 ID 予以清理
  */
 watch(
   () => layoutStore.notifications,
-  (newNotifications) => {
-    // 如果当前没有显示通知，且队列中有通知，显示第一个
-    if (!currentNotification.value && newNotifications.length > 0) {
-      currentNotification.value = newNotifications[0]!;
-      notificationOpened.value = true;
+  (notifications) => {
+    const currentIds = new Set(notifications.map((n) => n.id));
+
+    for (const notification of notifications) {
+      if (!shownNotificationIds.has(notification.id)) {
+        shownNotificationIds.add(notification.id);
+        showToast(notification);
+      }
     }
-    // 如果当前显示的通知不在队列中了（被移除了），清除当前通知
-    else if (currentNotification.value) {
-      const stillExists = newNotifications.some(
-        (n) => n.id === currentNotification.value!.id
-      );
-      if (!stillExists) {
-        currentNotification.value = null;
-        notificationOpened.value = false;
-        // 如果队列中还有通知，延迟显示下一个（等待关闭动画完成）
-        if (newNotifications.length > 0) {
-          setTimeout(() => {
-            if (layoutStore.notifications.length > 0) {
-              currentNotification.value = layoutStore.notifications[0]!;
-              notificationOpened.value = true;
-            }
-          }, 300); // 等待关闭动画完成
-        }
+
+    for (const id of shownNotificationIds) {
+      if (!currentIds.has(id)) {
+        toast.dismiss(id);
+        shownNotificationIds.delete(id);
       }
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
-
-/**
- * 监听 opened 状态变化，处理手动关闭
- * 当用户点击关闭按钮时，k-notification 会将 opened 设置为 false
- * 此时需要从队列中移除通知
- */
-watch(notificationOpened, (opened) => {
-  if (!opened && currentNotification.value) {
-    // 通知被关闭，从队列中移除
-    const id = currentNotification.value.id;
-    layoutStore.removeNotification(id);
-  }
-});
-
-/**
- * 处理通知关闭（点击通知时）
- * 
- * 逻辑说明：
- * 1. 关闭当前通知（设置 opened 为 false）
- * 2. watch 会监听到 opened 变化，自动从队列中移除
- */
-function handleNotificationClose(): void {
-  notificationOpened.value = false;
-}
 </script>
 
 <template>
-  <k-notification
-    :opened="notificationOpened"
-    :title="currentNotification?.title"
-    :subtitle="currentNotification?.subtitle"
-    :text="currentNotification?.content"
-    :title-right-text="titleRightText"
-    @click="handleNotificationClose"
-  />
+  <!-- 无可见 DOM：仅负责将 layoutStore 通知桥接到 Sonner -->
+  <span class="hidden" aria-hidden="true" />
 </template>

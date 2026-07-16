@@ -84,7 +84,7 @@ Vue 3 SPA using:
 - **Vue Router 4** with `createWebHistory`
 - **Pinia** for state management
 - **Alova** (not Axios/fetch directly) for all HTTP requests — configured in `src/utils/alova.ts`
-- **TailwindCSS v4** + `konsta` UI components
+- **TailwindCSS v4** + **shadcn-vue**（Reka UI）基础组件
 - **@vueuse/motion** for animations
 
 #### HTTP Client Pattern

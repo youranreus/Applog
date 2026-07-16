@@ -3,8 +3,8 @@ import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/useUserStore';
 import type { ISsoCallbackParams } from '@/types/user';
-import Button from '@/components/ui/button/index.vue';
-import { kCard } from 'konsta/vue';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 /**
  * 路由实例
@@ -69,36 +69,27 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-ios-light-surface">
+  <div class="min-h-screen flex items-center justify-center bg-background">
     <div class="w-full max-w-md px-6 py-12">
-      <k-card>
-        <h2 class="text-2xl font-bold mb-4">登录</h2>
+      <Card>
+        <CardContent>
+          <h2 class="text-2xl font-bold mb-4">登录</h2>
 
-        <p v-if="!error" class="text-sm text-muted-foreground">
-          正在处理登录...
-        </p>
-        <template v-else>
-          <p class="mb-4 text-red-600">{{ error }}</p>
+          <p v-if="!error" class="text-sm text-muted-foreground">
+            正在处理登录...
+          </p>
+          <template v-else>
+            <p class="mb-4 text-destructive">{{ error }}</p>
 
-          <Button
-            rounded
-            class="w-full"
-            @click="handleCallback"
-          >
-            重试
-          </Button>
-        </template>
-      </k-card>
+            <Button
+              class="w-full"
+              @click="handleCallback"
+            >
+              重试
+            </Button>
+          </template>
+        </CardContent>
+      </Card>
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 确保 ion-icon 正确显示 */
-ion-icon {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-}
-</style>
-

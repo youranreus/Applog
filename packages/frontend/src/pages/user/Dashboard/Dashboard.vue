@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { kMenuList, kMenuListItem } from 'konsta/vue';
 import { useSystemStore } from '@/stores/useSystemStore';
 import { useUserStore } from '@/stores/useUserStore';
 import { useSystemInitialize } from './hooks/useSystemInitialize';
 import SystemInitialize from './components/SystemInitialize.vue';
 import PersonalStats from './components/PersonalStats.vue';
 import SystemSettings from './components/SystemSettings.vue';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /**
  * Tab 类型定义
@@ -60,14 +60,6 @@ const tabs = [
   { key: 'settings' as TabType, label: '系统设置', icon: '⚙️' },
 ];
 
-/**
- * 切换 tab
- * @param tab - 要切换到的 tab key
- */
-function switchTab(tab: TabType): void {
-  activeTab.value = tab;
-}
-
 </script>
 
 <template>
@@ -111,17 +103,18 @@ function switchTab(tab: TabType): void {
             </div>
 
             <!-- Tab 导航 -->
-            <k-menu-list strong-ios>
-              <k-menu-list-item
-                v-for="tab in tabs"
-                :key="tab.key"
-                :title="tab.label"
-                :active="activeTab === tab.key"
-                class="px-0"
-                @click="switchTab(tab.key)"
-              >
-              </k-menu-list-item>
-            </k-menu-list>
+            <Tabs v-model="activeTab" orientation="vertical" class="w-full">
+              <TabsList variant="line" class="w-full h-auto">
+                <TabsTrigger
+                  v-for="tab in tabs"
+                  :key="tab.key"
+                  :value="tab.key"
+                  class="w-full justify-start"
+                >
+                  {{ tab.label }}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </aside>
 
           <!-- 右侧内容区 -->
@@ -210,10 +203,6 @@ function switchTab(tab: TabType): void {
   flex: 1;
   min-width: 0;
   width: 100%;
-}
-
-:deep(.k-list-item) a {
-  margin: 0;
 }
 
 /* 响应式布局 */

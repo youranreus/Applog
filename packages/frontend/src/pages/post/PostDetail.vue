@@ -4,7 +4,7 @@ import { usePostDetail } from './hooks/usePostDetail'
 import { useImagePreview } from '@/hooks/useImagePreview'
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue'
 import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue'
-import { kChip } from 'konsta/vue'
+import { Badge } from '@/components/ui/badge'
 
 const { post, loading, error, formatDate } = usePostDetail()
 const coverLoaded = ref(false)
@@ -58,9 +58,9 @@ const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview
             >•</span
           >
           <div v-if="post.tags && post.tags.length > 0" class="tags flex flex-wrap gap-2">
-            <kChip v-for="tag in post.tags" :key="tag">
+            <Badge v-for="tag in post.tags" :key="tag" variant="secondary">
               {{ tag }}
-            </kChip>
+            </Badge>
           </div>
         </div>
       </div>

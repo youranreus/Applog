@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { kLink } from 'konsta/vue'
 import { useLayoutStore } from '@/stores/useLayoutStore'
 import { useSystemStore } from '@/stores/useSystemStore'
 import { ROUTE_NAMES } from '@/constants/permission'
@@ -26,13 +25,12 @@ const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_CO
               class="w-px h-[14px] bg-[#d2d2d7]"
             >
             </div>
-            <k-link
-              component="router-link"
-              :link-props="{ to: `/${page.slug}.html` }"
+            <router-link
+              :to="`/${page.slug}.html`"
               class="text-xs text-[#424245]! hover:underline"
             >
               {{ page.title }}
-            </k-link>
+            </router-link>
           </template>
 
           <div

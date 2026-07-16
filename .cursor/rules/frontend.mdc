@@ -5,8 +5,8 @@ alwaysApply: true
 
 ## 技术栈
 - **框架**: Vue 3 + Composition API
-- **UI 组件库**: Konsta UI Vue
-- **样式**: Tailwind CSS
+- **UI 组件库**: shadcn-vue（基于 Reka UI）
+- **样式**: Tailwind CSS v4
 - **状态管理**: Pinia
 - **路由**: Vue Router
 - **语言**: TypeScript (严格模式)
@@ -55,15 +55,18 @@ import logoImg from '@/assets/images/logo.png'
 - 业务相关组件建议放在对应页面目录下
 - 组件按功能模块组织（可选）：`Button/`, `Card/`, `Form/` 等
 
-**@components/ui** - 自定义 UI 组件目录
-- **重要**：存放自定义的 UI 组件或对 Konsta UI 组件的包装
-- Konsta UI 组件通过 npm 包引入，按需导入使用
-- 如果需要封装或扩展 Konsta UI 组件，可以放在此目录
+**@components/ui** - UI 组件目录
+- **重要**：存放 shadcn-vue 基础组件与业务自定义 UI 组件
+- shadcn-vue 基础组件通过 CLI 添加（`pnpm dlx shadcn-vue@latest add <name>`），落盘于本目录
+- 配置见 `packages/frontend/components.json`，工具函数见 `@/lib/utils`（`cn`）
+- 业务组件（如 MarkdownRenderer、Photos）也放在此目录，与 shadcn 基础组件共存
 - 文件命名使用 PascalCase（如 `Button.vue`, `Card.vue`, `Dialog.vue`）
 - 示例目录结构：
   ```
   components/
-  ├── ui/              # 自定义 UI 组件
+  ├── ui/              # shadcn-vue 基础组件 + 业务 UI
+  │   ├── button/
+  │   ├── card/
   │   ├── markdown-renderer/
   │   │   └── MarkdownRenderer.vue
   │   └── ...
@@ -143,11 +146,12 @@ export const useUserStore = defineStore('user', () => {
   - 通用组件放在 `@components`
   - 业务组件放在对应页面目录
 
-### Konsta UI 使用
-- 组件通过 `konsta/vue` 包导入使用
-- 在 `App.vue` 中使用 `k-app` 包裹应用
-- 按需导入组件，减少打包体积
-- 如需扩展，可在 `@components/ui` 中创建包装组件
+### shadcn-vue 使用
+- 通过 CLI 添加组件：`pnpm dlx shadcn-vue@latest add <component>`
+- 从 `@/components/ui/<name>` 按需导入（如 `import { Button } from '@/components/ui/button'`）
+- 使用语义化 CSS 变量主题（见 `src/assets/base.css`）
+- 全局通知使用 Sonner（`Toaster` + `layoutStore.notify` 适配层）
+- 图标：现有代码可继续使用 ionicons；shadcn 组件默认使用 lucide（`@lucide/vue`）
 
 ### 接口开发
 - 接口开发需要使用 alova 进行开发

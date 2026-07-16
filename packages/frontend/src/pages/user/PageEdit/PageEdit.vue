@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { kToggle } from 'konsta/vue';
 import { usePageEdit } from './hooks/usePageEdit';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { ROUTE_NAMES } from '@/constants/permission';
 import Input from '@/components/ui/input/index.vue';
-import Button from '@/components/ui/button/index.vue';
-import Card from '@/components/ui/card/index.vue';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import Select from '@/components/ui/select/index.vue';
 import MarkdownEditor from '@/components/ui/markdown-editor/MarkdownEditor.vue';
 import Loading from '@/components/ui/loading/index.vue';
@@ -171,127 +171,128 @@ const formatDate = (date: Date | string): string => {
         <!-- 右侧编辑项 -->
         <div class="edit-sidebar">
           <!-- 页面标识 -->
-          <Card outline>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">页面标识</h4>
-            
-            <!-- Slug 输入 -->
-            <div>
-              <label class="block text-sm font-medium text-gray-900 mb-2">
-                页面 Slug
-              </label>
-              <Input
-                v-model="formData.slug"
-                type="text"
-                placeholder="请输入页面 slug（用于 URL）"
-                :validation-status="saveError ? 'error' : 'normal'"
-              />
-              <p class="text-xs text-gray-500 mt-1">
-                页面的唯一标识，用于生成 URL
-              </p>
-            </div>
+          <Card>
+            <CardContent>
+              <h4 class="text-sm font-semibold text-gray-900 mb-4">页面标识</h4>
+              
+              <!-- Slug 输入 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-900 mb-2">
+                  页面 Slug
+                </label>
+                <Input
+                  v-model="formData.slug"
+                  type="text"
+                  placeholder="请输入页面 slug（用于 URL）"
+                  :validation-status="saveError ? 'error' : 'normal'"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  页面的唯一标识，用于生成 URL
+                </p>
+              </div>
+            </CardContent>
           </Card>
 
           <!-- 页面状态 -->
-          <Card outline>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">页面状态</h4>
-            <div>
-              <label class="block text-sm font-medium text-gray-900 mb-2">
-                页面状态
-              </label>
-              <Select
-                v-model="formData.status"
-                :validation-status="saveError ? 'error' : 'normal'"
-              >
-                <option
-                  v-for="option in statusOptions"
-                  :key="option.value"
-                  :value="option.value"
+          <Card>
+            <CardContent>
+              <h4 class="text-sm font-semibold text-gray-900 mb-4">页面状态</h4>
+              <div>
+                <label class="block text-sm font-medium text-gray-900 mb-2">
+                  页面状态
+                </label>
+                <Select
+                  v-model="formData.status"
+                  :validation-status="saveError ? 'error' : 'normal'"
                 >
-                  {{ option.label }}
-                </option>
-              </Select>
-              <p class="text-xs text-gray-500 mt-1">
-                选择页面的发布状态
-              </p>
-            </div>
+                  <option
+                    v-for="option in statusOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </Select>
+                <p class="text-xs text-gray-500 mt-1">
+                  选择页面的发布状态
+                </p>
+              </div>
+            </CardContent>
           </Card>
 
           <!-- 显示设置 -->
-          <Card outline>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">显示设置</h4>
-            
-            <!-- 显示于导航栏 -->
-            <div class="mb-4">
-              <div class="flex items-center justify-between">
-                <div class="flex-1">
-                  <label class="block text-sm font-medium text-gray-900 mb-1">
-                    显示于导航栏
-                  </label>
-                  <p class="text-sm text-gray-500">
-                    控制页面是否在导航栏中显示
-                  </p>
-                </div>
-                <div class="ml-4">
-                  <k-toggle
-                    :checked="formData.showInNav"
-                    @change="formData.showInNav = !formData.showInNav"
-                  />
+          <Card>
+            <CardContent>
+              <h4 class="text-sm font-semibold text-gray-900 mb-4">显示设置</h4>
+              
+              <!-- 显示于导航栏 -->
+              <div class="mb-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-900 mb-1">
+                      显示于导航栏
+                    </label>
+                    <p class="text-sm text-gray-500">
+                      控制页面是否在导航栏中显示
+                    </p>
+                  </div>
+                  <div class="ml-4">
+                    <Switch v-model:checked="formData.showInNav" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- 显示于底部 -->
-            <div>
-              <div class="flex items-center justify-between">
-                <div class="flex-1">
-                  <label class="block text-sm font-medium text-gray-900 mb-1">
-                    显示于底部
-                  </label>
-                  <p class="text-sm text-gray-500">
-                    控制页面是否在 Footer 中显示
-                  </p>
-                </div>
-                <div class="ml-4">
-                  <k-toggle
-                    :checked="formData.showInFooter"
-                    @change="formData.showInFooter = !formData.showInFooter"
-                  />
+              <!-- 显示于底部 -->
+              <div>
+                <div class="flex items-center justify-between">
+                  <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-900 mb-1">
+                      显示于底部
+                    </label>
+                    <p class="text-sm text-gray-500">
+                      控制页面是否在 Footer 中显示
+                    </p>
+                  </div>
+                  <div class="ml-4">
+                    <Switch v-model:checked="formData.showInFooter" />
+                  </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
           </Card>
 
           <!-- 页面统计信息（仅编辑模式显示） -->
-          <Card outline>
-            <template v-if="isEditMode && pageDetail">
-              <h4 class="text-sm font-semibold text-gray-900 mb-4">页面统计</h4>
-              <div class="space-y-2 text-sm mb-4">
-                <div>
-                  <span class="text-gray-600">创建时间：</span>
-                  <span class="text-gray-900">{{ formatDate(pageDetail.createdAt) }}</span>
+          <Card>
+            <CardContent>
+              <template v-if="isEditMode && pageDetail">
+                <h4 class="text-sm font-semibold text-gray-900 mb-4">页面统计</h4>
+                <div class="space-y-2 text-sm mb-4">
+                  <div>
+                    <span class="text-gray-600">创建时间：</span>
+                    <span class="text-gray-900">{{ formatDate(pageDetail.createdAt) }}</span>
+                  </div>
+                  <div v-if="pageDetail.updatedAt && pageDetail.updatedAt !== pageDetail.createdAt">
+                    <span class="text-gray-600">更新时间：</span>
+                    <span class="text-gray-900">{{ formatDate(pageDetail.updatedAt) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600">浏览次数：</span>
+                    <span class="text-gray-900">{{ pageDetail.viewCount }} 次</span>
+                  </div>
                 </div>
-                <div v-if="pageDetail.updatedAt && pageDetail.updatedAt !== pageDetail.createdAt">
-                  <span class="text-gray-600">更新时间：</span>
-                  <span class="text-gray-900">{{ formatDate(pageDetail.updatedAt) }}</span>
-                </div>
-                <div>
-                  <span class="text-gray-600">浏览次数：</span>
-                  <span class="text-gray-900">{{ pageDetail.viewCount }} 次</span>
-                </div>
-              </div>
-            </template>
+              </template>
 
-            <!-- 保存按钮 -->
-            <div class="space-y-4">
-              <Button
-                :disabled="saving || loadingPageDetail"
-                rounded
-                class="w-full"
-                @click="onSaveClick"
-              >
-                {{ saving ? '保存中...' : '保存' }}
-              </Button>
-            </div>
+              <!-- 保存按钮 -->
+              <div class="space-y-4">
+                <Button
+                  :disabled="saving || loadingPageDetail"
+                  class="w-full"
+                  @click="onSaveClick"
+                >
+                  {{ saving ? '保存中...' : '保存' }}
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>

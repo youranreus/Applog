@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
 import { useRequest } from 'alova/client';
-import { kToggle } from 'konsta/vue';
 import { useSystemStore } from '@/stores/useSystemStore';
 import { setConfig } from '@/api/system-config';
 import { getSystemConfigKey, SYSTEM_CONFIG_KEYS, type ISystemBaseConfig } from '@applog/common';
 import Input from '@/components/ui/input/index.vue';
-import Button from '@/components/ui/button/index.vue';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 
 /**
  * 使用系统配置 Store 获取配置数据
@@ -208,10 +208,7 @@ async function handleSave(): Promise<void> {
             </p>
           </div>
           <div class="ml-4">
-            <k-toggle
-              :checked="formData.allowUserLogin"
-              @change="formData.allowUserLogin = !formData.allowUserLogin"
-            />
+            <Switch v-model:checked="formData.allowUserLogin" />
           </div>
         </div>
       </div>
@@ -228,10 +225,7 @@ async function handleSave(): Promise<void> {
             </p>
           </div>
           <div class="ml-4">
-            <k-toggle
-              :checked="formData.allowComment"
-              @change="formData.allowComment = !formData.allowComment"
-            />
+            <Switch v-model:checked="formData.allowComment" />
           </div>
         </div>
       </div>
@@ -245,7 +239,6 @@ async function handleSave(): Promise<void> {
       <div class="flex justify-end">
         <Button
           :disabled="saving || systemStore.loading"
-          rounded
           @click="handleSave"
         >
           {{ saving ? '保存中...' : '保存' }}

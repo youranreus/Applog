@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { kChip, kDialog, kDialogButton } from 'konsta/vue';
 import { usePostEdit } from './hooks/usePostEdit';
 import { useTagEditor } from './hooks/useTagEditor';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { ROUTE_NAMES } from '@/constants/permission';
 import Input from '@/components/ui/input/index.vue';
-import Button from '@/components/ui/button/index.vue';
-import Card from '@/components/ui/card/index.vue';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import Select from '@/components/ui/select/index.vue';
 import MarkdownEditor from '@/components/ui/markdown-editor/MarkdownEditor.vue';
 import Loading from '@/components/ui/loading/index.vue';
@@ -190,146 +197,152 @@ const formatDate = (date: Date | string): string => {
         <!-- 右侧编辑项 -->
         <div class="edit-sidebar">
           <!-- 文章状态 -->
-          <Card outline>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">文章状态</h4>
-            <div>
-              <label class="block text-sm font-medium text-gray-900 mb-2">
-                文章状态
-              </label>
-              <Select
-                v-model="formData.status"
-                :validation-status="saveError ? 'error' : 'normal'"
-              >
-                <option
-                  v-for="option in statusOptions"
-                  :key="option.value"
-                  :value="option.value"
+          <Card>
+            <CardContent>
+              <h4 class="text-sm font-semibold text-gray-900 mb-4">文章状态</h4>
+              <div>
+                <label class="block text-sm font-medium text-gray-900 mb-2">
+                  文章状态
+                </label>
+                <Select
+                  v-model="formData.status"
+                  :validation-status="saveError ? 'error' : 'normal'"
                 >
-                  {{ option.label }}
-                </option>
-              </Select>
-              <p class="text-xs text-gray-500 mt-1">
-                选择文章的发布状态
-              </p>
-            </div>
+                  <option
+                    v-for="option in statusOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </Select>
+                <p class="text-xs text-gray-500 mt-1">
+                  选择文章的发布状态
+                </p>
+              </div>
+            </CardContent>
           </Card>
 
           <!-- 文章样式 -->
-          <Card outline>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">元数据</h4>
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-900 mb-2">
-                文章封面
-              </label>
-              <Input
-                v-model="formData.cover"
-                type="text"
-                placeholder="请输入文章封面 URL"
-                :validation-status="saveError ? 'error' : 'normal'"
-              />
-              <p class="text-xs text-gray-500 mt-1">
-                输入文章封面的图片 URL 地址
-              </p>
-            </div>
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-900 mb-2">
-                文章摘要
-              </label>
-              <Input
-                v-model="formData.summary"
-                type="text"
-                placeholder="请输入文章摘要"
-                :validation-status="saveError ? 'error' : 'normal'"
-              />
-              <p class="text-xs text-gray-500 mt-1">
-                文章的简短描述，用于列表展示和 SEO
-              </p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-900 mb-2">
-                文章标签
-              </label>
-              <!-- 标签展示区域 -->
-              <div v-if="formData.tags && formData.tags.length > 0" class="flex flex-wrap gap-2 mb-2">
-                <k-chip
-                  v-for="(tag, index) in formData.tags"
-                  :key="index"
-                  delete-button
-                  @delete="handleDeleteTag(index)"
-                >
-                  {{ tag }}
-                </k-chip>
+          <Card>
+            <CardContent>
+              <h4 class="text-sm font-semibold text-gray-900 mb-4">元数据</h4>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-900 mb-2">
+                  文章封面
+                </label>
+                <Input
+                  v-model="formData.cover"
+                  type="text"
+                  placeholder="请输入文章封面 URL"
+                  :validation-status="saveError ? 'error' : 'normal'"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  输入文章封面的图片 URL 地址
+                </p>
               </div>
-              <!-- 新增标签按钮 -->
-              <Button
-                small
-                rounded
-                class="w-full"
-                @click="handleOpenAddTagDialog"
-              >
-                添加标签
-              </Button>
-              <p class="text-xs text-gray-500 mt-1">
-                为文章添加标签，方便分类和检索
-              </p>
-            </div>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-900 mb-2">
+                  文章摘要
+                </label>
+                <Input
+                  v-model="formData.summary"
+                  type="text"
+                  placeholder="请输入文章摘要"
+                  :validation-status="saveError ? 'error' : 'normal'"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  文章的简短描述，用于列表展示和 SEO
+                </p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-900 mb-2">
+                  文章标签
+                </label>
+                <!-- 标签展示区域 -->
+                <div v-if="formData.tags && formData.tags.length > 0" class="flex flex-wrap gap-2 mb-2">
+                  <Badge
+                    v-for="(tag, index) in formData.tags"
+                    :key="index"
+                    variant="secondary"
+                    class="cursor-pointer gap-1"
+                    @click="handleDeleteTag(index)"
+                  >
+                    {{ tag }}
+                    <span aria-hidden="true">×</span>
+                  </Badge>
+                </div>
+                <!-- 新增标签按钮 -->
+                <Button
+                  size="sm"
+                  variant="outline"
+                  class="w-full"
+                  @click="handleOpenAddTagDialog"
+                >
+                  添加标签
+                </Button>
+                <p class="text-xs text-gray-500 mt-1">
+                  为文章添加标签，方便分类和检索
+                </p>
+              </div>
+            </CardContent>
           </Card>
 
           <!-- 新增标签对话框 -->
-          <k-dialog
-            :opened="showAddTagDialog"
-            @backdrop-click="handleCloseAddTagDialog"
-          >
-            <template #title>添加标签</template>
-            <div class="p-4">
+          <Dialog v-model:open="showAddTagDialog">
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>添加标签</DialogTitle>
+              </DialogHeader>
               <Input
                 v-model="newTagInput"
                 type="text"
                 placeholder="请输入标签名称"
                 @keyup.enter="handleAddTag"
               />
-            </div>
-            <template #buttons>
-              <k-dialog-button @click="handleCloseAddTagDialog">
-                取消
-              </k-dialog-button>
-              <k-dialog-button strong @click="handleAddTag">
-                确定
-              </k-dialog-button>
-            </template>
-          </k-dialog>
+              <DialogFooter>
+                <Button variant="outline" @click="handleCloseAddTagDialog">
+                  取消
+                </Button>
+                <Button @click="handleAddTag">
+                  确定
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <!-- 文章统计信息（仅编辑模式显示） -->
-          <Card outline>
-            <template v-if="isEditMode && postDetail">
-              <h4 class="text-sm font-semibold text-gray-900 mb-4">文章统计</h4>
-              <div class="space-y-2 text-sm mb-4">
-                <div>
-                  <span class="text-gray-600">创建时间：</span>
-                  <span class="text-gray-900">{{ formatDate(postDetail.createdAt) }}</span>
+          <Card>
+            <CardContent>
+              <template v-if="isEditMode && postDetail">
+                <h4 class="text-sm font-semibold text-gray-900 mb-4">文章统计</h4>
+                <div class="space-y-2 text-sm mb-4">
+                  <div>
+                    <span class="text-gray-600">创建时间：</span>
+                    <span class="text-gray-900">{{ formatDate(postDetail.createdAt) }}</span>
+                  </div>
+                  <div v-if="postDetail.updatedAt && postDetail.updatedAt !== postDetail.createdAt">
+                    <span class="text-gray-600">更新时间：</span>
+                    <span class="text-gray-900">{{ formatDate(postDetail.updatedAt) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600">浏览次数：</span>
+                    <span class="text-gray-900">{{ postDetail.viewCount }} 次</span>
+                  </div>
                 </div>
-                <div v-if="postDetail.updatedAt && postDetail.updatedAt !== postDetail.createdAt">
-                  <span class="text-gray-600">更新时间：</span>
-                  <span class="text-gray-900">{{ formatDate(postDetail.updatedAt) }}</span>
-                </div>
-                <div>
-                  <span class="text-gray-600">浏览次数：</span>
-                  <span class="text-gray-900">{{ postDetail.viewCount }} 次</span>
-                </div>
-              </div>
-            </template>
+              </template>
 
-            <!-- 保存按钮 -->
-            <div class="space-y-4">
-              <Button
-                :disabled="saving || loadingPostDetail"
-                rounded
-                class="w-full"
-                @click="onSaveClick"
-              >
-                {{ saving ? '保存中...' : '保存' }}
-              </Button>
-            </div>
+              <!-- 保存按钮 -->
+              <div class="space-y-4">
+                <Button
+                  :disabled="saving || loadingPostDetail"
+                  class="w-full"
+                  @click="onSaveClick"
+                >
+                  {{ saving ? '保存中...' : '保存' }}
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>
