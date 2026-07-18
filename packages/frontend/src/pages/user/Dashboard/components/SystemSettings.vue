@@ -4,9 +4,16 @@ import { useRequest } from 'alova/client';
 import { useSystemStore } from '@/stores/useSystemStore';
 import { setConfig } from '@/api/system-config';
 import { getSystemConfigKey, SYSTEM_CONFIG_KEYS, type ISystemBaseConfig } from '@applog/common';
-import Input from '@/components/ui/input/index.vue';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 
 /**
  * 使用系统配置 Store 获取配置数据
@@ -169,71 +176,48 @@ async function handleSave(): Promise<void> {
     </div>
 
     <!-- 表单编辑 -->
-    <div v-else class="space-y-6">
-      <!-- 系统标题 -->
-      <div>
-        <label class="block text-sm font-medium text-gray-900 mb-2">
-          系统标题
-        </label>
+    <FieldGroup v-else class="gap-6">
+      <Field>
+        <FieldLabel>系统标题</FieldLabel>
         <Input
           v-model="formData.title"
           type="text"
           placeholder="请输入系统标题"
-          :validation-status="saveError ? 'error' : 'normal'"
+          :aria-invalid="!!saveError"
         />
-      </div>
+      </Field>
 
-      <!-- 系统描述 -->
-      <div>
-        <label class="block text-sm font-medium text-gray-900 mb-2">
-          系统描述
-        </label>
+      <Field>
+        <FieldLabel>系统描述</FieldLabel>
         <Input
           v-model="formData.description"
           type="text"
           placeholder="请输入系统描述"
-          :validation-status="saveError ? 'error' : 'normal'"
+          :aria-invalid="!!saveError"
         />
-      </div>
+      </Field>
 
-      <!-- 允许用户登录 -->
-      <div>
-        <div class="flex items-center justify-between">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-900 mb-1">
-              允许用户登录
-            </label>
-            <p class="text-sm text-gray-500">
-              控制是否允许用户登录系统
-            </p>
-          </div>
-          <div class="ml-4">
-            <Switch v-model:checked="formData.allowUserLogin" />
-          </div>
+      <Field orientation="horizontal">
+        <div class="flex-1">
+          <FieldLabel>允许用户登录</FieldLabel>
+          <FieldDescription>
+            控制是否允许用户登录系统
+          </FieldDescription>
         </div>
-      </div>
+        <Switch v-model:checked="formData.allowUserLogin" />
+      </Field>
 
-      <!-- 允许评论 -->
-      <div>
-        <div class="flex items-center justify-between">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-900 mb-1">
-              允许评论
-            </label>
-            <p class="text-sm text-gray-500">
-              控制是否允许用户发表评论
-            </p>
-          </div>
-          <div class="ml-4">
-            <Switch v-model:checked="formData.allowComment" />
-          </div>
+      <Field orientation="horizontal">
+        <div class="flex-1">
+          <FieldLabel>允许评论</FieldLabel>
+          <FieldDescription>
+            控制是否允许用户发表评论
+          </FieldDescription>
         </div>
-      </div>
+        <Switch v-model:checked="formData.allowComment" />
+      </Field>
 
-      <!-- 保存错误提示 -->
-      <div v-if="saveError" class="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p class="text-sm text-red-600">{{ saveError }}</p>
-      </div>
+      <FieldError v-if="saveError" :errors="[saveError]" />
 
       <!-- 保存按钮 -->
       <div class="flex justify-end">
@@ -244,7 +228,7 @@ async function handleSave(): Promise<void> {
           {{ saving ? '保存中...' : '保存' }}
         </Button>
       </div>
-    </div>
+    </FieldGroup>
 
     <!-- 无配置 -->
     <div v-if="!systemStore.loading && !systemStore.error && !systemStore.config" class="text-center text-gray-600 py-12">
@@ -258,4 +242,3 @@ async function handleSave(): Promise<void> {
   width: 100%;
 }
 </style>
-

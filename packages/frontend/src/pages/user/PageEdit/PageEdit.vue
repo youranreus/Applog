@@ -4,11 +4,24 @@ import { useRoute } from 'vue-router';
 import { usePageEdit } from './hooks/usePageEdit';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { ROUTE_NAMES } from '@/constants/permission';
-import Input from '@/components/ui/input/index.vue';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import Select from '@/components/ui/select/index.vue';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import MarkdownEditor from '@/components/ui/markdown-editor/MarkdownEditor.vue';
 import Loading from '@/components/ui/loading/index.vue';
 import type { PageStatus } from '@/types/page';
@@ -126,46 +139,46 @@ const formatDate = (date: Date | string): string => {
       <div class="edit-layout">
         <!-- 左侧主要内容区 -->
         <div class="edit-main">
-          <!-- 标题编辑 -->
-          <div outline class="mb-4">
-            <div class="mb-4">
-              <h3 class="block text-lg font-medium text-gray-900 mb-2">
+          <FieldGroup class="mb-4 gap-4">
+            <Field>
+              <FieldLabel class="text-lg font-medium text-gray-900">
                 页面标题
-              </h3>
+              </FieldLabel>
               <Input
                 v-model="formData.title"
                 type="text"
                 placeholder="请输入页面标题"
-                :validation-status="saveError ? 'error' : 'normal'"
-                :validation-message="saveError || ''"
+                :aria-invalid="!!saveError"
               />
-            </div>
-            <div class="mb-4">
-              <h3 class="block text-lg font-medium text-gray-900 mb-2">
+            </Field>
+
+            <Field>
+              <FieldLabel class="text-lg font-medium text-gray-900">
                 页面摘要
-              </h3>
+              </FieldLabel>
               <Input
                 v-model="formData.summary"
                 type="text"
                 placeholder="请输入页面摘要（可选）"
-                :validation-status="saveError ? 'error' : 'normal'"
+                :aria-invalid="!!saveError"
               />
-              <p class="text-xs text-gray-500 mt-1">
+              <FieldDescription>
                 页面的简短描述，用于列表展示和 SEO
-              </p>
-            </div>
-            <div>
-              <h3 class="block text-lg font-medium text-gray-900 mb-2">
+              </FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel class="text-lg font-medium text-gray-900">
                 页面内容
-              </h3>
+              </FieldLabel>
               <MarkdownEditor
                 v-model="formData.content"
                 placeholder="请输入页面内容（支持 Markdown）"
                 :validation-status="saveError ? 'error' : 'normal'"
                 :validation-message="saveError || ''"
               />
-            </div>
-          </div>
+            </Field>
+          </FieldGroup>
         </div>
 
         <!-- 右侧编辑项 -->
@@ -174,22 +187,18 @@ const formatDate = (date: Date | string): string => {
           <Card>
             <CardContent>
               <h4 class="text-sm font-semibold text-gray-900 mb-4">页面标识</h4>
-              
-              <!-- Slug 输入 -->
-              <div>
-                <label class="block text-sm font-medium text-gray-900 mb-2">
-                  页面 Slug
-                </label>
+              <Field>
+                <FieldLabel>页面 Slug</FieldLabel>
                 <Input
                   v-model="formData.slug"
                   type="text"
                   placeholder="请输入页面 slug（用于 URL）"
-                  :validation-status="saveError ? 'error' : 'normal'"
+                  :aria-invalid="!!saveError"
                 />
-                <p class="text-xs text-gray-500 mt-1">
+                <FieldDescription>
                   页面的唯一标识，用于生成 URL
-                </p>
-              </div>
+                </FieldDescription>
+              </Field>
             </CardContent>
           </Card>
 
@@ -197,26 +206,26 @@ const formatDate = (date: Date | string): string => {
           <Card>
             <CardContent>
               <h4 class="text-sm font-semibold text-gray-900 mb-4">页面状态</h4>
-              <div>
-                <label class="block text-sm font-medium text-gray-900 mb-2">
-                  页面状态
-                </label>
-                <Select
-                  v-model="formData.status"
-                  :validation-status="saveError ? 'error' : 'normal'"
-                >
-                  <option
-                    v-for="option in statusOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
+              <Field>
+                <FieldLabel>页面状态</FieldLabel>
+                <Select v-model="formData.status">
+                  <SelectTrigger class="w-full" :aria-invalid="!!saveError">
+                    <SelectValue placeholder="选择状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="option in statusOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
                 </Select>
-                <p class="text-xs text-gray-500 mt-1">
+                <FieldDescription>
                   选择页面的发布状态
-                </p>
-              </div>
+                </FieldDescription>
+              </Field>
             </CardContent>
           </Card>
 
@@ -224,40 +233,26 @@ const formatDate = (date: Date | string): string => {
           <Card>
             <CardContent>
               <h4 class="text-sm font-semibold text-gray-900 mb-4">显示设置</h4>
-              
-              <!-- 显示于导航栏 -->
-              <div class="mb-4">
-                <div class="flex items-center justify-between">
-                  <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-900 mb-1">
-                      显示于导航栏
-                    </label>
-                    <p class="text-sm text-gray-500">
-                      控制页面是否在导航栏中显示
-                    </p>
-                  </div>
-                  <div class="ml-4">
-                    <Switch v-model:checked="formData.showInNav" />
-                  </div>
-                </div>
-              </div>
 
-              <!-- 显示于底部 -->
-              <div>
-                <div class="flex items-center justify-between">
-                  <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-900 mb-1">
-                      显示于底部
-                    </label>
-                    <p class="text-sm text-gray-500">
-                      控制页面是否在 Footer 中显示
-                    </p>
-                  </div>
-                  <div class="ml-4">
-                    <Switch v-model:checked="formData.showInFooter" />
-                  </div>
+              <Field orientation="horizontal" class="mb-4">
+                <div class="flex-1">
+                  <FieldLabel>显示于导航栏</FieldLabel>
+                  <FieldDescription>
+                    控制页面是否在导航栏中显示
+                  </FieldDescription>
                 </div>
-              </div>
+                <Switch v-model:checked="formData.showInNav" />
+              </Field>
+
+              <Field orientation="horizontal">
+                <div class="flex-1">
+                  <FieldLabel>显示于底部</FieldLabel>
+                  <FieldDescription>
+                    控制页面是否在 Footer 中显示
+                  </FieldDescription>
+                </div>
+                <Switch v-model:checked="formData.showInFooter" />
+              </Field>
             </CardContent>
           </Card>
 
@@ -281,6 +276,8 @@ const formatDate = (date: Date | string): string => {
                   </div>
                 </div>
               </template>
+
+              <FieldError v-if="saveError" :errors="[saveError]" class="mb-4" />
 
               <!-- 保存按钮 -->
               <div class="space-y-4">

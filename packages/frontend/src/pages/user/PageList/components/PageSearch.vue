@@ -2,7 +2,8 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ROUTE_NAMES } from '@/constants/permission';
-import Input from '@/components/ui/input/index.vue';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 /**
  * Props 定义
@@ -67,116 +68,33 @@ function handleCreateNew(): void {
 </script>
 
 <template>
-  <div class="page-search">
-    <div class="search-container">
-      <!-- 搜索框 -->
+  <div class="mb-6 w-full">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
       <Input
         v-model="searchKeyword"
         type="text"
-        class="search-input"
+        class="flex-1"
         placeholder="请输入页面标题或摘要..."
         :disabled="loading"
         @keydown="handleKeydown"
       />
 
-      <button
-          type="button"
-          class="search-button"
-          :disabled="loading"
-          @click="handleSearch"
-        >
-          搜索
-        </button>
-
-      <!-- 新建按钮 -->
-      <button
+      <Button
         type="button"
-        class="create-button"
+        :disabled="loading"
+        @click="handleSearch"
+      >
+        搜索
+      </Button>
+
+      <Button
+        type="button"
+        variant="secondary"
         :disabled="loading"
         @click="handleCreateNew"
       >
         新建页面
-      </button>
+      </Button>
     </div>
   </div>
 </template>
-
-<style scoped>
-.page-search {
-  width: 100%;
-  margin-bottom: 1.5rem;
-}
-
-.search-container {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.search-button {
-  padding: 0.5rem 1rem;
-  border: 1px solid #3b82f6;
-  border-radius: 0.375rem;
-  background-color: #3b82f6;
-  color: #ffffff;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-}
-
-.search-button:hover:not(:disabled) {
-  background-color: #2563eb;
-  border-color: #2563eb;
-}
-
-.search-button:disabled {
-  background-color: #9ca3af;
-  border-color: #9ca3af;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.create-button {
-  padding: 0.5rem 1rem;
-  border: 1px solid #10b981;
-  border-radius: 0.375rem;
-  background-color: #10b981;
-  color: #ffffff;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-}
-
-.create-button:hover:not(:disabled) {
-  background-color: #059669;
-  border-color: #059669;
-}
-
-.create-button:disabled {
-  background-color: #9ca3af;
-  border-color: #9ca3af;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-/* 响应式布局 */
-@media (max-width: 640px) {
-  .search-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-input-wrapper {
-    min-width: 100%;
-  }
-
-  .create-button {
-    width: 100%;
-  }
-}
-</style>

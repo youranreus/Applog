@@ -5,7 +5,7 @@ import { usePostEdit } from './hooks/usePostEdit';
 import { useTagEditor } from './hooks/useTagEditor';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { ROUTE_NAMES } from '@/constants/permission';
-import Input from '@/components/ui/input/index.vue';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import Select from '@/components/ui/select/index.vue';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import MarkdownEditor from '@/components/ui/markdown-editor/MarkdownEditor.vue';
 import Loading from '@/components/ui/loading/index.vue';
 import type { PostStatus } from '@/types/post';
@@ -151,47 +164,46 @@ const formatDate = (date: Date | string): string => {
       <div class="edit-layout">
         <!-- 左侧主要内容区 -->
         <div class="edit-main">
-          <!-- 标题编辑 -->
-          <div outline class="mb-4">
-            <div class="mb-4">
-              <h3 class="block text-lg font-medium text-gray-900 mb-2">
+          <FieldGroup class="mb-4 gap-4">
+            <Field>
+              <FieldLabel class="text-lg font-medium text-gray-900">
                 Slug
-              </h3>
+              </FieldLabel>
               <Input
                 v-model="formData.slug"
                 type="text"
                 placeholder="请输入文章 slug（只能包含小写字母、数字和连字符）"
-                :validation-status="saveError ? 'error' : 'normal'"
-                :validation-message="saveError || ''"
+                :aria-invalid="!!saveError"
               />
-              <p class="text-xs text-gray-500 mt-1">
+              <FieldDescription>
                 文章的 URL 友好标识符，只能包含小写字母、数字和连字符
-              </p>
-            </div>
-            <div class="mb-4">
-              <h3 class="block text-lg font-medium text-gray-900 mb-2">
+              </FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel class="text-lg font-medium text-gray-900">
                 文章标题
-              </h3>
+              </FieldLabel>
               <Input
                 v-model="formData.title"
                 type="text"
                 placeholder="请输入文章标题"
-                :validation-status="saveError ? 'error' : 'normal'"
-                :validation-message="saveError || ''"
+                :aria-invalid="!!saveError"
               />
-            </div>
-            <div>
-              <h3 class="block text-lg font-medium text-gray-900 mb-2">
+            </Field>
+
+            <Field>
+              <FieldLabel class="text-lg font-medium text-gray-900">
                 文章内容
-              </h3>
+              </FieldLabel>
               <MarkdownEditor
                 v-model="formData.content"
                 placeholder="请输入文章内容（支持 Markdown）"
                 :validation-status="saveError ? 'error' : 'normal'"
                 :validation-message="saveError || ''"
               />
-            </div>
-          </div>
+            </Field>
+          </FieldGroup>
         </div>
 
         <!-- 右侧编辑项 -->
@@ -200,91 +212,87 @@ const formatDate = (date: Date | string): string => {
           <Card>
             <CardContent>
               <h4 class="text-sm font-semibold text-gray-900 mb-4">文章状态</h4>
-              <div>
-                <label class="block text-sm font-medium text-gray-900 mb-2">
-                  文章状态
-                </label>
-                <Select
-                  v-model="formData.status"
-                  :validation-status="saveError ? 'error' : 'normal'"
-                >
-                  <option
-                    v-for="option in statusOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
+              <Field>
+                <FieldLabel>文章状态</FieldLabel>
+                <Select v-model="formData.status">
+                  <SelectTrigger class="w-full" :aria-invalid="!!saveError">
+                    <SelectValue placeholder="选择状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="option in statusOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </SelectItem>
+                  </SelectContent>
                 </Select>
-                <p class="text-xs text-gray-500 mt-1">
+                <FieldDescription>
                   选择文章的发布状态
-                </p>
-              </div>
+                </FieldDescription>
+              </Field>
             </CardContent>
           </Card>
 
-          <!-- 文章样式 -->
+          <!-- 元数据 -->
           <Card>
             <CardContent>
               <h4 class="text-sm font-semibold text-gray-900 mb-4">元数据</h4>
-              <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-900 mb-2">
-                  文章封面
-                </label>
-                <Input
-                  v-model="formData.cover"
-                  type="text"
-                  placeholder="请输入文章封面 URL"
-                  :validation-status="saveError ? 'error' : 'normal'"
-                />
-                <p class="text-xs text-gray-500 mt-1">
-                  输入文章封面的图片 URL 地址
-                </p>
-              </div>
-              <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-900 mb-2">
-                  文章摘要
-                </label>
-                <Input
-                  v-model="formData.summary"
-                  type="text"
-                  placeholder="请输入文章摘要"
-                  :validation-status="saveError ? 'error' : 'normal'"
-                />
-                <p class="text-xs text-gray-500 mt-1">
-                  文章的简短描述，用于列表展示和 SEO
-                </p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-900 mb-2">
-                  文章标签
-                </label>
-                <!-- 标签展示区域 -->
-                <div v-if="formData.tags && formData.tags.length > 0" class="flex flex-wrap gap-2 mb-2">
-                  <Badge
-                    v-for="(tag, index) in formData.tags"
-                    :key="index"
-                    variant="secondary"
-                    class="cursor-pointer gap-1"
-                    @click="handleDeleteTag(index)"
+              <FieldGroup class="gap-4">
+                <Field>
+                  <FieldLabel>文章封面</FieldLabel>
+                  <Input
+                    v-model="formData.cover"
+                    type="text"
+                    placeholder="请输入文章封面 URL"
+                    :aria-invalid="!!saveError"
+                  />
+                  <FieldDescription>
+                    输入文章封面的图片 URL 地址
+                  </FieldDescription>
+                </Field>
+
+                <Field>
+                  <FieldLabel>文章摘要</FieldLabel>
+                  <Input
+                    v-model="formData.summary"
+                    type="text"
+                    placeholder="请输入文章摘要"
+                    :aria-invalid="!!saveError"
+                  />
+                  <FieldDescription>
+                    文章的简短描述，用于列表展示和 SEO
+                  </FieldDescription>
+                </Field>
+
+                <Field>
+                  <FieldLabel>文章标签</FieldLabel>
+                  <div v-if="formData.tags && formData.tags.length > 0" class="flex flex-wrap gap-2 mb-2">
+                    <Badge
+                      v-for="(tag, index) in formData.tags"
+                      :key="index"
+                      variant="secondary"
+                      class="cursor-pointer gap-1"
+                      @click="handleDeleteTag(index)"
+                    >
+                      {{ tag }}
+                      <span aria-hidden="true">×</span>
+                    </Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    class="w-full"
+                    @click="handleOpenAddTagDialog"
                   >
-                    {{ tag }}
-                    <span aria-hidden="true">×</span>
-                  </Badge>
-                </div>
-                <!-- 新增标签按钮 -->
-                <Button
-                  size="sm"
-                  variant="outline"
-                  class="w-full"
-                  @click="handleOpenAddTagDialog"
-                >
-                  添加标签
-                </Button>
-                <p class="text-xs text-gray-500 mt-1">
-                  为文章添加标签，方便分类和检索
-                </p>
-              </div>
+                    添加标签
+                  </Button>
+                  <FieldDescription>
+                    为文章添加标签，方便分类和检索
+                  </FieldDescription>
+                </Field>
+              </FieldGroup>
             </CardContent>
           </Card>
 
@@ -331,6 +339,8 @@ const formatDate = (date: Date | string): string => {
                   </div>
                 </div>
               </template>
+
+              <FieldError v-if="saveError" :errors="[saveError]" class="mb-4" />
 
               <!-- 保存按钮 -->
               <div class="space-y-4">

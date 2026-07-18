@@ -2,7 +2,7 @@
 import { usePageList } from './hooks/usePageList';
 import PageSearch from './components/PageSearch.vue';
 import PageTable from './components/PageTable.vue';
-import PagePagination from './components/PagePagination.vue';
+import AdminPagination from '../components/AdminPagination.vue';
 
 /**
  * 使用页面列表 Hook 获取数据和状态
@@ -60,7 +60,7 @@ function handlePageChange(page: number): void {
 
     <!-- 分页区域 -->
     <div v-if="!error" class="pagination-wrapper">
-      <PagePagination
+      <AdminPagination
         :pagination="pagination"
         :loading="loading"
         @page-change="handlePageChange"

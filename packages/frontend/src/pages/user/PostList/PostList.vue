@@ -2,7 +2,7 @@
 import { usePostList } from './hooks/usePostList';
 import PostSearch from './components/PostSearch.vue';
 import PostTable from './components/PostTable.vue';
-import PostPagination from './components/PostPagination.vue';
+import AdminPagination from '../components/AdminPagination.vue';
 
 /**
  * 使用文章列表 Hook 获取数据和状态
@@ -62,7 +62,7 @@ function handlePageChange(page: number): void {
 
     <!-- 分页区域 -->
     <div v-if="!error" class="pagination-wrapper">
-      <PostPagination
+      <AdminPagination
         :pagination="pagination"
         :loading="loading"
         @page-change="handlePageChange"

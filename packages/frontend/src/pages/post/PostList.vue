@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { usePostList } from './hooks/usePostList';
-import Pagination from '@/components/ui/pagination/index.vue';
+import PostListPagination from './components/PostListPagination.vue';
 import { ROUTE_NAMES } from '@/constants/permission';
 import { useSeoHead } from '@/hooks/useSeoHead';
 
@@ -59,7 +59,7 @@ function goToPostDetail(slug: string): void {
 
     <!-- 分页组件：有数据、总页数大于1 -->
     <div v-if="pagination && pagination.totalItems > 0 && pagination.totalPages > 1" class="mt-6 sm:mt-8">
-      <Pagination
+      <PostListPagination
         :current-page="pagination.currentPage"
         :total-pages="pagination.totalPages"
         :on-change="handlePageChange"
