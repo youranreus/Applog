@@ -1,54 +1,105 @@
 # Directory Structure
 
-> How backend code is organized in this project.
+> How `@applog/backend` source is organized.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's backend directory structure here.
-
-Questions to answer:
-- How are modules/packages organized?
-- Where does business logic live?
-- Where are API endpoints defined?
-- How are utilities and helpers organized?
--->
-
-(To be filled by the team)
+Business features live under `src/module/`. Entities are centralized in `src/entities/` (not inside each module). Path alias `@/*` → `src/*`.
 
 ---
 
 ## Directory Layout
 
 ```
-<!-- Replace with your actual structure -->
-src/
-├── ...
-└── ...
+packages/backend/src/
+├── main.ts                 # Fastify bootstrap, global interceptor/filters
+├── app.module.ts           # Root module: TypeORM, AuthGuard, ValidationPipe
+├── app.controller.ts
+├── app.service.ts
+├── entities/               # All TypeORM entities + ENTITY_LIST barrel
+│   ├── index.ts
+│   ├── User.ts
+│   ├── Post.ts
+│   ├── Comment.ts
+│   ├── Page.ts
+│   └── SystemConfig.ts
+├── module/
+│   ├── index.ts            # Re-exports *Module
+│   ├── user/
+│   ├── post/
+│   ├── comment/
+│   ├── page/
+│   ├── system-config/      # May include adapters/, migration.service.ts
+│   └── seo/                # Raw XML responses (bypasses TransformInterceptor)
+└── utils/
+    ├── const.ts            # ENV_LIST load order
+    └── types.ts            # UserRole + SSO/JWT role mappers
 ```
 
----
-
-## Module Organization
-
-<!-- How should new features/modules be organized? -->
-
-(To be filled by the team)
+Reference: `packages/backend/src/app.module.ts`, `packages/backend/src/module/index.ts`.
 
 ---
 
-## Naming Conventions
+## Module Layout
 
-<!-- File and folder naming rules -->
+Typical feature module (example: post):
 
-(To be filled by the team)
+```
+module/post/
+├── post.module.ts
+├── post.controller.ts
+├── post.service.ts
+└── dto/
+    ├── index.ts
+    ├── create-post.dto.ts
+    ├── update-post.dto.ts
+    ├── query-post.dto.ts
+    └── post-response.dto.ts
+```
+
+| Concern | Location | Example |
+|---------|----------|---------|
+| HTTP routes | `*.controller.ts` | `PostController` |
+| Business logic | `*.service.ts` | `PostService` |
+| Input validation | `dto/*` classes | `CreatePostDto` |
+| Response shapes | `dto/*` interfaces/types | `IPostResponseDto` |
+| Persistence model | `src/entities/` | `PostEntity` |
+
+Reference modules:
+- `packages/backend/src/module/post/`
+- `packages/backend/src/module/comment/`
+- `packages/backend/src/module/system-config/`
 
 ---
 
-## Examples
+## File Naming
 
-<!-- Link to well-organized modules as examples -->
+| Kind | Convention | Example |
+|------|------------|---------|
+| Entity file | PascalCase | `Post.ts` → `PostEntity` |
+| Module/controller/service | kebab-case | `post.controller.ts` |
+| DTO file | kebab-case | `create-post.dto.ts` |
+| Class names | PascalCase | `PostService` |
 
-(To be filled by the team)
+---
+
+## Cross-Module Dependencies
+
+- Register entities with `TypeOrmModule.forFeature([...])` in the module that needs them.
+- Export services when another module injects them (e.g. `CommentModule` exports `CommentService` for `PostModule`).
+- Do not invent a custom repository layer — inject `Repository<T>` via `@InjectRepository`.
+
+---
+
+## Common Mistakes
+
+### Mistake: Putting entities inside a module folder
+
+**Wrong**: `module/post/entities/Post.ts`  
+**Correct**: `src/entities/Post.ts` + add to `ENTITY_LIST` in `entities/index.ts`.
+
+### Mistake: Fat controllers
+
+Controllers only bind params and call services. See `packages/backend/src/module/post/post.controller.ts`.

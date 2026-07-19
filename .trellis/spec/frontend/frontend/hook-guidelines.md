@@ -1,51 +1,85 @@
 # Hook Guidelines
 
-> How hooks are used in this project.
+> Composable patterns in `@applog/frontend`.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's hook conventions here.
-
-Questions to answer:
-- What custom hooks do you have?
-- How do you handle data fetching?
-- What are the naming conventions?
-- How do you share stateful logic?
--->
-
-(To be filled by the team)
+Hooks (composables) encapsulate reusable reactive logic. Split **public** hooks (`src/hooks/`) from **page/business** hooks (`pages/**/hooks/` or component-local hooks).
 
 ---
 
-## Custom Hook Patterns
+## Public Hooks (`src/hooks/`)
 
-<!-- How to create and structure custom hooks -->
+Prefer low domain coupling. Current set:
 
-(To be filled by the team)
+| File | Role |
+|------|------|
+| `useSeoHead.ts` | `@unhead/vue` meta helpers |
+| `useJsonLd.ts` | JSON-LD structured data |
+| `useImagePreview.ts` | Click-to-preview images in a container |
+| `usePageDetail.ts` | Fetch page by slug + SEO (slightly domain-specific but shared by page routes) |
 
----
-
-## Data Fetching
-
-<!-- How data fetching is handled (React Query, SWR, etc.) -->
-
-(To be filled by the team)
-
----
-
-## Naming Conventions
-
-<!-- Hook naming rules (use*, etc.) -->
-
-(To be filled by the team)
+Reference directory: `packages/frontend/src/hooks/`.
 
 ---
 
-## Common Mistakes
+## Page / Business Hooks
 
-<!-- Hook-related mistakes your team has made -->
+Live next to the feature:
 
-(To be filled by the team)
+| Example | Path |
+|---------|------|
+| Public post detail | `pages/post/hooks/usePostDetail.ts` |
+| Public post list | `pages/post/hooks/usePostList.ts` |
+| Admin post list | `pages/user/PostList/hooks/usePostList.ts` (often proxies admin store) |
+| Post editor | `pages/user/PostEdit/hooks/usePostEdit.ts` |
+| System config UI | `pages/user/Dashboard/hooks/useSystemConfig.ts` |
+| Markdown renderer | `components/ui/markdown-renderer/hooks/useMarkdownRenderer.ts` |
+
+Pattern: `.vue` files call the hook; hook owns `useRequest`/`useWatcher`, derived state, and submit handlers.
+
+---
+
+## Alova Request Hooks
+
+Configured singleton: `packages/frontend/src/utils/alova.ts`.
+
+| Hook | When |
+|------|------|
+| `useRequest(method\|factory, opts)` | One-shot or store-owned requests; `immediate` controls auto-run |
+| `useWatcher(factory, deps, opts)` | Re-fetch when watched deps change (slug/page/filter) |
+
+Examples:
+- Store: `useSystemStore` → `useRequest(() => getConfig(...), { immediate: true })`
+- Page: `pages/post/hooks/usePostDetail.ts` → `useWatcher`
+- Page: `hooks/usePageDetail.ts` → `useWatcher`
+
+API modules return Alova `Method` objects typed as **already unwrapped `data`** (interceptor strips `{ data, code, msg }`).
+
+---
+
+## Layering Rules
+
+1. Views → hooks/stores → `api/*` → `alovaInstance`
+2. Do not call `alovaInstance` from SFCs.
+3. Put cross-route shared mutable state in Pinia, not a random global hook.
+4. JSDoc every exported composable (`@param` / `@returns`, Chinese OK).
+
+---
+
+## Anti-Patterns
+
+| Avoid | Prefer |
+|-------|--------|
+| Fat SFCs with inline fetch logic | Page hook + `useRequest`/`useWatcher` |
+| Duplicating toast/error handling everywhere | Store notify + consistent catch |
+| Public hooks that hard-code admin-only flows | Keep admin logic under `pages/user/**` |
+| Mixing `.then()` with `await` | `async/await` only |
+
+---
+
+## Reality Note
+
+`usePageDetail` sits in `src/hooks/` but talks to page APIs — acceptable today because multiple routes reuse it. New highly domain-specific hooks should still prefer `pages/<domain>/hooks/`.

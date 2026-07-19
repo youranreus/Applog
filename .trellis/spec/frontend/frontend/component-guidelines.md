@@ -1,12 +1,43 @@
 # Component Guidelines
 
-> How components are built in this project.
+> How Vue components are built in `@applog/frontend`.
 
 ---
 
 ## Overview
 
-Frontend UI primitives live under `packages/frontend/src/components/ui/` (shadcn-vue / Reka UI). Theme tokens and semantic CSS variables are defined in `packages/frontend/src/assets/base.css`, aligned with root `DESIGN.md` (Apple light theme) for interactive chrome.
+All SFCs use `<script setup lang="ts">` (no Options API). Frontend UI primitives live under `packages/frontend/src/components/ui/` (shadcn-vue / Reka UI). Theme tokens and semantic CSS variables are defined in `packages/frontend/src/assets/base.css`, aligned with root `DESIGN.md` (Apple light theme) for interactive chrome.
+
+---
+
+## SFC Conventions
+
+1. Prefer Composition API only.
+2. Keep page SFCs thin — call a page hook or store.
+3. Import shadcn pieces from `@/components/ui/<name>` barrels.
+4. Merge classes with `cn()` from `@/lib/utils`.
+5. Icons: existing layout code may still use ionicons; new shadcn-adjacent UI typically uses lucide (`@lucide/vue`).
+
+Example imports (admin settings):
+
+```typescript
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Field, FieldLabel } from '@/components/ui/field';
+```
+
+Reference: `packages/frontend/src/pages/user/Dashboard/components/SystemSettings.vue`, `packages/frontend/components.json`.
+
+---
+
+## Component Layers
+
+| Layer | Path | Examples |
+|-------|------|----------|
+| shadcn primitive | `components/ui/button`, `dialog`, `field`, … | `Button.vue` |
+| Reusable business UI | also under `components/ui/` | `markdown-renderer`, `photos`, `article-card` |
+| Layout | `components/Layout/` | `Header.vue`, `Footer.vue` |
+| Page-local | `pages/**/components/` | `PostTable.vue`, `AdminPagination.vue` |
 
 ---
 
@@ -87,6 +118,22 @@ Card permanent edge:
 
 ---
 
+## Styling Notes
+
+- Prefer Tailwind utilities; scoped SCSS is OK for deep article/markdown styles (`:deep()`).
+- Global design tokens: `packages/frontend/src/assets/base.css` (`@import "tailwindcss"`, `@theme inline`, `:root` / `.dark`).
+- Notifications: call `useLayoutStore().notify(...)`; `GlobalNotification.vue` bridges to Sonner — do not invent a second toast path.
+
+---
+
+## Markdown / BBCode UI
+
+`MarkdownRenderer` uses IntersectionObserver lazy images. BBCode tags map to Vue components via `utils/markdown` registries (`art`, `bili`, `collapse`, `photos`, `dplayer`).
+
+Reference: `packages/frontend/src/components/ui/markdown-renderer/`, `packages/frontend/src/utils/markdown/`.
+
+---
+
 ## Common Mistakes
 
 ### Common Mistake: Ring clipped inside scroll panes
@@ -104,3 +151,7 @@ Card permanent edge:
 **Cause**: `padding` added directly on `.edit-main` / `.edit-sidebar`.
 
 **Fix**: Keep outer columns padding-free; gutter only on inner `.edit-pane-scroll`.
+
+### Common Mistake: Options API or Axios
+
+Not used in this codebase — stick to `<script setup>` + Alova.

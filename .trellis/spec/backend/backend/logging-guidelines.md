@@ -1,51 +1,72 @@
 # Logging Guidelines
 
-> How logging is done in this project.
+> Structured logging via `HLogger` in `@applog/backend`.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's logging conventions here.
+- Logger module: `LoggerModule` from `@reus-able/nestjs` (global in `app.module.ts`)
+- Injection token: `HLOGGER_TOKEN`
+- Type: `HLogger`
 
-Questions to answer:
-- What logging library do you use?
-- What are the log levels and when to use each?
-- What should be logged?
-- What should NOT be logged (PII, secrets)?
--->
-
-(To be filled by the team)
+Almost every service injects the logger. Known exception: `SeoService` currently has no logger.
 
 ---
 
-## Log Levels
+## Injection Pattern
 
-<!-- When to use each level: debug, info, warn, error -->
+```typescript
+import { HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 
-(To be filled by the team)
+@Injectable()
+export class PostService {
+  constructor(
+    @Inject(HLOGGER_TOKEN) private readonly logger: HLogger,
+  ) {}
+
+  private log(message: string): void {
+    this.logger.log(message, PostService.name);
+  }
+
+  private warn(message: string): void {
+    this.logger.warn(message, PostService.name);
+  }
+
+  private error(message: string): void {
+    this.logger.error(message, PostService.name);
+  }
+}
+```
+
+Reference: `packages/backend/src/module/post/post.service.ts`, `packages/backend/src/module/user/user.service.ts`.
 
 ---
 
-## Structured Logging
+## What To Log
 
-<!-- Log format, required fields -->
+| Level | Use for |
+|-------|---------|
+| `log` | Operation start/success (create/update/delete, SSO steps, migration stats) |
+| `warn` | Suspicious but handled cases (e.g. non-admin writing `SYSTEM_` keys) |
+| `error` | Unexpected failures before wrapping as `BusinessException` |
 
-(To be filled by the team)
-
----
-
-## What to Log
-
-<!-- Important events to log -->
-
-(To be filled by the team)
+Include enough context (ids/slugs/action) but **never** log secrets (`TOKEN_SECRET`, SSO secret, passwords, raw JWT).
 
 ---
 
-## What NOT to Log
+## Anti-Patterns
 
-<!-- Sensitive data, PII, secrets -->
+| Avoid | Why |
+|-------|-----|
+| `console.log` / `console.error` | Not used in this codebase |
+| Logging without context name | Always pass `ServiceName.name` as second arg |
+| Logging PII/secrets | Security risk |
+| Skipping logger on new services | Follow existing service template |
 
-(To be filled by the team)
+---
+
+## Verification
+
+- New services inject `HLOGGER_TOKEN` and define private `log` / `warn` / `error` helpers.
+- Catch blocks that convert unknown errors call `this.error(...)` before throwing `BusinessException`.

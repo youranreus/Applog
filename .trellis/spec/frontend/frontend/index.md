@@ -1,12 +1,25 @@
 # Frontend Development Guidelines
 
-> Best practices for frontend development in this project.
+> Vue 3 conventions for `@applog/frontend` (`packages/frontend`).
 
 ---
 
 ## Overview
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+Stack: Vue 3 + Composition API (`<script setup>`), Pinia, Vue Router, Alova, Tailwind CSS v4, shadcn-vue (Reka UI). Path alias `@/*` → `src/*`.
+
+Shared contracts: `@applog/common` (system config only today).
+
+---
+
+## Pre-Development Checklist
+
+- [ ] UI lives in `components/` (shared) or `pages/<domain>/` (page-local)
+- [ ] Business logic goes in page hooks or Pinia stores — not fat SFCs
+- [ ] HTTP goes through `src/api/*` + `alovaInstance` (no Axios / raw fetch)
+- [ ] Lists/forms use `useRequest` / `useWatcher` appropriately
+- [ ] Types use `I*` interfaces and `as const` instead of `enum`
+- [ ] Interactive chrome follows shadcn tokens in `assets/base.css` (see Component Guidelines)
 
 ---
 
@@ -14,26 +27,23 @@ This directory contains guidelines for frontend development. Fill in each file w
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | shadcn theming, ring/overflow, Select | Filled (partial) |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+| [Directory Structure](./directory-structure.md) | `src/` layout and placement rules | Filled |
+| [Component Guidelines](./component-guidelines.md) | SFC patterns, shadcn, Apple theme tokens | Filled |
+| [Hook Guidelines](./hook-guidelines.md) | Public vs page hooks, Alova hooks | Filled |
+| [State Management](./state-management.md) | Pinia stores + API layering | Filled |
+| [Quality Guidelines](./quality-guidelines.md) | Forbidden patterns, lint/typecheck | Filled |
+| [Type Safety](./type-safety.md) | Types, constants, `@applog/common` | Filled |
 
 ---
 
-## How to Fill These Guidelines
+## Quality Check
 
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
+- [ ] No `any`, no TS `enum`, no `await`+`.then()` mix
+- [ ] Pages do not call `alovaInstance` directly
+- [ ] Auth-sensitive routes use `ROUTE_PERMISSIONS` / guard meta
+- [ ] Notifications go through `layoutStore.notify` (Sonner bridge)
+- [ ] Theme changes remap semantic CSS variables — do not one-off restyle every page
 
 ---
 
-**Language**: All documentation should be written in **English**.
+**Language**: English (code comments may be Chinese).

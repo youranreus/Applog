@@ -1,12 +1,24 @@
 # Backend Development Guidelines
 
-> Best practices for backend development in this project.
+> NestJS + Fastify conventions for `@applog/backend` (`packages/backend`).
 
 ---
 
 ## Overview
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and shared utilities from `@reus-able/nestjs`. Listen port: **4000**. Workspace dependency: `@applog/common`.
+
+---
+
+## Pre-Development Checklist
+
+- [ ] New feature belongs in `src/module/<name>/` (controller + service + `dto/`)
+- [ ] New entity goes in `src/entities/` and is added to `ENTITY_LIST`
+- [ ] Protected routes use `@AuthRoles('user' | 'admin')`; public routes omit it
+- [ ] Business errors use `BusinessException` (not NestJS HTTP exception classes)
+- [ ] Service injects `HLogger` via `HLOGGER_TOKEN` and wraps log helpers
+- [ ] Controller returns domain/DTO data; `TransformInterceptor` wraps `{ data, code, msg }`
+- [ ] Cross-package system-config contracts come from `@applog/common`
 
 ---
 
@@ -14,25 +26,23 @@ This directory contains guidelines for backend development. Fill in each file wi
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+| [Directory Structure](./directory-structure.md) | `src/` layout, module layout, entities | Filled |
+| [Database Guidelines](./database-guidelines.md) | TypeORM entities, queries, pagination | Filled |
+| [Error Handling](./error-handling.md) | `BusinessException`, validation, filters | Filled |
+| [Quality Guidelines](./quality-guidelines.md) | Naming, JSDoc, forbidden patterns | Filled |
+| [Logging Guidelines](./logging-guidelines.md) | `HLogger` usage in services | Filled |
 
 ---
 
-## How to Fill These Guidelines
+## Quality Check
 
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
+- [ ] No `NotFoundException` / `BadRequestException` for business errors
+- [ ] No `console.log` — use `HLogger`
+- [ ] No `await` mixed with `.then()`
+- [ ] Controller stays thin; logic lives in service
+- [ ] Input DTOs are classes with `class-validator`; response shapes are `I*` interfaces/types
+- [ ] API controllers use `version: [VERSION_NEUTRAL, '1']` unless intentionally raw (e.g. SEO XML)
 
 ---
 
-**Language**: All documentation should be written in **English**.
+**Language**: English (project code comments may be Chinese).

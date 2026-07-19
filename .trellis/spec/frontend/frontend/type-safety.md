@@ -1,51 +1,62 @@
 # Type Safety
 
-> Type safety patterns in this project.
+> TypeScript conventions in `@applog/frontend`.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's type safety conventions here.
-
-Questions to answer:
-- What type system do you use?
-- How are types organized?
-- What validation library do you use?
-- How do you handle type inference?
--->
-
-(To be filled by the team)
+Frontend keeps local view/API types under `src/types/`. Cross-package system-config contracts come from `@applog/common`. Project rules forbid casual `any` and TS `enum`.
 
 ---
 
-## Type Organization
+## Naming
 
-<!-- Where types are defined, shared types vs local types -->
+| Kind | Convention | Example file |
+|------|------------|--------------|
+| Interface | `I` + PascalCase | `types/user.ts` → `IUserResponseDto` |
+| Type alias / unions | PascalCase | `UserRole`, `PostStatus` |
+| Const maps | `UPPER_SNAKE_CASE` + `as const` | `USER_ROLES`, `ROUTE_NAMES` |
+| Files | kebab-case or domain name | `post.ts`, `api.ts` |
 
-(To be filled by the team)
-
----
-
-## Validation
-
-<!-- Runtime validation patterns (Zod, Yup, io-ts, etc.) -->
-
-(To be filled by the team)
+Reference: `packages/frontend/src/types/post.ts`, `packages/frontend/src/constants/permission.ts`.
 
 ---
 
-## Common Patterns
+## API Typing
 
-<!-- Type utilities, generics, type guards -->
-
-(To be filled by the team)
+- Describe raw envelope only when needed: `IRestfulResponse<T>` in `types/api.ts`.
+- Alova methods are typed with **unwrapped** `T` because `utils/alova.ts` already returns `data`.
+- Prefer `import type` for type-only imports.
 
 ---
 
-## Forbidden Patterns
+## Shared Package Types
 
-<!-- any, type assertions, etc. -->
+```typescript
+import type { ISystemBaseConfig } from '@applog/common';
+import { SYSTEM_CONFIG_KEYS, getSystemConfigKey } from '@applog/common';
+```
 
-(To be filled by the team)
+Used by: `useSystemStore`, `api/system-config/*`, Dashboard system settings.
+
+Do **not** move every frontend DTO into common — only true cross-layer contracts.
+
+---
+
+## Forbidden / Avoided
+
+| Pattern | Status in `src/` |
+|---------|------------------|
+| `any` | Avoid (effectively unused) |
+| `enum` | Avoid — use unions + `as const` |
+| Untyped Alova calls | Always provide `T` |
+| Duplicating `ISystemBaseConfig` locally | Import from `@applog/common` |
+
+---
+
+## Verification
+
+```bash
+pnpm --filter @applog/frontend run type-check
+```
