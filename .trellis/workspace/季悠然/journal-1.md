@@ -75,3 +75,38 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Dashboard 概览 Top3 修复与 toast 打磨
+
+**Date**: 2026-07-19
+**Task**: Dashboard 概览 Top3 修复与 toast 打磨
+**Branch**: `master`
+
+### Summary
+
+按 critique Top3 完成概览页：保存/初始化反馈与危险操作确认、统计列表降噪、Apple 分段切换与「概览」文案；统一 Sonner 无图标 toast；并写入前端通知/组件约定。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ca1491f` | (see git log) |
+| `7bb575c` | (see git log) |
+| `cf85bc6` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
