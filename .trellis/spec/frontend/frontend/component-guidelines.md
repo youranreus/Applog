@@ -183,6 +183,29 @@ Reference: `packages/frontend/src/pages/user/PostList/`, `packages/frontend/src/
 
 ---
 
+## Site settings + Footer meta
+
+### Convention: Date fields use shadcn Calendar + Popover
+
+**What**: Admin date inputs (e.g. 建站日期) use `Popover` + `Calendar` + trigger `Button`, not native `<input type="date">`. Persist as `YYYY-MM-DD` string on `ISystemBaseConfig`; clear sets `''`.
+
+**Why**: Matches shadcn-vue / Apple-theme chrome; supports explicit clear UX.
+
+**Related**: `@internationalized/date` `CalendarDate` ↔ string helpers live next to the form (`SystemSettings.vue`).
+
+### Convention: Footer Row1 vs Row2
+
+**What**:
+- 上行（可选）：ICP + uptime — sibling block；桌面同行、移动两行
+- 下行：Copyright | Nav (+ optional buildInfo) — preserve original single-row flex/`sm:contents` layout
+- Never nest meta inside the copyright cell
+
+**Why**: Nesting meta inside the copyright flex item breaks Copyright + Nav staying on one row. Meta sits above the legal/nav row.
+
+Reference: `packages/frontend/src/components/Layout/Footer.vue`, `packages/frontend/src/utils/site-uptime.ts`, `packages/frontend/src/pages/user/Dashboard/components/SystemSettings.vue`.
+
+---
+
 ## Markdown / BBCode UI
 
 `MarkdownRenderer` uses IntersectionObserver lazy images. BBCode tags map to Vue components via `utils/markdown` registries (`art`, `bili`, `collapse`, `photos`, `dplayer`).

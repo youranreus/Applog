@@ -43,9 +43,12 @@ Criteria (all should be true):
 ## Current Shared Contract (system config)
 
 - DB/config key example: `SYSTEM_BASE_CONFIG` = prefix + `SYSTEM_CONFIG_KEYS.BASE_CONFIG`
-- Stored value JSON matches `ISystemBaseConfig` (`title`, `description`, `allowUserLogin`, `allowComment`)
+- Stored value JSON matches `ISystemBaseConfig`:
+  - Required: `title`, `description`, `allowUserLogin`, `allowComment`
+  - Optional site meta: `siteFoundedDate?` (`YYYY-MM-DD` or `''`), `icpFilingNumber?` (display string or `''`)
 - Frontend prefers `getSystemConfigKey(...)` when calling config APIs
 - Backend currently concatenates `${prefix}${SYSTEM_CONFIG_KEYS.BASE_CONFIG}` (semantically equivalent; prefer reusing the helper when touching that code)
+- Old configs missing optional fields are treated as unconfigured (`|| ''` / omit display)
 
 References:
 - `packages/common/src/types/system-config.ts`
@@ -54,6 +57,59 @@ References:
 - `packages/backend/src/module/system-config/system-config.service.ts`
 - `packages/frontend/src/stores/useSystemStore/index.ts`
 - `packages/frontend/src/api/system-config/getConfig.ts`
+
+---
+
+## Scenario: Extending `ISystemBaseConfig` site meta (founded date / ICP)
+
+### 1. Scope / Trigger
+- Trigger: Adding optional fields that both admin settings and public Footer consume via the same `SYSTEM_BASE_CONFIG` JSON blob (cross-layer contract change).
+
+### 2. Signatures
+- Type: `ISystemBaseConfig` in `packages/common/src/types/system-config.ts`
+- Storage key: `${SYSTEM_CONFIG_PREFIX}BASE_CONFIG` (still one JSON document; no new `SYSTEM_CONFIG_KEYS` entry)
+- Backend init: `SystemConfigService.initializeSystem` default object must include new fields as `''`
+- Frontend write: `SystemSettings.vue` → `setConfig({ configKey, configValue: JSON.stringify(formData) })`
+- Frontend read: `useSystemStore.config` parsed as `ISystemBaseConfig`
+
+### 3. Contracts
+| Field | Type | Constraints |
+|-------|------|-------------|
+| `siteFoundedDate` | `string?` | ISO date `YYYY-MM-DD` or `''`; empty / missing = Footer hides uptime |
+| `icpFilingNumber` | `string?` | Free text or `''`; empty / missing = Footer hides ICP link |
+| Uptime display | Frontend-only | Local `YYYY-MM-DDT00:00:00` start; text `本站已运行 {d} 天 {h} 时 {m} 分 {s} 秒`; clamp future to 0 |
+| ICP link | Frontend-only | `https://beian.miit.gov.cn/` + `target="_blank"` + `rel="noopener noreferrer"` |
+
+### 4. Validation & Error Matrix
+| Condition | Behavior |
+|-----------|----------|
+| Missing optional fields on old JSON | Treat as unconfigured; do not throw |
+| Illegal date string (non `YYYY-MM-DD` / invalid calendar day) | Do not show uptime; admin Calendar parses to `undefined` |
+| Empty string after clear + save | Persist `''`; hide corresponding Footer item |
+| Future founded date | Show zeroed uptime (no negative) |
+
+### 5. Good/Base/Bad Cases
+- Good: both fields set → Footer Row2 shows ICP then uptime (desktop ` · `; mobile two lines)
+- Base: both empty → no Row2; Row1 Copyright \| Nav unchanged
+- Bad: inventing a second `SYSTEM_*` key for these fields, or computing uptime on the server
+
+### 6. Tests Required
+- Unit: `site-uptime` helpers — empty/illegal → `null`; 1-day delta copy; future → zeros
+- Manual/E2E: save/clear in SystemSettings; Footer visibility matrix (only ICP / only date / both / neither)
+- Type-check after `pnpm --filter @applog/common run build`
+
+### 7. Wrong vs Correct
+#### Wrong
+```typescript
+// Separate SYSTEM_ICP key + native <input type="date"> only on FE types
+interface ILocalConfig { founded: Date }
+```
+#### Correct
+```typescript
+// Extend shared ISystemBaseConfig; store YYYY-MM-DD string; FE Calendar ↔ string
+siteFoundedDate?: string;
+icpFilingNumber?: string;
+```
 
 ---
 

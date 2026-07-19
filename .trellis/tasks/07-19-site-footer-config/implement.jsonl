@@ -1,0 +1,5 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/common/shared/type-safety.md", "reason": "ISystemBaseConfig field naming"}
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "Footer and SystemSettings UI"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Config field spans common/be/fe"}
+{"file": ".trellis/tasks/07-19-site-footer-config/design.md", "reason": "Implementation design"}

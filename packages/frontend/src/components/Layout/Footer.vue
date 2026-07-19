@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useLayoutStore } from '@/stores/useLayoutStore'
 import { useSystemStore } from '@/stores/useSystemStore'
 import { ROUTE_NAMES } from '@/constants/permission'
+import { getSiteUptimeText } from '@/utils/site-uptime'
+
+const ICP_FILING_URL = 'https://beian.miit.gov.cn/'
 
 const currentYear = computed(() => new Date().getFullYear())
 const layoutStore = useLayoutStore()
@@ -11,12 +14,80 @@ const systemStore = useSystemStore()
 const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_COMMIT
   ? `${import.meta.env.VITE_GIT_BRANCH}@${import.meta.env.VITE_GIT_COMMIT}`
   : null
+
+/**
+ * 当前时间戳，每秒刷新以驱动运行时间文案
+ */
+const now = ref(Date.now())
+let uptimeTimer: ReturnType<typeof setInterval> | null = null
+
+/**
+ * 备案号（trim 后非空才展示）
+ */
+const icpFilingNumber = computed(() => {
+  const value = systemStore.config?.icpFilingNumber?.trim()
+  return value || null
+})
+
+/**
+ * 实时运行时间文案
+ */
+const uptimeText = computed(() => {
+  return getSiteUptimeText(systemStore.config?.siteFoundedDate, now.value)
+})
+
+/**
+ * 是否渲染第二行次要信息（备案 / 运行时间）
+ */
+const showMetaRow = computed(() => {
+  return Boolean(icpFilingNumber.value || uptimeText.value)
+})
+
+onMounted(() => {
+  uptimeTimer = setInterval(() => {
+    now.value = Date.now()
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (uptimeTimer) {
+    clearInterval(uptimeTimer)
+    uptimeTimer = null
+  }
+})
 </script>
 
 <template>
   <footer class="bg-[#f5f5f7]">
-    <div class="common-page-container footer-container">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center min-h-16 py-3 sm:py-0 gap-y-2 sm:gap-y-0">
+    <div class="common-page-container footer-container flex flex-col justify-center gap-y-4">
+      <!-- 上行：备案 / 运行时间（仅配置后展示） -->
+      <div
+        v-if="showMetaRow"
+        class="flex flex-col sm:flex-row sm:items-center gap-y-1 sm:gap-y-0"
+      >
+        <a
+          v-if="icpFilingNumber"
+          :href="ICP_FILING_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-xs text-gray-500! hover:underline"
+        >
+          {{ icpFilingNumber }}
+        </a>
+        <span
+          v-if="icpFilingNumber && uptimeText"
+          class="hidden sm:inline mx-1.5 text-xs text-gray-400"
+          aria-hidden="true"
+        >
+          ·
+        </span>
+        <p v-if="uptimeText" class="text-xs text-gray-500">
+          {{ uptimeText }}
+        </p>
+      </div>
+
+      <!-- 下行：版权 + 导航（+ 可选 buildInfo），保持原有单行布局 -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-y-2 sm:gap-y-0">
         <!-- showInFooter 页面链接（移动端排首位） -->
         <div class="flex items-center gap-x-3 order-first sm:order-2 sm:ml-6">
           <template v-for="(page, index) in layoutStore.footerPages" :key="page.id">
@@ -62,12 +133,17 @@ const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_CO
 
 <style scoped>
 .footer-container {
-  padding: 0;
+  /* 覆盖 common-page-container 的 padding-top: 2rem；仅保留页脚自身上下边距 */
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 @media screen and (max-width: 768px) {
   .footer-container {
-    padding: 0 1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 }
 </style>

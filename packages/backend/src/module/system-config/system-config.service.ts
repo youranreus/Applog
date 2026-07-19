@@ -247,6 +247,8 @@ export class SystemConfigService {
         description: '',
         allowUserLogin: true,
         allowComment: true,
+        siteFoundedDate: '',
+        icpFilingNumber: '',
       };
 
       // 创建配置实体

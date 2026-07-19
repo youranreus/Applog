@@ -1,13 +1,28 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
+import type { DateValue } from '@internationalized/date';
+import {
+  CalendarDate,
+  DateFormatter,
+  getLocalTimeZone,
+  today,
+} from '@internationalized/date';
+import { CalendarIcon, XIcon } from '@lucide/vue';
 import { useRequest } from 'alova/client';
 import { useSystemStore } from '@/stores/useSystemStore';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { setConfig } from '@/api/system-config';
 import { getSystemConfigKey, SYSTEM_CONFIG_KEYS, type ISystemBaseConfig } from '@applog/common';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Field,
   FieldDescription,
@@ -23,6 +38,65 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+
+/**
+ * 建站日期展示用格式化器（本地时区）
+ */
+const siteFoundedDateFormatter = new DateFormatter('zh-CN', {
+  dateStyle: 'long',
+});
+
+/**
+ * 日历默认占位（本地今天）
+ */
+const calendarDefaultPlaceholder = today(getLocalTimeZone());
+
+/**
+ * 日期选择 Popover 开关
+ */
+const siteFoundedDateOpen = ref(false);
+
+/**
+ * 将 YYYY-MM-DD 解析为 CalendarDate
+ * @param ymd - ISO 日期字符串
+ * @returns 有效日期或 undefined（非法日历日不抛错）
+ */
+function parseYmdToCalendarDate(ymd: string): DateValue | undefined {
+  const trimmed = ymd.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return undefined;
+  }
+
+  const [yearText, monthText, dayText] = trimmed.split('-');
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return undefined;
+  }
+
+  try {
+    return new CalendarDate(year, month, day);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * 将 DateValue 转为 YYYY-MM-DD 存储字符串
+ * @param date - 日历选中值
+ * @returns ISO 日期或空串
+ */
+function calendarDateToYmd(date: DateValue | null | undefined): string {
+  if (!date) {
+    return '';
+  }
+
+  const month = String(date.month).padStart(2, '0');
+  const day = String(date.day).padStart(2, '0');
+  return `${date.year}-${month}-${day}`;
+}
 
 /**
  * 使用系统配置 Store 获取配置数据
@@ -42,7 +116,44 @@ const formData = ref<ISystemBaseConfig>({
   description: '',
   allowUserLogin: true,
   allowComment: true,
+  siteFoundedDate: '',
+  icpFilingNumber: '',
 });
+
+/**
+ * 表单绑定的建站日期（Calendar 用 DateValue，只读；写入走 handleSiteFoundedDateSelect）
+ */
+const siteFoundedCalendarDate = computed<DateValue | undefined>(() => {
+  return parseYmdToCalendarDate(formData.value.siteFoundedDate || '');
+});
+
+/**
+ * 建站日期按钮展示文案
+ */
+const siteFoundedDateLabel = computed(() => {
+  const date = siteFoundedCalendarDate.value;
+  if (!date) {
+    return '选择建站日期';
+  }
+  return siteFoundedDateFormatter.format(date.toDate(getLocalTimeZone()));
+});
+
+/**
+ * 选中日历日期后写入表单并关闭 Popover
+ * @param value - 选中的日期
+ */
+function handleSiteFoundedDateSelect(value: DateValue | undefined): void {
+  formData.value.siteFoundedDate = calendarDateToYmd(value);
+  siteFoundedDateOpen.value = false;
+}
+
+/**
+ * 清空建站日期（保存后页脚不再展示运行时间）
+ */
+function clearSiteFoundedDate(): void {
+  formData.value.siteFoundedDate = '';
+  siteFoundedDateOpen.value = false;
+}
 
 /**
  * 权限变更确认对话框
@@ -152,6 +263,8 @@ function initializeFormData(): void {
       description: config.description || '',
       allowUserLogin: config.allowUserLogin ?? true,
       allowComment: config.allowComment ?? true,
+      siteFoundedDate: config.siteFoundedDate || '',
+      icpFilingNumber: config.icpFilingNumber || '',
     };
   } else {
     formData.value = {
@@ -159,6 +272,8 @@ function initializeFormData(): void {
       description: '',
       allowUserLogin: true,
       allowComment: true,
+      siteFoundedDate: '',
+      icpFilingNumber: '',
     };
   }
 }
@@ -287,6 +402,60 @@ async function handleConfirmPermissionSave(): Promise<void> {
             type="text"
             placeholder="请输入系统描述"
           />
+        </Field>
+
+        <Field>
+          <FieldLabel>建站日期</FieldLabel>
+          <div class="flex items-center gap-2">
+            <Popover v-model:open="siteFoundedDateOpen">
+              <PopoverTrigger as-child>
+                <Button
+                  type="button"
+                  variant="outline"
+                  :class="cn(
+                    'h-8 w-full max-w-xs justify-start rounded-[8px] border-input bg-frost px-2.5 font-normal text-foreground shadow-none hover:bg-frost',
+                    !siteFoundedCalendarDate && 'text-muted-foreground',
+                  )"
+                >
+                  <CalendarIcon class="size-4 opacity-60" />
+                  {{ siteFoundedDateLabel }}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent class="w-auto p-0" align="start">
+                <Calendar
+                  :model-value="siteFoundedCalendarDate"
+                  :default-placeholder="calendarDefaultPlaceholder"
+                  layout="month-and-year"
+                  @update:model-value="handleSiteFoundedDateSelect"
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              v-if="siteFoundedCalendarDate"
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="清除建站日期"
+              @click="clearSiteFoundedDate"
+            >
+              <XIcon class="size-4" />
+            </Button>
+          </div>
+          <FieldDescription>
+            配置后将在页面底部展示实时运行时间；清空后不展示
+          </FieldDescription>
+        </Field>
+
+        <Field>
+          <FieldLabel>备案号</FieldLabel>
+          <Input
+            v-model="formData.icpFilingNumber"
+            type="text"
+            placeholder="如 粤ICP备xxxxxxxx号"
+          />
+          <FieldDescription>
+            配置后将在页面底部展示，点击跳转至工信部备案查询；清空后不展示
+          </FieldDescription>
         </Field>
       </FieldGroup>
 
