@@ -110,11 +110,50 @@ Card permanent edge:
 
 ---
 
+## Tabs
+
+### Convention: Active hover must keep active text color
+
+**What**: Default horizontal Tabs use `data-active:bg-primary` + `data-active:text-primary-foreground`. Always pair with `data-active:hover:text-primary-foreground` (line variant: `data-active:hover:text-primary`).
+
+**Why**: Bare `hover:text-foreground` overrides active white/blue text and turns the selected tab illegible on hover.
+
+**Also**:
+- Triggers use `cursor-pointer` (disabled → `cursor-not-allowed`)
+- Default list height is `h-10` with comfortable trigger padding (`px-3 py-1.5`)
+
+---
+
+## Textarea / MarkdownEditor
+
+### Convention: Textarea matches Input chrome
+
+**What**: `Textarea` uses the same Apple chrome as `Input`: `rounded-[8px]`, `bg-frost`, `focus-visible:ring-2`.
+
+**Why**: Edit forms mix Input + Textarea; mismatched radius/fill looks inconsistent.
+
+### Convention: MarkdownEditor layout
+
+**What**: `MarkdownEditor` puts shadcn `Tabs` **outside** the content frame. Edit (`Textarea`) and preview (`ArticleRenderer`) share one fixed-height frame (`550px`) so switching does not jump. Errors use `aria-invalid` — do **not** reintroduce `validationStatus` / `validationMessage`; page-level `FieldError` owns the message.
+
+```vue
+<MarkdownEditor
+  v-model="formData.content"
+  placeholder="..."
+  :aria-invalid="!!saveError"
+/>
+```
+
+Reference: `packages/frontend/src/components/ui/markdown-editor/`.
+
+---
+
 ## Button / Badge / Input (Apple theme)
 
 - Button: `rounded-full`, `shadow-none`; `outline` / `link` use Link Blue (`#0066cc` / `text-link-blue`), not Apple Blue text
 - Badge (Tag): `rounded-full`
 - Input: `rounded-[8px]`, `bg-frost`, outer `focus-visible:ring-2`
+- Textarea: same chrome as Input (see above)
 
 ---
 
@@ -122,6 +161,7 @@ Card permanent edge:
 
 - Prefer Tailwind utilities; scoped SCSS is OK for deep article/markdown styles (`:deep()`).
 - Global design tokens: `packages/frontend/src/assets/base.css` (`@import "tailwindcss"`, `@theme inline`, `:root` / `.dark`).
+- Global scrollbar (WebKit + Firefox): transparent track, 8px rounded thumb in Pebble / Ash — defined in `base.css` `@layer base`.
 - Notifications: call `useLayoutStore().notify(...)`; `GlobalNotification.vue` bridges to Sonner — do not invent a second toast path.
 
 ---
@@ -151,6 +191,14 @@ Reference: `packages/frontend/src/components/ui/markdown-renderer/`, `packages/f
 **Cause**: `padding` added directly on `.edit-main` / `.edit-sidebar`.
 
 **Fix**: Keep outer columns padding-free; gutter only on inner `.edit-pane-scroll`.
+
+### Common Mistake: Tabs active hover turns white text dark
+
+**Symptom**: Selected tab text becomes hard to read on hover.
+
+**Cause**: `hover:text-foreground` without `data-active:hover:text-primary-foreground`.
+
+**Fix**: Always pin active hover text to the active color (see Tabs convention).
 
 ### Common Mistake: Options API or Axios
 
