@@ -80,8 +80,8 @@ useHead({
     <GlobalLoading />
     <!-- 全局通知适配层 -->
     <GlobalNotification />
-    <!-- Sonner 吐司容器 -->
-    <Toaster position="top-center" rich-colors close-button />
+    <!-- Sonner 吐司容器（样式由 Sonner.vue / applog-toast 统一） -->
+    <Toaster />
   </div>
 </template>
 
