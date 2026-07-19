@@ -19,17 +19,17 @@ export const NAV_GROUPS: Record<string, INavItemSource[]> = {
     {
       type: 'route',
       route: { name: ROUTE_NAMES.USER_POST_LIST },
-      title: '文章管理',
+      title: '文章',
     },
     {
       type: 'route',
       route: { name: ROUTE_NAMES.USER_PAGE_LIST },
-      title: '页面管理',
+      title: '页面',
     },
     {
       type: 'route',
       route: { name: ROUTE_NAMES.USER_COMMENT_LIST },
-      title: '评论管理',
+      title: '评论',
     },
     // 可以添加页面类型的导航项
     // {
