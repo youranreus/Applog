@@ -4,33 +4,60 @@ import { useRouter } from 'vue-router';
 import type { IPostListItem } from '@/types/post';
 import Loading from '@/components/ui/loading/index.vue';
 import { ROUTE_NAMES } from '@/constants/permission';
+import AdminListEmpty from '../../components/AdminListEmpty.vue';
 
 /**
  * Props 定义
  */
-interface Props {
+interface IPostTableProps {
   /** 文章列表数据 */
   posts: IPostListItem[];
   /** 是否正在加载 */
   loading?: boolean;
+  /** 当前是否有搜索关键字（区分空态） */
+  hasKeyword?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+/**
+ * Emits 定义
+ */
+interface IPostTableEmits {
+  /** 空态：写第一篇 */
+  (e: 'create'): void;
+  /** 空态：清除搜索 */
+  (e: 'clear-search'): void;
+}
+
+const props = withDefaults(defineProps<IPostTableProps>(), {
   posts: () => [],
   loading: false,
+  hasKeyword: false,
 });
 
-/**
- * 路由实例
- */
+const emit = defineEmits<IPostTableEmits>();
+
 const router = useRouter();
 
 /**
  * 是否有数据
  */
-const hasData = computed(() => {
-  return props.posts.length > 0;
-});
+const hasData = computed(() => props.posts.length > 0);
+
+/**
+ * 空态文案
+ */
+const emptyMessage = computed(() =>
+  props.hasKeyword
+    ? '没有找到相关文章。换个词试试，或清除搜索。'
+    : '还没有文章。写第一篇？',
+);
+
+/**
+ * 空态按钮文案
+ */
+const emptyActionLabel = computed(() =>
+  props.hasKeyword ? '清除搜索' : '写新文章',
+);
 
 /**
  * 格式化日期
@@ -44,20 +71,6 @@ function formatDate(date: Date | string): string {
     month: '2-digit',
     day: '2-digit',
   });
-}
-
-/**
- * 获取状态标签样式
- * @param status - 文章状态
- * @returns 状态标签的 CSS 类名
- */
-function getStatusClass(status: 'draft' | 'published' | 'archived'): string {
-  const statusMap = {
-    draft: 'status-draft',
-    published: 'status-published',
-    archived: 'status-archived',
-  };
-  return statusMap[status] || '';
 }
 
 /**
@@ -75,293 +88,260 @@ function getStatusText(status: 'draft' | 'published' | 'archived'): string {
 }
 
 /**
- * 跳转到编辑页面
+ * 跳转到编辑页
  * @param slug - 文章 slug
  */
-function handleRowClick(slug: string): void {
+function goEdit(slug: string): void {
   router.push({
     name: ROUTE_NAMES.USER_POST_EDIT,
     params: { slug },
   });
 }
+
+/**
+ * 行键盘激活
+ * @param event - 键盘事件
+ * @param slug - 文章 slug
+ */
+function handleRowKeydown(event: KeyboardEvent, slug: string): void {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    goEdit(slug);
+  }
+}
+
+/**
+ * 空态主操作
+ */
+function handleEmptyAction(): void {
+  if (props.hasKeyword) {
+    emit('clear-search');
+    return;
+  }
+  emit('create');
+}
 </script>
 
 <template>
-  <div class="post-table">
-    <!-- 加载状态 -->
-    <div v-if="loading" class="table-loading">
-      <Loading :size="48" />
+  <div class="admin-content-table">
+    <div
+      v-if="loading"
+      class="admin-content-table__loading"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <Loading :size="40" />
+      <span class="sr-only">正在加载文章列表</span>
     </div>
 
-    <!-- 表格内容 -->
-    <div v-else-if="hasData" class="table-container">
-      <table class="table">
-        <thead class="table-header">
+    <div
+      v-else-if="hasData"
+      class="admin-content-table__scroll"
+    >
+      <table class="admin-content-table__table">
+        <thead>
           <tr>
-            <th class="table-header-cell">标题</th>
-            <th class="table-header-cell">摘要</th>
-            <th class="table-header-cell">状态</th>
-            <th class="table-header-cell">作者</th>
-            <th class="table-header-cell">浏览次数</th>
-            <th class="table-header-cell">创建时间</th>
+            <th scope="col">标题</th>
+            <th
+              scope="col"
+              class="admin-content-table__col-slug"
+            >
+              Slug
+            </th>
+            <th
+              scope="col"
+              class="admin-content-table__col-status"
+            >
+              状态
+            </th>
+            <th
+              scope="col"
+              class="admin-content-table__col-meta"
+            >
+              更新
+            </th>
           </tr>
         </thead>
-        <tbody class="table-body">
+        <tbody>
           <tr
             v-for="post in posts"
             :key="post.id"
-            class="table-row"
-            @click="handleRowClick(post.slug)"
+            class="admin-content-table__row"
+            tabindex="0"
+            role="link"
+            :aria-label="`编辑文章：${post.title}`"
+            @click="goEdit(post.slug)"
+            @keydown="handleRowKeydown($event, post.slug)"
           >
-            <td class="table-cell table-cell-title">
-              <div class="cell-title-wrapper">
-                <span class="cell-title">{{ post.title }}</span>
-                <span v-if="post.tags && post.tags.length > 0" class="cell-tags">
-                  <span
-                    v-for="tag in post.tags.slice(0, 3)"
-                    :key="tag"
-                    class="cell-tag"
-                  >
-                    {{ tag }}
-                  </span>
-                  <span v-if="post.tags.length > 3" class="cell-tag-more">
-                    +{{ post.tags.length - 3 }}
-                  </span>
-                </span>
-              </div>
+            <td class="admin-content-table__title">
+              <span class="admin-content-table__title-text">{{ post.title }}</span>
             </td>
-            <td class="table-cell table-cell-summary">
-              <span class="cell-summary">{{ post.summary || '-' }}</span>
+            <td class="admin-content-table__col-slug">
+              <code class="admin-content-table__slug">{{ post.slug }}</code>
             </td>
-            <td class="table-cell table-cell-status">
-              <span :class="['status-badge', getStatusClass(post.status)]">
+            <td class="admin-content-table__col-status">
+              <span
+                class="admin-content-table__status"
+                :data-status="post.status"
+              >
                 {{ getStatusText(post.status) }}
               </span>
             </td>
-            <td class="table-cell table-cell-author">
-              <div v-if="post.author" class="cell-author">
-                <span class="author-name">{{ post.author.name }}</span>
-              </div>
-              <span v-else class="cell-author-empty">-</span>
-            </td>
-            <td class="table-cell table-cell-views">
-              {{ post.viewCount }}
-            </td>
-            <td class="table-cell table-cell-date">
-              {{ formatDate(post.createdAt) }}
+            <td class="admin-content-table__col-meta admin-content-table__meta">
+              {{ formatDate(post.updatedAt || post.createdAt) }}
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- 空状态 -->
-    <div v-else class="table-empty">
-      <p class="empty-text">暂无文章数据</p>
-    </div>
+    <AdminListEmpty
+      v-else
+      :message="emptyMessage"
+      :is-filtered="hasKeyword"
+      :action-label="emptyActionLabel"
+      @action="handleEmptyAction"
+    />
   </div>
 </template>
 
 <style scoped>
-.post-table {
+.admin-content-table {
   width: 100%;
-  background-color: #ffffff;
-  border-radius: 0.5rem;
+  border: 1px solid var(--color-pebble, #e2e2e5);
+  border-radius: var(--radius-cards, 8px);
+  background: #ffffff;
   overflow: hidden;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
-.table-loading,
-.table-empty {
+.admin-content-table__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20rem;
   padding: 3rem 1.5rem;
-  text-align: center;
-  min-height: 400px;
 }
 
-.loading-text,
-.empty-text {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.table-container {
+.admin-content-table__scroll {
   overflow-x: auto;
 }
 
-.table {
+.admin-content-table__table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.table-header {
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.table-header-cell {
+.admin-content-table__table th {
   padding: 0.75rem 1rem;
   text-align: left;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--color-graphite, #474747);
+  background: var(--color-frost, #f5f5f7);
+  border-bottom: 1px solid var(--color-pebble, #e2e2e5);
 }
 
-.table-body {
-  background-color: #ffffff;
+.admin-content-table__table td {
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-carbon, #1d1d1f);
+  border-bottom: 1px solid var(--color-pebble, #e2e2e5);
+  vertical-align: middle;
 }
 
-.table-row {
-  border-bottom: 1px solid #e5e7eb;
+.admin-content-table__row {
   cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
+  transition: background-color 0.15s ease-out;
 }
 
-.table-row:hover {
-  background-color: #f9fafb;
+.admin-content-table__row:hover {
+  background: var(--color-frost, #f5f5f7);
 }
 
-.table-row:last-child {
+.admin-content-table__row:focus {
+  outline: none;
+}
+
+.admin-content-table__row:focus-visible {
+  outline: 2px solid var(--color-apple-blue, #0071e3);
+  outline-offset: -2px;
+}
+
+.admin-content-table__row:last-child td {
   border-bottom: none;
 }
 
-.table-cell {
-  padding: 1rem;
-  font-size: 0.875rem;
-  color: #111827;
-}
-
-.table-cell-title {
-  min-width: 200px;
-}
-
-.cell-title-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.cell-title {
+.admin-content-table__title-text {
   font-weight: 500;
-  color: #111827;
 }
 
-.cell-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  align-items: center;
+.admin-content-table__col-slug,
+.admin-content-table__col-status {
+  width: 1%;
+  min-width: 120px;
+  white-space: nowrap;
+  padding-inline: 0.75rem;
 }
 
-.cell-tag {
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  background-color: #e0e7ff;
-  color: #4338ca;
-}
-
-.cell-tag-more {
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  background-color: #f3f4f6;
-  color: #6b7280;
-}
-
-.table-cell-summary {
-  min-width: 200px;
-  max-width: 300px;
-}
-
-.cell-summary {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+.admin-content-table__slug {
+  display: inline-block;
+  max-width: 14rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.table-cell-status {
-  min-width: 100px;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.375rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.75rem;
+  color: var(--color-ash, #707070);
+  vertical-align: middle;
+}
+
+.admin-content-table__status {
+  display: inline-block;
+  font-size: 0.8125rem;
   font-weight: 500;
+  color: var(--color-smoke, #333333);
 }
 
-.status-draft {
-  background-color: #fef3c7;
-  color: #92400e;
+.admin-content-table__status[data-status='draft']::before,
+.admin-content-table__status[data-status='published']::before,
+.admin-content-table__status[data-status='archived']::before {
+  content: '';
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-right: 0.4rem;
+  border-radius: 999px;
+  vertical-align: 0.05em;
+  background: var(--color-mist, #858585);
 }
 
-.status-published {
-  background-color: #d1fae5;
-  color: #065f46;
+.admin-content-table__status[data-status='published']::before {
+  background: var(--color-apple-blue, #0071e3);
 }
 
-.status-archived {
-  background-color: #e5e7eb;
-  color: #374151;
+.admin-content-table__status[data-status='draft']::before {
+  background: var(--color-ash, #707070);
 }
 
-.table-cell-author {
-  min-width: 120px;
+.admin-content-table__col-meta {
+  width: 1%;
+  white-space: nowrap;
+  padding-inline: 0.75rem;
 }
 
-.cell-author {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.admin-content-table__meta {
+  color: var(--color-ash, #707070);
 }
 
-.author-name {
-  color: #111827;
-  font-weight: 500;
-}
-
-.cell-author-empty {
-  color: #9ca3af;
-}
-
-.table-cell-views {
-  min-width: 80px;
-  color: #6b7280;
-}
-
-.table-cell-date {
-  min-width: 120px;
-  color: #6b7280;
-}
-
-/* 响应式布局 */
 @media (max-width: 768px) {
-  .table-container {
-    overflow-x: scroll;
+  .admin-content-table__table th,
+  .admin-content-table__table td {
+    padding: 0.625rem 0.75rem;
   }
+}
 
-  .table-header-cell,
-  .table-cell {
-    padding: 0.5rem;
-    font-size: 0.8125rem;
-  }
-
-  .table-cell-title {
-    min-width: 150px;
-  }
-
-  .table-cell-summary {
-    min-width: 150px;
-    max-width: 200px;
+@media (prefers-reduced-motion: reduce) {
+  .admin-content-table__row {
+    transition: none;
   }
 }
 </style>

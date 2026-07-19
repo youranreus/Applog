@@ -23,10 +23,10 @@ const props = withDefaults(defineProps<{
     :aria-current="isActive ? 'page' : undefined"
     :class="cn(
       buttonVariants({
-        variant: isActive ? 'outline' : 'ghost',
+        variant: 'ghost',
         size,
       }),
-      '',
+      isActive && 'bg-muted text-foreground hover:bg-muted',
       props.class,
     )"
   >

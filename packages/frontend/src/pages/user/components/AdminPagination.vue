@@ -99,7 +99,7 @@ function handlePageUpdate(page: number): void {
       :page="currentPage"
       :items-per-page="itemsPerPage"
       :total="totalItems"
-      :sibling-count="2"
+      :sibling-count="1"
       show-edges
       :disabled="loading"
       class="mx-0 w-auto justify-end"

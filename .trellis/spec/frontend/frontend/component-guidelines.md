@@ -168,6 +168,21 @@ Reference: `packages/frontend/src/components/ui/markdown-editor/`.
 
 ---
 
+## Admin list surfaces
+
+Management list pages (`/user/post`, `/user/page`) share shell pieces under `pages/user/components/`:
+
+- `AdminListHeader` — title + wave underline (aligned with Dashboard) + one filled primary create CTA on the right
+- `AdminListSearch` — leading search icon, submit on Enter only, custom clear `X` (hide native webkit cancel)
+- `AdminListEmpty` / `AdminListError` — empty teaches next step; error offers retry
+- `AdminPagination` — uses shadcn Pagination; active page is `ghost` + muted fill (**no outline border**)
+
+Table conventions: clickable rows are keyboard-reachable (`tabindex` + Enter/Space); prefer compact columns (title · slug · status · updated); page lists may add「作用于」for nav/footer.
+
+Reference: `packages/frontend/src/pages/user/PostList/`, `packages/frontend/src/pages/user/PageList/`, `packages/frontend/src/pages/user/components/AdminList*.vue`.
+
+---
+
 ## Markdown / BBCode UI
 
 `MarkdownRenderer` uses IntersectionObserver lazy images. BBCode tags map to Vue components via `utils/markdown` registries (`art`, `bili`, `collapse`, `photos`, `dplayer`).

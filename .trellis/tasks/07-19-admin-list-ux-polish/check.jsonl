@@ -1,0 +1,5 @@
+{"file": ".impeccable/critique/2026-07-19T09-41-49Z__packages-frontend-src-pages-user-postlist-pagelist.md", "reason": "critique backlog and acceptance baseline"}
+{"file": ".trellis/spec/frontend/frontend/index.md", "reason": "frontend quality check entry"}
+{"file": ".trellis/spec/frontend/frontend/quality-guidelines.md", "reason": "forbidden patterns + verification commands"}
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "shadcn + Apple tokens for admin chrome"}
+{"file": ".trellis/spec/frontend/frontend/hook-guidelines.md", "reason": "page hook + useWatcher layering"}

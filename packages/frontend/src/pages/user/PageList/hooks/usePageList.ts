@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import { useRequest, useWatcher } from 'alova/client';
+import { useWatcher } from 'alova/client';
 import { getPageList } from '@/api/page/getPageList';
 import type { IPageListItem, IQueryPage, IPagination, IPaginationMeta } from '@/types/page';
 
@@ -7,18 +7,17 @@ import type { IPageListItem, IQueryPage, IPagination, IPaginationMeta } from '@/
  * 页面列表 Hook
  * 管理页面列表数据，支持分页、搜索和标签筛选
  * @returns 页面列表相关的状态和方法
- * 
+ *
  * 逻辑说明：
- * 1. 使用 useRequest 调用 getPageList API 获取页面列表
- * 2. 使用函数形式传入请求方法，alova 会自动追踪 queryParams 的变化
- * 3. 当 queryParams.value 变化时，会自动重新请求数据
- * 4. 初始数据设置为空列表和默认分页信息
- * 5. 提供修改查询参数的方法，修改后会自动触发重新请求
+ * 1. 使用 useWatcher 调用 getPageList API 获取页面列表
+ * 2. 监听 queryParams，变化时自动重新请求
+ * 3. 初始数据为空列表与默认分页信息
+ * 4. 通过 setPage / setKeyword 等方法修改查询参数
  */
 export function usePageList() {
   /**
    * 查询参数（响应式）
-   * 当参数变化时，useRequest 会自动重新请求数据
+   * 变化时由 useWatcher 触发重新请求
    */
   const queryParams = ref<IQueryPage>({
     page: 1,
@@ -30,11 +29,6 @@ export function usePageList() {
    * 使用 alova 的 useWatcher 获取页面列表
    * 接口路径: GET /page
    * 响应拦截器会自动提取 data 字段，返回 IPagination<IPageListItem> 类型
-   * 
-   * 逻辑说明：
-   * 1. 使用函数形式传入请求方法，alova 会自动追踪 queryParams 的变化
-   * 2. 当 queryParams.value 变化时，会自动重新请求数据
-   * 3. 初始数据设置为空列表和默认分页信息
    */
   const {
     loading,

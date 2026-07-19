@@ -4,33 +4,60 @@ import { useRouter } from 'vue-router';
 import type { IPageListItem } from '@/types/page';
 import Loading from '@/components/ui/loading/index.vue';
 import { ROUTE_NAMES } from '@/constants/permission';
+import AdminListEmpty from '../../components/AdminListEmpty.vue';
 
 /**
  * Props 定义
  */
-interface Props {
+interface IPageTableProps {
   /** 页面列表数据 */
   pages: IPageListItem[];
   /** 是否正在加载 */
   loading?: boolean;
+  /** 当前是否有搜索关键字（区分空态） */
+  hasKeyword?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+/**
+ * Emits 定义
+ */
+interface IPageTableEmits {
+  /** 空态：新建页面 */
+  (e: 'create'): void;
+  /** 空态：清除搜索 */
+  (e: 'clear-search'): void;
+}
+
+const props = withDefaults(defineProps<IPageTableProps>(), {
   pages: () => [],
   loading: false,
+  hasKeyword: false,
 });
 
-/**
- * 路由实例
- */
+const emit = defineEmits<IPageTableEmits>();
+
 const router = useRouter();
 
 /**
  * 是否有数据
  */
-const hasData = computed(() => {
-  return props.pages.length > 0;
-});
+const hasData = computed(() => props.pages.length > 0);
+
+/**
+ * 空态文案
+ */
+const emptyMessage = computed(() =>
+  props.hasKeyword
+    ? '没有找到相关页面。换个词试试，或清除搜索。'
+    : '还没有独立页面。建一个关于页或友情链接页？',
+);
+
+/**
+ * 空态按钮文案
+ */
+const emptyActionLabel = computed(() =>
+  props.hasKeyword ? '清除搜索' : '新建页面',
+);
 
 /**
  * 格式化日期
@@ -44,20 +71,6 @@ function formatDate(date: Date | string): string {
     month: '2-digit',
     day: '2-digit',
   });
-}
-
-/**
- * 获取状态标签样式
- * @param status - 页面状态
- * @returns 状态标签的 CSS 类名
- */
-function getStatusClass(status: 'draft' | 'published' | 'archived'): string {
-  const statusMap = {
-    draft: 'status-draft',
-    published: 'status-published',
-    archived: 'status-archived',
-  };
-  return statusMap[status] || '';
 }
 
 /**
@@ -75,247 +88,298 @@ function getStatusText(status: 'draft' | 'published' | 'archived'): string {
 }
 
 /**
- * 跳转到编辑页面
+ * 跳转到编辑页
  * @param slug - 页面 slug
  */
-function handleRowClick(slug: string): void {
+function goEdit(slug: string): void {
   router.push({
     name: ROUTE_NAMES.USER_PAGE_EDIT,
     params: { slug },
   });
 }
+
+/**
+ * 行键盘激活
+ * @param event - 键盘事件
+ * @param slug - 页面 slug
+ */
+function handleRowKeydown(event: KeyboardEvent, slug: string): void {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    goEdit(slug);
+  }
+}
+
+/**
+ * 空态主操作
+ */
+function handleEmptyAction(): void {
+  if (props.hasKeyword) {
+    emit('clear-search');
+    return;
+  }
+  emit('create');
+}
 </script>
 
 <template>
-  <div class="page-table">
-    <!-- 加载状态 -->
-    <div v-if="loading" class="table-loading">
-      <Loading :size="48" />
+  <div class="admin-content-table">
+    <div
+      v-if="loading"
+      class="admin-content-table__loading"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <Loading :size="40" />
+      <span class="sr-only">正在加载页面列表</span>
     </div>
 
-    <!-- 表格内容 -->
-    <div v-else-if="hasData" class="table-container">
-      <table class="table">
-        <thead class="table-header">
+    <div
+      v-else-if="hasData"
+      class="admin-content-table__scroll"
+    >
+      <table class="admin-content-table__table">
+        <thead>
           <tr>
-            <th class="table-header-cell">标题</th>
-            <th class="table-header-cell">Slug</th>
-            <th class="table-header-cell">状态</th>
-            <th class="table-header-cell">浏览次数</th>
-            <th class="table-header-cell">创建时间</th>
+            <th scope="col">标题</th>
+            <th
+              scope="col"
+              class="admin-content-table__col-slug"
+            >
+              Slug
+            </th>
+            <th
+              scope="col"
+              class="admin-content-table__col-placement"
+            >
+              作用于
+            </th>
+            <th
+              scope="col"
+              class="admin-content-table__col-status"
+            >
+              状态
+            </th>
+            <th
+              scope="col"
+              class="admin-content-table__col-meta"
+            >
+              更新
+            </th>
           </tr>
         </thead>
-        <tbody class="table-body">
+        <tbody>
           <tr
             v-for="page in pages"
             :key="page.id"
-            class="table-row"
-            @click="handleRowClick(page.slug)"
+            class="admin-content-table__row"
+            tabindex="0"
+            role="link"
+            :aria-label="`编辑页面：${page.title}`"
+            @click="goEdit(page.slug)"
+            @keydown="handleRowKeydown($event, page.slug)"
           >
-            <td class="table-cell table-cell-title">
-              <div class="cell-title-wrapper">
-                <span class="cell-title">{{ page.title }}</span>
-                <span v-if="page.showInNav" class="cell-badge badge-nav">导航</span>
-                <span v-if="page.showInFooter" class="cell-badge badge-footer">Footer</span>
-              </div>
+            <td class="admin-content-table__title">
+              <span class="admin-content-table__title-text">{{ page.title }}</span>
             </td>
-            <td class="table-cell table-cell-slug">
-              <code class="cell-slug">{{ page.slug }}</code>
+            <td class="admin-content-table__col-slug">
+              <code class="admin-content-table__slug">{{ page.slug }}</code>
             </td>
-            <td class="table-cell table-cell-status">
-              <span :class="['status-badge', getStatusClass(page.status)]">
+            <td class="admin-content-table__col-placement">
+              <span
+                v-if="page.showInNav || page.showInFooter"
+                class="admin-content-table__placements"
+              >
+                <span v-if="page.showInNav">导航</span>
+                <span v-if="page.showInFooter">页脚</span>
+              </span>
+              <span
+                v-else
+                class="admin-content-table__placement-empty"
+              >—</span>
+            </td>
+            <td class="admin-content-table__col-status">
+              <span
+                class="admin-content-table__status"
+                :data-status="page.status"
+              >
                 {{ getStatusText(page.status) }}
               </span>
             </td>
-            <td class="table-cell table-cell-views">
-              {{ page.viewCount }}
-            </td>
-            <td class="table-cell table-cell-date">
-              {{ formatDate(page.createdAt) }}
+            <td class="admin-content-table__col-meta admin-content-table__meta">
+              {{ formatDate(page.updatedAt || page.createdAt) }}
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- 空状态 -->
-    <div v-else class="table-empty">
-      <p class="empty-text">暂无页面数据</p>
-    </div>
+    <AdminListEmpty
+      v-else
+      :message="emptyMessage"
+      :is-filtered="hasKeyword"
+      :action-label="emptyActionLabel"
+      @action="handleEmptyAction"
+    />
   </div>
 </template>
 
 <style scoped>
-.page-table {
+.admin-content-table {
   width: 100%;
-  background-color: #ffffff;
-  border-radius: 0.5rem;
+  border: 1px solid var(--color-pebble, #e2e2e5);
+  border-radius: var(--radius-cards, 8px);
+  background: #ffffff;
   overflow: hidden;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
-.table-loading,
-.table-empty {
+.admin-content-table__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20rem;
   padding: 3rem 1.5rem;
-  text-align: center;
-  min-height: 400px;
 }
 
-.loading-text,
-.empty-text {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.table-container {
+.admin-content-table__scroll {
   overflow-x: auto;
 }
 
-.table {
+.admin-content-table__table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.table-header {
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.table-header-cell {
+.admin-content-table__table th {
   padding: 0.75rem 1rem;
   text-align: left;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--color-graphite, #474747);
+  background: var(--color-frost, #f5f5f7);
+  border-bottom: 1px solid var(--color-pebble, #e2e2e5);
 }
 
-.table-body {
-  background-color: #ffffff;
+.admin-content-table__table td {
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-carbon, #1d1d1f);
+  border-bottom: 1px solid var(--color-pebble, #e2e2e5);
+  vertical-align: middle;
 }
 
-.table-row {
-  border-bottom: 1px solid #e5e7eb;
+.admin-content-table__row {
   cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
+  transition: background-color 0.15s ease-out;
 }
 
-.table-row:hover {
-  background-color: #f9fafb;
+.admin-content-table__row:hover {
+  background: var(--color-frost, #f5f5f7);
 }
 
-.table-row:last-child {
+.admin-content-table__row:focus {
+  outline: none;
+}
+
+.admin-content-table__row:focus-visible {
+  outline: 2px solid var(--color-apple-blue, #0071e3);
+  outline-offset: -2px;
+}
+
+.admin-content-table__row:last-child td {
   border-bottom: none;
 }
 
-.table-cell {
-  padding: 1rem;
-  font-size: 0.875rem;
-  color: #111827;
-}
-
-.table-cell-title {
-  min-width: 200px;
-}
-
-.cell-title-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.cell-title {
-  font-weight: 500;
-  color: #111827;
-}
-
-.cell-badge {
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
+.admin-content-table__title-text {
   font-weight: 500;
 }
 
-.badge-nav {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.badge-footer {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
-.table-cell-slug {
-  min-width: 150px;
-}
-
-.cell-slug {
-  padding: 0.25rem 0.5rem;
-  background-color: #f3f4f6;
-  border-radius: 0.25rem;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.8125rem;
-  color: #6b7280;
-}
-
-.table-cell-status {
-  min-width: 100px;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.status-draft {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.status-published {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.status-archived {
-  background-color: #e5e7eb;
-  color: #374151;
-}
-
-.table-cell-views {
-  min-width: 80px;
-  color: #6b7280;
-}
-
-.table-cell-date {
+.admin-content-table__col-slug,
+.admin-content-table__col-status {
+  width: 1%;
   min-width: 120px;
-  color: #6b7280;
+  white-space: nowrap;
+  padding-inline: 0.75rem;
 }
 
-/* 响应式布局 */
+.admin-content-table__col-placement {
+  width: 1%;
+  min-width: 7rem;
+  white-space: nowrap;
+  padding-inline: 0.75rem;
+}
+
+.admin-content-table__slug {
+  display: inline-block;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  color: var(--color-ash, #707070);
+  vertical-align: middle;
+}
+
+.admin-content-table__placements {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-graphite, #474747);
+}
+
+.admin-content-table__placement-empty {
+  color: var(--color-mist, #858585);
+}
+
+.admin-content-table__status {
+  display: inline-block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-smoke, #333333);
+}
+
+.admin-content-table__status[data-status='draft']::before,
+.admin-content-table__status[data-status='published']::before,
+.admin-content-table__status[data-status='archived']::before {
+  content: '';
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-right: 0.4rem;
+  border-radius: 999px;
+  vertical-align: 0.05em;
+  background: var(--color-mist, #858585);
+}
+
+.admin-content-table__status[data-status='published']::before {
+  background: var(--color-apple-blue, #0071e3);
+}
+
+.admin-content-table__status[data-status='draft']::before {
+  background: var(--color-ash, #707070);
+}
+
+.admin-content-table__col-meta {
+  width: 1%;
+  white-space: nowrap;
+  padding-inline: 0.75rem;
+}
+
+.admin-content-table__meta {
+  color: var(--color-ash, #707070);
+}
+
 @media (max-width: 768px) {
-  .table-container {
-    overflow-x: scroll;
+  .admin-content-table__table th,
+  .admin-content-table__table td {
+    padding: 0.625rem 0.75rem;
   }
+}
 
-  .table-header-cell,
-  .table-cell {
-    padding: 0.5rem;
-    font-size: 0.8125rem;
-  }
-
-  .table-cell-title {
-    min-width: 150px;
-  }
-
-  .table-cell-slug {
-    min-width: 120px;
+@media (prefers-reduced-motion: reduce) {
+  .admin-content-table__row {
+    transition: none;
   }
 }
 </style>
