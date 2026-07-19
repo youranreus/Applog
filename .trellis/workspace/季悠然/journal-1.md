@@ -110,3 +110,36 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 文章页面管理列表 UX 打磨
+
+**Date**: 2026-07-19
+**Task**: 文章页面管理列表 UX 打磨
+**Branch**: `master`
+
+### Summary
+
+完成 admin-list-ux-polish：列表页头/搜索/空错态/表格/分页打磨，check 通过并提交
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b0f2c12` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
