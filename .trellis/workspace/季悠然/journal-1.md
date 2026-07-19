@@ -143,3 +143,36 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: 修复文章阅读次数不更新
+
+**Date**: 2026-07-19
+**Task**: 修复文章阅读次数不更新
+**Branch**: `master`
+
+### Summary
+
+定位 Post 详情未自增 viewCount；公开已发布才计数，管理端 includeUnpublished 不计数（Post/Page 对齐），并写入 backend database-guidelines。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `eeeb809` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
