@@ -6,7 +6,7 @@ import { initializeSystem } from '@/api/system-config';
  * 用于处理系统初始化逻辑
  * @param refreshConfig - 刷新配置的方法，初始化成功后调用
  * @returns 系统初始化相关的状态和方法
- * 
+ *
  * 逻辑说明：
  * 1. 使用 useRequest 调用 initializeSystem API
  * 2. 不立即请求，需要手动触发
@@ -21,33 +21,43 @@ export function useSystemInitialize(refreshConfig: () => Promise<void>) {
    */
   const {
     loading,
+    error,
     send: initRequest,
   } = useRequest(initializeSystem, {
-    immediate: false, // 不立即请求，需要手动触发
+    immediate: false,
   });
+
+  /**
+   * 从请求错误中提取可读消息
+   * @param err - 未知错误对象
+   * @returns 面向用户的错误文案
+   */
+  function getErrorMessage(err: unknown): string {
+    if (err instanceof Error && err.message) {
+      return err.message;
+    }
+    return '系统初始化失败，请稍后重试';
+  }
 
   /**
    * 处理系统初始化
    * 调用初始化接口，成功后重新获取配置
-   * @throws 初始化失败时抛出错误
+   * @returns 成功时 resolve，失败时 reject（错误信息同时写入 useRequest.error）
    */
   async function handleInitialize(): Promise<void> {
     try {
       await initRequest();
-      // 初始化成功后重新获取配置
       await refreshConfig();
-    } catch (error) {
-      console.error('系统初始化失败:', error);
-      // 重新抛出错误，让调用方处理
-      throw error;
+    } catch (err) {
+      console.error('系统初始化失败:', err);
+      throw err instanceof Error ? err : new Error(getErrorMessage(err));
     }
   }
 
   return {
-    // 初始化加载状态
     loading,
-    // 初始化处理方法
+    error,
     handleInitialize,
+    getErrorMessage,
   };
 }
-

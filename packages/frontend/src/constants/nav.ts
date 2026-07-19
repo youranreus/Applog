@@ -14,7 +14,7 @@ export const NAV_GROUPS: Record<string, INavItemSource[]> = {
     {
       type: 'route',
       route: { name: ROUTE_NAMES.USER_DASHBOARD },
-      title: '仪表盘',
+      title: '概览',
     },
     {
       type: 'route',

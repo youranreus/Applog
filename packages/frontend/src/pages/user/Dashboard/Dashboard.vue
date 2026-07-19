@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useSystemStore } from '@/stores/useSystemStore';
 import { useUserStore } from '@/stores/useUserStore';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 import { useSystemInitialize } from './hooks/useSystemInitialize';
 import SystemInitialize from './components/SystemInitialize.vue';
 import PersonalStats from './components/PersonalStats.vue';
@@ -24,13 +25,30 @@ const systemStore = useSystemStore();
 const userStore = useUserStore();
 
 /**
+ * 布局 Store：通知反馈
+ */
+const layoutStore = useLayoutStore();
+
+/**
  * 使用系统初始化 Hook 处理初始化逻辑
  */
 const {
   loading: initLoading,
+  error: initError,
   handleInitialize,
+  getErrorMessage,
 } = useSystemInitialize(async () => {
   await systemStore.refreshConfig();
+});
+
+/**
+ * 初始化失败时的内联错误文案
+ */
+const initErrorMessage = computed(() => {
+  if (!initError.value) {
+    return null;
+  }
+  return getErrorMessage(initError.value);
 });
 
 /**
@@ -38,12 +56,10 @@ const {
  * 当配置为空或请求失败时返回 true
  */
 const showInitializeButton = computed(() => {
-  // 如果正在加载配置，不显示初始化按钮
   if (systemStore.loading) {
     return false;
   }
-  
-  // 如果配置为空或请求失败，显示初始化按钮
+
   return !systemStore.config || !!systemStore.error;
 });
 
@@ -56,33 +72,65 @@ const activeTab = ref<TabType>('stats');
  * Tab 配置列表
  */
 const tabs = [
-  { key: 'stats' as TabType, label: '个人统计', icon: '📊' },
-  { key: 'settings' as TabType, label: '系统设置', icon: '⚙️' },
+  { key: 'stats' as TabType, label: '个人统计' },
+  { key: 'settings' as TabType, label: '系统设置' },
 ];
 
+/**
+ * 处理系统初始化：成功/失败均给出可见反馈
+ */
+async function onInitialize(): Promise<void> {
+  try {
+    await handleInitialize();
+    layoutStore.notify({
+      title: '初始化成功',
+      content: '系统配置已就绪，可以开始管理站点',
+      type: 'success',
+    });
+  } catch (error) {
+    layoutStore.notify({
+      title: '初始化失败',
+      content: getErrorMessage(error),
+      type: 'error',
+    });
+  }
+}
 </script>
 
 <template>
   <div class="dashboard-page admin-page-container">
-    <div class="page-header mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">用户中心</h1>
-      <p class="text-gray-600">欢迎来到用户控制面板</p>
-    </div>
+    <header class="page-header">
+      <h1 class="page-title">
+        <span class="page-title__text">概览</span>
+        <svg
+          class="page-title__wave"
+          viewBox="0 0 48 12"
+          preserveAspectRatio="xMinYMid meet"
+          aria-hidden="true"
+        >
+          <path
+            d="M3 7 C 12 2.5, 18 2.5, 24 7 S 36 11.5, 45 7"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </h1>
+    </header>
 
     <div class="dashboard-content">
-      <!-- 系统初始化提示 -->
       <SystemInitialize
         v-if="showInitializeButton"
         :loading="initLoading"
-        @initialize="handleInitialize"
+        :error-message="initErrorMessage"
+        @initialize="onInitialize"
       />
 
-      <!-- 正常内容 -->
       <div v-else class="dashboard-main">
         <div class="dashboard-layout">
-          <!-- 左侧栏 -->
           <aside class="dashboard-sidebar">
-            <!-- 用户信息卡片 -->
             <div class="user-info-card">
               <div class="user-avatar-wrapper">
                 <img
@@ -93,23 +141,30 @@ const tabs = [
                 />
                 <div
                   v-else
-                  class="user-avatar user-avatar-emoji"
+                  class="user-avatar user-avatar-fallback"
+                  aria-hidden="true"
                 >
-                  👤
+                  {{ (userStore.user?.name || '?').slice(0, 1) }}
                 </div>
               </div>
-              <h3 class="user-name">{{ userStore.user?.name || '未登录' }}</h3>
+              <h2 class="user-name">{{ userStore.user?.name || '未登录' }}</h2>
               <p class="user-email">{{ userStore.user?.email || '' }}</p>
             </div>
 
-            <!-- Tab 导航 -->
-            <Tabs v-model="activeTab" orientation="vertical" class="w-full">
-              <TabsList variant="line" class="w-full h-auto">
+            <Tabs
+              v-model="activeTab"
+              orientation="vertical"
+              class="dashboard-segment w-full"
+            >
+              <TabsList
+                variant="default"
+                class="dashboard-segment__list"
+              >
                 <TabsTrigger
                   v-for="tab in tabs"
                   :key="tab.key"
                   :value="tab.key"
-                  class="w-full justify-start"
+                  class="dashboard-segment__trigger"
                 >
                   {{ tab.label }}
                 </TabsTrigger>
@@ -117,12 +172,8 @@ const tabs = [
             </Tabs>
           </aside>
 
-          <!-- 右侧内容区 -->
           <main class="dashboard-content-area">
-            <!-- 个人统计 -->
             <PersonalStats v-if="activeTab === 'stats'" />
-
-            <!-- 系统设置 -->
             <SystemSettings v-else-if="activeTab === 'settings'" />
           </main>
         </div>
@@ -137,12 +188,43 @@ const tabs = [
 }
 
 .page-header {
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.page-title {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  margin: 0;
+  padding-bottom: 2px;
+  overflow: visible;
+  font-family: var(--font-heading, inherit);
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--color-carbon, #1d1d1f);
+  text-wrap: balance;
+}
+
+.page-title__text {
+  display: block;
+}
+
+.page-title__wave {
+  display: block;
+  width: 2.1em;
+  height: 12px;
+  margin-top: 2px;
+  overflow: visible;
+  color: var(--color-signal-blue, #2997ff);
+  opacity: 0.65;
+  pointer-events: none;
 }
 
 .dashboard-content {
-  margin-top: 2rem;
+  margin-top: 0;
 }
 
 .dashboard-main {
@@ -155,13 +237,11 @@ const tabs = [
   align-items: flex-start;
 }
 
-/* 左侧栏 */
 .dashboard-sidebar {
   flex-shrink: 0;
   width: 280px;
 }
 
-/* 用户信息卡片 */
 .user-info-card {
   margin-bottom: 1.5rem;
 }
@@ -178,34 +258,103 @@ const tabs = [
   object-fit: cover;
 }
 
-.user-avatar-emoji {
+.user-avatar-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e5e7eb;
-  font-size: 2.5rem;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 1.75rem;
+  font-weight: 600;
   line-height: 1;
 }
 
 .user-name {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--foreground);
 }
 
 .user-email {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--muted-foreground);
 }
 
-/* 右侧内容区 */
+/**
+ * Apple 色块按钮式分段切换
+ * 选中：Apple Blue 填充胶囊；未选中：Frost 色块
+ */
+.dashboard-segment :deep(.dashboard-segment__list) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dashboard-segment :deep(.dashboard-segment__trigger) {
+  width: 100%;
+  height: auto;
+  min-height: 40px;
+  justify-content: flex-start;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-frost, #f5f5f7);
+  color: var(--color-carbon, #1d1d1f);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-align: left;
+  box-shadow: none;
+  transition:
+    background-color 0.18s ease-out,
+    color 0.18s ease-out,
+    transform 0.12s ease-out;
+}
+
+.dashboard-segment :deep(.dashboard-segment__trigger::after) {
+  display: none;
+}
+
+.dashboard-segment :deep(.dashboard-segment__trigger:hover) {
+  background: var(--color-pebble, #e2e2e5);
+  color: var(--color-carbon, #1d1d1f);
+}
+
+.dashboard-segment :deep(.dashboard-segment__trigger[data-state='active']),
+.dashboard-segment :deep(.dashboard-segment__trigger[aria-selected='true']) {
+  background: var(--color-apple-blue, #0071e3);
+  color: var(--color-ice, #f4f8fb);
+  font-weight: 500;
+}
+
+.dashboard-segment :deep(.dashboard-segment__trigger[data-state='active']:hover),
+.dashboard-segment :deep(.dashboard-segment__trigger[aria-selected='true']:hover) {
+  background: var(--color-link-blue, #0066cc);
+  color: var(--color-ice, #f4f8fb);
+}
+
+.dashboard-segment :deep(.dashboard-segment__trigger:focus-visible) {
+  outline: 2px solid var(--color-apple-blue, #0071e3);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.dashboard-segment :deep(.dashboard-segment__trigger:active:not(:disabled)) {
+  transform: scale(0.98);
+}
+
 .dashboard-content-area {
   flex: 1;
   min-width: 0;
   width: 100%;
 }
 
-/* 响应式布局 */
 @media (max-width: 768px) {
   .dashboard-layout {
     flex-direction: column;
@@ -215,6 +364,22 @@ const tabs = [
     width: 100%;
   }
 
+  .dashboard-segment :deep(.dashboard-segment__list) {
+    flex-direction: row;
+  }
+
+  .dashboard-segment :deep(.dashboard-segment__trigger) {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-segment :deep(.dashboard-segment__trigger) {
+    transition: none;
+  }
+
+  .dashboard-segment :deep(.dashboard-segment__trigger:active:not(:disabled)) {
+    transform: none;
+  }
 }
 </style>
-
