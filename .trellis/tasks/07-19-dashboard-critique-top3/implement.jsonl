@@ -1,0 +1,3 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "shadcn notify Dialog patterns"}
+{"file": ".impeccable/critique/2026-07-19T06-20-38Z__es-frontend-src-pages-user-dashboard-dashboard-vue.md", "reason": "critique backlog Top3"}

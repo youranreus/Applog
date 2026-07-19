@@ -163,6 +163,8 @@ Reference: `packages/frontend/src/components/ui/markdown-editor/`.
 - Global design tokens: `packages/frontend/src/assets/base.css` (`@import "tailwindcss"`, `@theme inline`, `:root` / `.dark`).
 - Global scrollbar (WebKit + Firefox): transparent track, 8px rounded thumb in Pebble / Ash — defined in `base.css` `@layer base`.
 - Notifications: call `useLayoutStore().notify(...)`; `GlobalNotification.vue` bridges to Sonner — do not invent a second toast path.
+- Toast chrome (`components/ui/sonner/Sonner.vue`): **no type icons**, `richColors: false`, light hairline card (`applog-toast`); types differ by subtle border/bg only on error. Keep close-button X; do not reintroduce colored icon circles.
+- Admin overview metrics: prefer **list rows + `RouterLink`** to management routes; avoid equal-weight rainbow metric card grids (SaaS vanity pattern).
 
 ---
 

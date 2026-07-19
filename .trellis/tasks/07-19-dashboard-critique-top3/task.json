@@ -1,0 +1,32 @@
+{
+  "id": "dashboard-critique-top3",
+  "name": "dashboard-critique-top3",
+  "title": "Dashboard critique Top3 修复",
+  "description": "",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "frontend",
+  "package": null,
+  "priority": "P2",
+  "creator": "季悠然",
+  "assignee": "季悠然",
+  "createdAt": "2026-07-19",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "master",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "packages/frontend/src/pages/user/Dashboard/Dashboard.vue",
+    "packages/frontend/src/pages/user/Dashboard/components/PersonalStats.vue",
+    "packages/frontend/src/pages/user/Dashboard/components/SystemSettings.vue",
+    "packages/frontend/src/pages/user/Dashboard/components/SystemInitialize.vue",
+    "packages/frontend/src/pages/user/Dashboard/hooks/useSystemInitialize.ts"
+  ],
+  "notes": "Top3 done: harden notify+confirm, quieter stats list, detect clean, type-check ok",
+  "meta": {}
+}

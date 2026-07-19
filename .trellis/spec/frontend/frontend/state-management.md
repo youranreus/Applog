@@ -58,6 +58,17 @@ Example: `packages/frontend/src/api/post/getPostList.ts`.
 
 Use `useLayoutStore().notify(...)`. `GlobalNotification.vue` adapts the queue to Sonner. Do not add parallel toast utilities.
 
+### Dangerous settings / irreversible actions
+
+When a form can disable site-wide capabilities (e.g. `allowUserLogin`, `allowComment`) or run one-shot bootstrap (`initializeSystem`):
+
+1. **Confirm first** — `Dialog` with consequence copy before calling the API.
+2. **Then persist** — only after confirm, call `useRequest` / save.
+3. **Always notify** — success and failure via `layoutStore.notify`; never rely on `console.log`.
+4. **Catch-frame errors** — in `catch`, derive the message from the thrown `error` (or a helper), not only from a computed that may still be empty in the same tick.
+
+Reference: `packages/frontend/src/pages/user/Dashboard/components/SystemSettings.vue`, `SystemInitialize.vue`.
+
 ---
 
 ## When To Use Store vs Page Hook
