@@ -176,3 +176,36 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: 建站日期与备案号配置
+
+**Date**: 2026-07-20
+**Task**: 建站日期与备案号配置
+**Branch**: `master`
+
+### Summary
+
+管理端新增建站日期（shadcn Calendar）与备案号；Footer 展示实时运行时间与备案链接；同步 common/backend 契约与 Trellis spec。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6ba7090` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
