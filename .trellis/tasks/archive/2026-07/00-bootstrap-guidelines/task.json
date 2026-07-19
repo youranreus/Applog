@@ -3,7 +3,7 @@
   "name": "00-bootstrap-guidelines",
   "title": "Bootstrap Guidelines",
   "description": "Fill in project development guidelines for AI agents",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "docs",
   "scope": null,
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "季悠然",
   "assignee": "季悠然",
   "createdAt": "2026-07-19",
-  "completedAt": null,
+  "completedAt": "2026-07-19",
   "branch": null,
   "base_branch": null,
   "worktree_path": null,
@@ -21,10 +21,10 @@
   "children": [],
   "parent": null,
   "relatedFiles": [
-    ".trellis/spec/backend/",
-    ".trellis/spec/common/",
-    ".trellis/spec/frontend/"
+    ".trellis/spec/backend/backend/",
+    ".trellis/spec/common/shared/",
+    ".trellis/spec/frontend/frontend/"
   ],
-  "notes": "First-time setup task created by trellis init (frontend project)",
+  "notes": "Bootstrapped from CLAUDE.md, .cursor/rules, and real package source. Removed invalid backend/frontend and common backend/frontend template layers; common uses shared layer.",
   "meta": {}
 }

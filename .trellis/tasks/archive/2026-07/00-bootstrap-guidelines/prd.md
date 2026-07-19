@@ -21,26 +21,24 @@ the rest conversationally.
 
 ## Status (update the checkboxes as you complete each item)
 
-- [ ] Fill guidelines for @applog/backend
-- [ ] Fill guidelines for @applog/common
-- [ ] Fill guidelines for @applog/frontend
-- [ ] Add code examples
+- [x] Fill guidelines for @applog/backend
+- [x] Fill guidelines for @applog/common
+- [x] Fill guidelines for @applog/frontend
+- [x] Add code examples
 
 ---
 
-## Spec files to populate
+## Spec files populated
 
 ### Package: @applog/backend (`spec/backend/`)
 
 - Backend guidelines: `.trellis/spec/backend/backend/`
-
-- Frontend guidelines: `.trellis/spec/backend/frontend/`
+- Removed non-applicable `spec/backend/frontend/` template layer (NestJS has no frontend layer)
 
 ### Package: @applog/common (`spec/common/`)
 
-- Backend guidelines: `.trellis/spec/common/backend/`
-
-- Frontend guidelines: `.trellis/spec/common/frontend/`
+- Shared library guidelines: `.trellis/spec/common/shared/`
+- Replaced template `backend/` + `frontend/` layers with a single `shared` layer
 
 ### Package: @applog/frontend (`spec/frontend/`)
 
