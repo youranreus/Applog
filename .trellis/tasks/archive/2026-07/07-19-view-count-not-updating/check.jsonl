@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/backend/index.md", "reason": "Backend quality-check entrypoint and pre-dev checklist"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "Service/JSDoc/async patterns for Post/Page changes"}
+{"file": ".trellis/spec/backend/backend/database-guidelines.md", "reason": "Admin visibility + viewCount increment contract"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Detail response → frontend viewCount display boundary"}
+{"file": ".trellis/tasks/07-19-view-count-not-updating/research/view-count-codepath.md", "reason": "Root-cause evidence and agreed counting rule"}
