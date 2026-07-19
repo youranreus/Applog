@@ -58,7 +58,12 @@ const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview
             >•</span
           >
           <div v-if="post.tags && post.tags.length > 0" class="tags flex flex-wrap gap-2">
-            <Badge v-for="tag in post.tags" :key="tag" variant="secondary">
+            <Badge
+              v-for="tag in post.tags"
+              :key="tag"
+              variant="secondary"
+              class="font-normal text-ash"
+            >
               {{ tag }}
             </Badge>
           </div>
