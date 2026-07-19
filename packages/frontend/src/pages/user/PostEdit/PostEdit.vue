@@ -164,50 +164,53 @@ const formatDate = (date: Date | string): string => {
       <div class="edit-layout">
         <!-- 左侧主要内容区 -->
         <div class="edit-main">
-          <FieldGroup class="mb-4 gap-4">
-            <Field>
-              <FieldLabel class="text-lg font-medium text-gray-900">
-                Slug
-              </FieldLabel>
-              <Input
-                v-model="formData.slug"
-                type="text"
-                placeholder="请输入文章 slug（只能包含小写字母、数字和连字符）"
-                :aria-invalid="!!saveError"
-              />
-              <FieldDescription>
-                文章的 URL 友好标识符，只能包含小写字母、数字和连字符
-              </FieldDescription>
-            </Field>
+          <div class="edit-pane-scroll">
+            <FieldGroup class="mb-4 gap-4">
+              <Field>
+                <FieldLabel class="text-lg font-medium text-gray-900">
+                  Slug
+                </FieldLabel>
+                <Input
+                  v-model="formData.slug"
+                  type="text"
+                  placeholder="请输入文章 slug（只能包含小写字母、数字和连字符）"
+                  :aria-invalid="!!saveError"
+                />
+                <FieldDescription>
+                  文章的 URL 友好标识符，只能包含小写字母、数字和连字符
+                </FieldDescription>
+              </Field>
 
-            <Field>
-              <FieldLabel class="text-lg font-medium text-gray-900">
-                文章标题
-              </FieldLabel>
-              <Input
-                v-model="formData.title"
-                type="text"
-                placeholder="请输入文章标题"
-                :aria-invalid="!!saveError"
-              />
-            </Field>
+              <Field>
+                <FieldLabel class="text-lg font-medium text-gray-900">
+                  文章标题
+                </FieldLabel>
+                <Input
+                  v-model="formData.title"
+                  type="text"
+                  placeholder="请输入文章标题"
+                  :aria-invalid="!!saveError"
+                />
+              </Field>
 
-            <Field>
-              <FieldLabel class="text-lg font-medium text-gray-900">
-                文章内容
-              </FieldLabel>
-              <MarkdownEditor
-                v-model="formData.content"
-                placeholder="请输入文章内容（支持 Markdown）"
-                :validation-status="saveError ? 'error' : 'normal'"
-                :validation-message="saveError || ''"
-              />
-            </Field>
-          </FieldGroup>
+              <Field>
+                <FieldLabel class="text-lg font-medium text-gray-900">
+                  文章内容
+                </FieldLabel>
+                <MarkdownEditor
+                  v-model="formData.content"
+                  placeholder="请输入文章内容（支持 Markdown）"
+                  :validation-status="saveError ? 'error' : 'normal'"
+                  :validation-message="saveError || ''"
+                />
+              </Field>
+            </FieldGroup>
+          </div>
         </div>
 
         <!-- 右侧编辑项 -->
         <div class="edit-sidebar">
+          <div class="edit-pane-scroll edit-sidebar-scroll">
           <!-- 文章状态 -->
           <Card>
             <CardContent>
@@ -354,6 +357,7 @@ const formatDate = (date: Date | string): string => {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
     </div>
@@ -393,9 +397,10 @@ const formatDate = (date: Date | string): string => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   min-width: 0;
+  min-height: 0;
   width: 100%; /* 手机竖屏下占满宽度 */
+  overflow: hidden; /* 外层只负责占位对齐，滚动放在内层 */
 }
 
 .edit-sidebar {
@@ -403,7 +408,24 @@ const formatDate = (date: Date | string): string => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/**
+ * 内层滚动容器：为外扩 focus ring（box-shadow）预留 gutter。
+ * padding 加在这里而不是 .edit-main/.edit-sidebar，避免破坏左右列外沿对齐。
+ */
+.edit-pane-scroll {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  padding: 2px;
+}
+
+.edit-sidebar-scroll {
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
 }
 
