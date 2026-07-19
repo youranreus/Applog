@@ -161,9 +161,44 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Firefox：thumb / track */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-pebble) transparent;
   }
+
   body {
     @apply bg-background text-foreground;
     @apply font-sans;
+  }
+
+  /**
+   * 全局滚动条（WebKit）
+   * 对齐 DESIGN.md：透明轨道、8px 圆角、Pebble/Ash 中性滑块，无阴影
+   */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 8px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-pebble);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ash);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
