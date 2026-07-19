@@ -146,3 +146,15 @@ VITE_API_BASE_URL    # Backend URL, defaults to http://localhost:4000
 - **Admin role**: Role-based access uses a numeric `role` value compared against `SYSTEM_ADMIN_ROLE_VALUE`. In the frontend, `roles: ['admin']` in route meta triggers the permission guard.
 - **System config**: Key-value store in DB. Keys prefixed with `SYSTEM_` (configurable) are read-only for non-admins.
 - **Backend path alias**: `@/` maps to `src/` in backend TypeScript (via `tsconfig-paths`).
+
+## Design Context
+
+Strategic design context lives in [`PRODUCT.md`](PRODUCT.md); visual tokens in [`DESIGN.md`](DESIGN.md). Impeccable live config: [`.impeccable/live/config.json`](.impeccable/live/config.json).
+
+- **Register / platform:** brand · web
+- **Positioning:** 一个人的公开写作空间——声音清晰、节奏慢、不追信息密度
+- **Primary audience:** 回访读者；次要：路过访客、作者自己
+- **Primary job:** 沉浸阅读；主路径 Landing 先认识，退路文章列表
+- **Personality:** 干净 · 锐利 · 自信；情绪：安静、从容
+- **Principles:** 阅读优先；用克制换锐利；先认识再深入；慢节奏；像人，不像产品站
+- **Avoid:** 信息流博客模板、夸张营销落地页、厚重 SaaS 后台感
