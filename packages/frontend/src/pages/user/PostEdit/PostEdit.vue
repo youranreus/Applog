@@ -200,8 +200,7 @@ const formatDate = (date: Date | string): string => {
                 <MarkdownEditor
                   v-model="formData.content"
                   placeholder="请输入文章内容（支持 Markdown）"
-                  :validation-status="saveError ? 'error' : 'normal'"
-                  :validation-message="saveError || ''"
+                  :aria-invalid="!!saveError"
                 />
               </Field>
             </FieldGroup>
