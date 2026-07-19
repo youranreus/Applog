@@ -236,6 +236,7 @@ export class PostService {
    * 1. 通过 slug 查询文章
    * 2. 非 admin 或未显式请求 includeUnpublished 时，仅允许 published
    * 3. 未授权访问非 published 时返回「文章不存在」
+   * 4. 仅公开访问已发布文章时增加浏览次数；管理端 includeUnpublished 不计数
    */
   async findOne(
     slug: string,
@@ -258,16 +259,26 @@ export class PostService {
         throw new BusinessException('文章不存在');
       }
 
+      const allowUnpublished = this.canViewUnpublished(
+        options?.user,
+        options?.includeUnpublished,
+      );
+
       // 公开端仅允许已发布文章
-      if (
-        !this.canViewUnpublished(options?.user, options?.includeUnpublished) &&
-        post.status !== 'published'
-      ) {
+      if (!allowUnpublished && post.status !== 'published') {
         this.warn(`文章 slug "${slug}" 未发布，拒绝公开访问`);
         throw new BusinessException('文章不存在');
       }
 
-      this.log(`成功获取文章详情，slug: ${slug}，ID: ${post.id}`);
+      // 仅公开访问已发布文章时计数；管理端 includeUnpublished 不计数
+      if (post.status === 'published' && !allowUnpublished) {
+        post.viewCount += 1;
+        await this.postRepo.save(post);
+      }
+
+      this.log(
+        `成功获取文章详情，slug: ${slug}，ID: ${post.id}，浏览次数: ${post.viewCount}`,
+      );
       return post.getData(true); // 包含作者信息
     } catch (error) {
       if (error instanceof BusinessException) {
@@ -333,8 +344,13 @@ export class PostService {
     queryDto: QueryPostDto,
     user?: UserJwtPayload,
   ): Promise<Pagination<IPostListItemDto>> {
-    const { page = 1, limit = 10, keyword, tags, includeUnpublished } =
-      queryDto;
+    const {
+      page = 1,
+      limit = 10,
+      keyword,
+      tags,
+      includeUnpublished,
+    } = queryDto;
     const allowUnpublished = this.canViewUnpublished(user, includeUnpublished);
 
     this.log(

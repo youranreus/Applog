@@ -248,8 +248,13 @@ export class PageService {
     queryDto: QueryPageDto,
     user?: UserJwtPayload,
   ): Promise<Pagination<IPageListItemDto>> {
-    const { page = 1, limit = 10, keyword, tags, includeUnpublished } =
-      queryDto;
+    const {
+      page = 1,
+      limit = 10,
+      keyword,
+      tags,
+      includeUnpublished,
+    } = queryDto;
     const allowUnpublished = this.canViewUnpublished(user, includeUnpublished);
 
     this.log(
@@ -382,7 +387,7 @@ export class PageService {
    * 逻辑说明：
    * 1. 通过 id 查询页面
    * 2. 非 admin 或未显式请求 includeUnpublished 时，仅允许 published
-   * 3. 仅对已发布页面增加浏览次数
+   * 3. 仅公开访问已发布页面时增加浏览次数；管理端 includeUnpublished 不计数
    */
   async findOne(
     id: number,
@@ -406,17 +411,19 @@ export class PageService {
         throw new BusinessException('页面不存在');
       }
 
+      const allowUnpublished = this.canViewUnpublished(
+        options?.user,
+        options?.includeUnpublished,
+      );
+
       // 公开端仅允许已发布页面
-      if (
-        !this.canViewUnpublished(options?.user, options?.includeUnpublished) &&
-        page.status !== 'published'
-      ) {
+      if (!allowUnpublished && page.status !== 'published') {
         this.warn(`页面 #${id} 未发布，拒绝公开访问`);
         throw new BusinessException('页面不存在');
       }
 
-      // 只对已发布的页面增加浏览次数
-      if (page.status === 'published') {
+      // 仅公开访问已发布页面时计数；管理端 includeUnpublished 不计数
+      if (page.status === 'published' && !allowUnpublished) {
         page.viewCount += 1;
         await this.pageRepo.save(page);
       }
@@ -442,7 +449,7 @@ export class PageService {
    * 逻辑说明：
    * 1. 通过 slug 查询页面
    * 2. 非 admin 或未显式请求 includeUnpublished 时，仅允许 published
-   * 3. 仅对已发布页面增加浏览次数
+   * 3. 仅公开访问已发布页面时增加浏览次数；管理端 includeUnpublished 不计数
    */
   async findBySlug(
     slug: string,
@@ -466,17 +473,19 @@ export class PageService {
         throw new BusinessException('页面不存在');
       }
 
+      const allowUnpublished = this.canViewUnpublished(
+        options?.user,
+        options?.includeUnpublished,
+      );
+
       // 公开端仅允许已发布页面
-      if (
-        !this.canViewUnpublished(options?.user, options?.includeUnpublished) &&
-        page.status !== 'published'
-      ) {
+      if (!allowUnpublished && page.status !== 'published') {
         this.warn(`页面slug "${slug}" 未发布，拒绝公开访问`);
         throw new BusinessException('页面不存在');
       }
 
-      // 只对已发布的页面增加浏览次数
-      if (page.status === 'published') {
+      // 仅公开访问已发布页面时计数；管理端 includeUnpublished 不计数
+      if (page.status === 'published' && !allowUnpublished) {
         page.viewCount += 1;
         await this.pageRepo.save(page);
       }

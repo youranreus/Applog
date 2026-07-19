@@ -70,6 +70,55 @@ Posts and similar content default to **published-only**. Admins may request unpu
 
 Reference: `PostService.isAdmin` and `findAll` / `findOne` in `post.service.ts`.
 
+### Detail `viewCount` increment
+
+On Post / Page detail reads (`findOne` / `findBySlug`), increment `viewCount` only when:
+
+```text
+status === 'published' && !canViewUnpublished(user, includeUnpublished)
+```
+
+| Case | Increment? |
+|------|------------|
+| Public GET published detail | Yes (+1, persist, return updated value) |
+| Admin + `includeUnpublished=true` (`canViewUnpublished` true) | No (edit/preview path) |
+| Public GET unpublished (rejected as not found) | No |
+
+Keep Post and Page conditions identical. Do not add a separate “report view” API unless product explicitly asks.
+
+#### Wrong vs Correct
+
+```typescript
+// Wrong — only Page increments; Post never writes viewCount
+if (page.status === 'published') {
+  page.viewCount += 1;
+  await this.pageRepo.save(page);
+}
+
+// Wrong — admin edit/preview also inflates counts
+if (entity.status === 'published') {
+  entity.viewCount += 1;
+  await repo.save(entity);
+}
+
+// Correct — public published only; Post and Page share the same gate
+const allowUnpublished = this.canViewUnpublished(user, includeUnpublished);
+if (entity.status === 'published' && !allowUnpublished) {
+  entity.viewCount += 1;
+  await repo.save(entity);
+}
+```
+
+#### Common Mistake
+
+**Symptom**: Article `viewCount` stays at 0 (or never grows) while Page counts work.
+
+**Cause**: Detail field + UI exist, but only one entity type implements the increment.
+
+**Prevention**: When changing detail read side effects, update Post and Page together and keep the gate expression identical.
+
+Reference: `PostService.findOne`, `PageService.findOne` / `findBySlug`.
+
 ---
 
 ## Migration Adapters (data import)
