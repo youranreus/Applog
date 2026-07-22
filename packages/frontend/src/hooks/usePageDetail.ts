@@ -2,6 +2,7 @@ import { computed, type Ref } from 'vue';
 import { useWatcher } from 'alova/client';
 import { getPageBySlug } from '@/api/page/getPageBySlug';
 import { useSeoHead } from '@/hooks/useSeoHead';
+import { useAnalyticsViewReport } from '@/hooks/analytics/useAnalyticsViewReport';
 import type { IPageDetail } from '@/types/page';
 
 /**
@@ -48,6 +49,9 @@ export function usePageDetail(slug: Ref<string> | string) {
   const page = computed<IPageDetail | undefined>(() => {
     return pageDetail.value;
   });
+
+  // 已发布页面加载成功后静默上报 PV/UV
+  useAnalyticsViewReport(page, 'page');
 
   useSeoHead({
     title: computed(() => page.value?.title),

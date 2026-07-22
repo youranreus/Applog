@@ -1,11 +1,24 @@
 <script setup lang="ts">
+import { computed, watch } from 'vue';
 import { useRequest } from 'alova/client';
 import { RouterLink } from 'vue-router';
 import { getUserOverview } from '@/api/user';
+import { getAnalyticsSummary } from '@/api/analytics';
+import { useUserStore } from '@/stores/useUserStore';
 import Loading from '@/components/ui/loading/index.vue';
 import { Button } from '@/components/ui/button';
-import { ROUTE_NAMES } from '@/constants/permission';
+import { ROUTE_NAMES, USER_ROLES } from '@/constants/permission';
 import { ChevronRightIcon } from '@lucide/vue';
+
+/**
+ * 用户 Store：判断是否管理员（仅 admin 展示流量摘要）
+ */
+const userStore = useUserStore();
+
+/**
+ * 当前用户是否为管理员
+ */
+const isAdmin = computed(() => userStore.user?.role === USER_ROLES.ADMIN);
 
 /**
  * 使用 alova 的 useRequest 获取用户创作概览信息
@@ -19,6 +32,31 @@ const {
 } = useRequest(getUserOverview, {
   immediate: true,
 });
+
+/**
+ * 管理员流量摘要（按 isAdmin 触发，非 admin 不请求）
+ */
+const {
+  loading: summaryLoading,
+  data: summaryData,
+  error: summaryError,
+  send: reloadSummary,
+} = useRequest(getAnalyticsSummary, {
+  immediate: false,
+});
+
+/**
+ * 管理员进入时拉取流量摘要
+ */
+watch(
+  isAdmin,
+  (admin) => {
+    if (admin) {
+      void reloadSummary();
+    }
+  },
+  { immediate: true },
+);
 
 /**
  * 统计行配置：标签、数值字段、跳转路由
@@ -61,10 +99,45 @@ const statRows: IStatRow[] = [
 ];
 
 /**
- * 重新加载概览数据
+ * 流量摘要行（无跳转，纯展示）
+ */
+interface ITrafficRow {
+  key: string;
+  label: string;
+  getValue: () => number;
+}
+
+const trafficRows: ITrafficRow[] = [
+  {
+    key: 'todayPv',
+    label: '今日 PV',
+    getValue: () => summaryData.value?.todayPv ?? 0,
+  },
+  {
+    key: 'todayUv',
+    label: '今日 UV',
+    getValue: () => summaryData.value?.todayUv ?? 0,
+  },
+  {
+    key: 'last7Pv',
+    label: '近 7 日 PV',
+    getValue: () => summaryData.value?.last7DaysPv ?? 0,
+  },
+  {
+    key: 'last7Uv',
+    label: '近 7 日 UV',
+    getValue: () => summaryData.value?.last7DaysUv ?? 0,
+  },
+];
+
+/**
+ * 重新加载概览与流量摘要
  */
 async function handleRetry(): Promise<void> {
   await reloadOverview();
+  if (isAdmin.value) {
+    await reloadSummary();
+  }
 }
 </script>
 
@@ -77,7 +150,10 @@ async function handleRetry(): Promise<void> {
       </p>
     </div>
 
-    <div v-if="loading" class="flex justify-center py-16 min-h-[240px]">
+    <div
+      v-if="loading || (isAdmin && summaryLoading)"
+      class="flex justify-center py-16 min-h-[240px]"
+    >
       <Loading />
     </div>
 
@@ -88,24 +164,54 @@ async function handleRetry(): Promise<void> {
       </Button>
     </div>
 
-    <ul
-      v-else-if="overviewData"
-      class="stat-list"
-      aria-label="创作数据统计"
-    >
-      <li v-for="row in statRows" :key="row.key">
-        <RouterLink
-          :to="{ name: row.routeName }"
-          class="stat-row"
+    <template v-else-if="overviewData">
+      <ul class="stat-list" aria-label="创作数据统计">
+        <li v-for="row in statRows" :key="row.key">
+          <RouterLink
+            :to="{ name: row.routeName }"
+            class="stat-row"
+          >
+            <span class="stat-label">{{ row.label }}</span>
+            <span class="stat-meta">
+              <span class="stat-value">{{ row.getValue() }}</span>
+              <ChevronRightIcon class="stat-chevron" aria-hidden="true" />
+            </span>
+          </RouterLink>
+        </li>
+      </ul>
+
+      <template v-if="isAdmin">
+        <div class="traffic-summary-header">
+          <h3 class="traffic-summary-title">站点流量</h3>
+          <p class="traffic-summary-desc">
+            今日与近 7 日 PV/UV（含去抖，与「N 次浏览」口径不同）
+          </p>
+        </div>
+
+        <div
+          v-if="summaryError"
+          class="text-sm text-destructive mb-2"
         >
-          <span class="stat-label">{{ row.label }}</span>
-          <span class="stat-meta">
-            <span class="stat-value">{{ row.getValue() }}</span>
-            <ChevronRightIcon class="stat-chevron" aria-hidden="true" />
-          </span>
-        </RouterLink>
-      </li>
-    </ul>
+          流量摘要加载失败，
+          <button type="button" class="retry-inline" @click="reloadSummary">
+            重试
+          </button>
+        </div>
+
+        <ul
+          v-else
+          class="stat-list"
+          aria-label="站点流量摘要"
+        >
+          <li v-for="row in trafficRows" :key="row.key" class="stat-row stat-row--static">
+            <span class="stat-label">{{ row.label }}</span>
+            <span class="stat-meta">
+              <span class="stat-value">{{ row.getValue() }}</span>
+            </span>
+          </li>
+        </ul>
+      </template>
+    </template>
 
     <div v-else class="text-center text-muted-foreground py-12">
       <p>暂无统计数据</p>
@@ -141,6 +247,14 @@ async function handleRetry(): Promise<void> {
   background-color: var(--color-frost, #f5f5f7);
 }
 
+.stat-row--static {
+  cursor: default;
+}
+
+.stat-row--static:hover {
+  background-color: transparent;
+}
+
 .stat-row:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
@@ -167,6 +281,34 @@ async function handleRetry(): Promise<void> {
   width: 1rem;
   height: 1rem;
   color: var(--muted-foreground);
+}
+
+.traffic-summary-header {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.traffic-summary-title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.traffic-summary-desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+
+.retry-inline {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-link-blue, #0066cc);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
 }
 
 @media (prefers-reduced-motion: reduce) {

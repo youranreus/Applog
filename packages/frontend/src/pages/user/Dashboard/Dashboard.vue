@@ -7,12 +7,14 @@ import { useSystemInitialize } from './hooks/useSystemInitialize';
 import SystemInitialize from './components/SystemInitialize.vue';
 import PersonalStats from './components/PersonalStats.vue';
 import SystemSettings from './components/SystemSettings.vue';
+import TrafficStats from './components/TrafficStats.vue';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { USER_ROLES } from '@/constants/permission';
 
 /**
  * Tab 类型定义
  */
-type TabType = 'stats' | 'settings';
+type TabType = 'stats' | 'settings' | 'traffic';
 
 /**
  * 使用系统配置 Store 获取配置状态
@@ -28,6 +30,11 @@ const userStore = useUserStore();
  * 布局 Store：通知反馈
  */
 const layoutStore = useLayoutStore();
+
+/**
+ * 是否管理员（流量相关 UI 仅 admin）
+ */
+const isAdmin = computed(() => userStore.user?.role === USER_ROLES.ADMIN);
 
 /**
  * 使用系统初始化 Hook 处理初始化逻辑
@@ -69,12 +76,18 @@ const showInitializeButton = computed(() => {
 const activeTab = ref<TabType>('stats');
 
 /**
- * Tab 配置列表
+ * Tab 配置列表（管理员额外展示「流量详情」）
  */
-const tabs = [
-  { key: 'stats' as TabType, label: '个人统计' },
-  { key: 'settings' as TabType, label: '系统设置' },
-];
+const tabs = computed(() => {
+  const base: { key: TabType; label: string }[] = [
+    { key: 'stats', label: '个人统计' },
+    { key: 'settings', label: '系统设置' },
+  ];
+  if (isAdmin.value) {
+    base.splice(1, 0, { key: 'traffic', label: '流量详情' });
+  }
+  return base;
+});
 
 /**
  * 处理系统初始化：成功/失败均给出可见反馈
@@ -174,6 +187,7 @@ async function onInitialize(): Promise<void> {
 
           <main class="dashboard-content-area">
             <PersonalStats v-if="activeTab === 'stats'" />
+            <TrafficStats v-else-if="activeTab === 'traffic' && isAdmin" />
             <SystemSettings v-else-if="activeTab === 'settings'" />
           </main>
         </div>
