@@ -20,8 +20,11 @@ Prefer low domain coupling. Current set:
 | `useJsonLd.ts` | JSON-LD structured data |
 | `useImagePreview.ts` | Click-to-preview images in a container |
 | `usePageDetail.ts` | Fetch page by slug + SEO (slightly domain-specific but shared by page routes) |
+| `analytics/useAnalyticsViewReport.ts` | After published detail load, silent `POST /analytics/view` (shared by post + page) |
 
 Reference directory: `packages/frontend/src/hooks/`.
+
+Domain-ish but **cross-route** helpers may live under `hooks/<domain>/` (e.g. analytics) instead of duplicating under every `pages/**/hooks`. Prefer page-local hooks when only one route owns the behavior.
 
 ---
 
@@ -39,6 +42,14 @@ Live next to the feature:
 | Markdown renderer | `components/ui/markdown-renderer/hooks/useMarkdownRenderer.ts` |
 
 Pattern: `.vue` files call the hook; hook owns `useRequest`/`useWatcher`, derived state, and submit handlers.
+
+### Analytics view report
+
+- Visitor id: `utils/visitor-id.ts` → `localStorage` key `applog_vid` (UUID).
+- Call `useAnalyticsViewReport(contentRef, 'post' | 'page')` from detail hooks after data is available.
+- Failures are silent; clear in-memory “already reported” marker on failure so a later retry can fire.
+- Do not block reading UX on analytics network errors.
+- API modules: `src/api/analytics/*` (alova). Admin queries require admin JWT.
 
 ---
 

@@ -19,7 +19,8 @@ Shared contracts: `@applog/common` (system config only today).
 - [ ] HTTP goes through `src/api/*` + `alovaInstance` (no Axios / raw fetch)
 - [ ] Lists/forms use `useRequest` / `useWatcher` appropriately
 - [ ] Types use `I*` interfaces and `as const` instead of `enum`
-- [ ] Interactive chrome follows shadcn tokens in `assets/base.css` (see Component Guidelines)
+- [ ] Theme tokens in `assets/base.css` (see Component Guidelines)
+- [ ] Content PV/UV: report via `hooks/analytics` + `api/analytics`; do not reuse `viewCount` for Dashboard traffic
 
 ---
 
@@ -43,6 +44,7 @@ Shared contracts: `@applog/common` (system config only today).
 - [ ] Auth-sensitive routes use `ROUTE_PERMISSIONS` / guard meta
 - [ ] Notifications go through `layoutStore.notify` (Sonner bridge)
 - [ ] Theme changes remap semantic CSS variables — do not one-off restyle every page
+- [ ] Dashboard traffic UI: admin-only, list-row tone, SVG trend (no chart library)
 
 ---
 

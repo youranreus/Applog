@@ -84,7 +84,9 @@ status === 'published' && !canViewUnpublished(user, includeUnpublished)
 | Admin + `includeUnpublished=true` (`canViewUnpublished` true) | No (edit/preview path) |
 | Public GET unpublished (rejected as not found) | No |
 
-Keep Post and Page conditions identical. Do not add a separate “report view” API unless product explicitly asks.
+Keep Post and Page `viewCount` conditions identical.
+
+Dashboard **PV/UV** is a separate product surface: public `POST /analytics/view` + daily aggregate tables. Do **not** replace or drive Analytics from the detail GET `viewCount++` path, and do not assume the two counters match (debounce, author exclusion, and start-from-now differ). See [Analytics Guidelines](./analytics-guidelines.md).
 
 #### Wrong vs Correct
 

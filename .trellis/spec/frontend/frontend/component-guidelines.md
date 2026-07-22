@@ -39,6 +39,15 @@ Reference: `packages/frontend/src/pages/user/Dashboard/components/SystemSettings
 | Layout | `components/Layout/` | `Header.vue`, `Footer.vue` |
 | Page-local | `pages/**/components/` | `PostTable.vue`, `AdminPagination.vue` |
 
+### Dashboard traffic (admin)
+
+- **PersonalStats**: append today / last-7d PV·UV as quiet stat rows (same list tone as post/page/comment counts) — not rainbow metric cards.
+- **TrafficStats** tab (admin-only): ~30-day **SVG** trend (no chart.js/echarts) + post/page Top 10 by PV.
+- Gate traffic summary + tab with admin role; non-admins must not see either.
+- Do not imply Dashboard PV equals public `viewCount`.
+
+Reference: `pages/user/Dashboard/Dashboard.vue`, `PersonalStats.vue`, `TrafficStats.vue`.
+
 ---
 
 ## Theming (shadcn + DESIGN.md)
