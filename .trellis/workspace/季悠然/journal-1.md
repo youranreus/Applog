@@ -209,3 +209,37 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: 博客 PV/UV 统计与后台展示
+
+**Date**: 2026-07-23
+**Task**: 博客 PV/UV 统计与后台展示
+**Branch**: `master`
+
+### Summary
+
+实现站点/内容级 PV/UV：独立上报、日聚合、管理员概览摘要与流量详情；补充 analytics code-spec 后归档任务。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4be33b6` | (see git log) |
+| `33efd3c` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
