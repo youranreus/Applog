@@ -243,3 +243,37 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: 接入 Umami 升级流量统计
+
+**Date**: 2026-07-26
+**Task**: 接入 Umami 升级流量统计
+**Branch**: `feat/umami-analytics-integration`
+
+### Summary
+
+将 Dashboard 流量改为自建 Umami：管理端配置对接、公开 tracker 引导、后端代理查询 Views/Visitors/趋势/热门/设备/地域；停用旧自建 PV/UV 上报；更新 analytics 与跨层 spec。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9e0da36` | (see git log) |
+| `c935d23` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
