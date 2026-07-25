@@ -5,12 +5,12 @@ import type {
 } from '@/types/analytics';
 
 /**
- * 获取内容 Top 榜（管理员）
+ * 获取热门页面 Top（管理员）
  * 接口路径: GET /analytics/top
- * @param params - type / days / limit
+ * @param params - days / limit
  * @returns Method，返回 Top 列表
  */
-export const getAnalyticsTop = (params: IQueryAnalyticsTopParams) => {
+export const getAnalyticsTop = (params?: IQueryAnalyticsTopParams) => {
   return alovaInstance.Get<IAnalyticsTopItemDto[]>('/analytics/top', {
     params,
   });

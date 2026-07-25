@@ -367,6 +367,7 @@ async function onInitialize(): Promise<void> {
   flex: 1;
   min-width: 0;
   width: 100%;
+  padding-bottom: 2.5rem;
 }
 
 @media (max-width: 768px) {

@@ -6,6 +6,7 @@ import { MotionPlugin } from '@vueuse/motion';
 import App from './App.vue';
 import router, { setupPermissionGuard } from './router';
 import { useUserStore } from './stores/useUserStore';
+import { setupUmamiTracker } from './hooks/analytics/useUmamiTracker';
 import './assets/base.css';
 import '@/assets/main.scss';
 // 初始化 alova 实例
@@ -26,6 +27,9 @@ const authInitPromise = userStore.initializeAuth();
 
 // 设置权限守卫，传入 authInitPromise 供守卫等待
 setupPermissionGuard(authInitPromise);
+
+// auth 就绪后按角色注入 Umami tracker（admin 跳过）
+setupUmamiTracker(authInitPromise);
 
 app.use(router);
 

@@ -4,7 +4,6 @@ import { useWatcher } from 'alova/client';
 import { getPostBySlug } from '@/api/post/getPostById';
 import { useSeoHead } from '@/hooks/useSeoHead';
 import { useArticleJsonLd } from '@/hooks/useJsonLd';
-import { useAnalyticsViewReport } from '@/hooks/analytics/useAnalyticsViewReport';
 import type { IPostDetail } from '@/types/post';
 
 /**
@@ -58,9 +57,6 @@ export function usePostDetail() {
     return postDetail.value;
   });
 
-  // 已发布文章加载成功后静默上报 PV/UV
-  useAnalyticsViewReport(post, 'post');
-
   const SITE_URL = import.meta.env.VITE_SITE_URL || '';
 
   useSeoHead({
@@ -113,4 +109,3 @@ export function usePostDetail() {
     formatDate,
   };
 }
-

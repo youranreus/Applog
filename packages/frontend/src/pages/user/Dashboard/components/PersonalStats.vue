@@ -109,26 +109,34 @@ interface ITrafficRow {
 
 const trafficRows: ITrafficRow[] = [
   {
-    key: 'todayPv',
-    label: '今日 PV',
-    getValue: () => summaryData.value?.todayPv ?? 0,
+    key: 'todayViews',
+    label: '今日浏览',
+    getValue: () => summaryData.value?.todayViews ?? 0,
   },
   {
-    key: 'todayUv',
-    label: '今日 UV',
-    getValue: () => summaryData.value?.todayUv ?? 0,
+    key: 'todayVisitors',
+    label: '今日访客',
+    getValue: () => summaryData.value?.todayVisitors ?? 0,
   },
   {
-    key: 'last7Pv',
-    label: '近 7 日 PV',
-    getValue: () => summaryData.value?.last7DaysPv ?? 0,
+    key: 'last7Views',
+    label: '近 7 日浏览',
+    getValue: () => summaryData.value?.last7DaysViews ?? 0,
   },
   {
-    key: 'last7Uv',
-    label: '近 7 日 UV',
-    getValue: () => summaryData.value?.last7DaysUv ?? 0,
+    key: 'last7Visitors',
+    label: '近 7 日访客',
+    getValue: () => summaryData.value?.last7DaysVisitors ?? 0,
   },
 ];
+
+/**
+ * 流量错误是否为「未配置」
+ */
+const isSummaryNotConfigured = computed(() => {
+  const message = summaryError.value?.message ?? '';
+  return message.includes('未配置');
+});
 
 /**
  * 重新加载概览与流量摘要
@@ -184,18 +192,27 @@ async function handleRetry(): Promise<void> {
         <div class="traffic-summary-header">
           <h3 class="traffic-summary-title">站点流量</h3>
           <p class="traffic-summary-desc">
-            今日与近 7 日 PV/UV（含去抖，与「N 次浏览」口径不同）
+            今日与近 7 日浏览 / 访客（来自 Umami，与「N 次浏览」口径不同）
           </p>
         </div>
 
         <div
           v-if="summaryError"
-          class="text-sm text-destructive mb-2"
+          class="text-sm text-muted-foreground mb-2"
         >
-          流量摘要加载失败，
-          <button type="button" class="retry-inline" @click="reloadSummary">
-            重试
-          </button>
+          <template v-if="isSummaryNotConfigured">
+            尚未配置 Umami，请前往
+            <span class="text-link-blue">系统设置</span>
+            填写对接信息。
+          </template>
+          <template v-else>
+            <span class="text-destructive">
+              {{ summaryError.message || '流量摘要加载失败' }}，
+            </span>
+            <button type="button" class="retry-inline" @click="reloadSummary">
+              重试
+            </button>
+          </template>
         </div>
 
         <ul
@@ -309,6 +326,10 @@ async function handleRetry(): Promise<void> {
   cursor: pointer;
   text-decoration: underline;
   font-size: inherit;
+}
+
+.text-link-blue {
+  color: var(--color-link-blue, #0066cc);
 }
 
 @media (prefers-reduced-motion: reduce) {

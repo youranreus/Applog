@@ -1,13 +1,11 @@
-import type { AnalyticsContentType } from '@/entities';
-
 /**
- * 站点流量摘要（今日 + 近 7 日）
+ * 站点流量摘要（今日 + 近 7 日，Umami pageviews / visitors）
  */
 export interface IAnalyticsSummaryDto {
-  todayPv: number;
-  todayUv: number;
-  last7DaysPv: number;
-  last7DaysUv: number;
+  todayViews: number;
+  todayVisitors: number;
+  last7DaysViews: number;
+  last7DaysVisitors: number;
 }
 
 /**
@@ -15,18 +13,24 @@ export interface IAnalyticsSummaryDto {
  */
 export interface IAnalyticsTrendPointDto {
   date: string;
-  pv: number;
-  uv: number;
+  views: number;
+  visitors: number;
 }
 
 /**
- * Top 榜单项
+ * 热门页面单项（单栏 path Top）
  */
 export interface IAnalyticsTopItemDto {
-  contentType: AnalyticsContentType;
-  contentId: number;
+  path: string;
   title: string;
-  slug: string;
-  pv: number;
-  uv: number;
+  views: number;
+  href: string;
+}
+
+/**
+ * 设备 / OS / 地域分布单项
+ */
+export interface IAnalyticsBreakdownItemDto {
+  name: string;
+  value: number;
 }

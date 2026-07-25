@@ -11,8 +11,17 @@ import { CalendarIcon, XIcon } from '@lucide/vue';
 import { useRequest } from 'alova/client';
 import { useSystemStore } from '@/stores/useSystemStore';
 import { useLayoutStore } from '@/stores/useLayoutStore';
+import { useUserStore } from '@/stores/useUserStore';
 import { setConfig } from '@/api/system-config';
-import { getSystemConfigKey, SYSTEM_CONFIG_KEYS, type ISystemBaseConfig } from '@applog/common';
+import { getUmamiConfig, setUmamiConfig } from '@/api/analytics';
+import {
+  getSystemConfigKey,
+  SYSTEM_CONFIG_KEYS,
+  UMAMI_PASSWORD_MASK,
+  type ISystemBaseConfig,
+  type IUmamiConfig,
+} from '@applog/common';
+import { USER_ROLES } from '@/constants/permission';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -365,6 +374,160 @@ async function handleConfirmPermissionSave(): Promise<void> {
   permissionConfirmOpen.value = false;
   await persistConfig();
 }
+
+/**
+ * 当前用户是否为管理员（Umami 完整配置仅 admin）
+ */
+const userStore = useUserStore();
+const isAdmin = computed(() => userStore.user?.role === USER_ROLES.ADMIN);
+
+/**
+ * Umami 对接表单
+ */
+const umamiForm = ref<IUmamiConfig>({
+  baseUrl: '',
+  websiteId: '',
+  scriptUrl: '',
+  username: '',
+  password: '',
+  enabled: true,
+});
+
+/**
+ * 拉取脱敏 Umami 配置（仅 admin 请求，避免非管理员触发鉴权失败）
+ */
+const {
+  loading: umamiLoading,
+  data: umamiConfigData,
+  error: umamiLoadError,
+  send: reloadUmamiConfig,
+} = useRequest(getUmamiConfig, {
+  immediate: false,
+});
+
+/**
+ * 管理员进入系统设置时再拉取 Umami 配置
+ */
+watch(
+  isAdmin,
+  (admin) => {
+    if (admin) {
+      void reloadUmamiConfig();
+    }
+  },
+  { immediate: true },
+);
+
+/**
+ * 密码输入草稿（与脱敏占位分离，避免清空误写）
+ */
+const umamiPasswordDraft = ref('');
+
+/**
+ * 将接口数据写入表单
+ * @param data - 脱敏配置
+ */
+function applyUmamiForm(data: IUmamiConfig): void {
+  umamiForm.value = {
+    baseUrl: data.baseUrl || '',
+    websiteId: data.websiteId || '',
+    scriptUrl: data.scriptUrl || '',
+    username: data.username || '',
+    password: data.password || '',
+    enabled: data.enabled !== false,
+  };
+  umamiPasswordDraft.value = '';
+}
+
+watch(
+  umamiConfigData,
+  (data) => {
+    if (data) {
+      applyUmamiForm(data);
+    }
+  },
+  { immediate: true },
+);
+
+/**
+ * 保存 Umami 配置请求
+ */
+const {
+  loading: umamiSaving,
+  error: umamiSaveRequestError,
+  send: saveUmamiRequest,
+} = useRequest(
+  () =>
+    setUmamiConfig({
+      ...umamiForm.value,
+      // 空草稿 = 不修改已存密码
+      password: umamiPasswordDraft.value,
+    }),
+  {
+    immediate: false,
+  },
+);
+
+/**
+ * Umami 保存错误文案
+ */
+const umamiSaveError = computed<string | null>(() => {
+  if (!umamiSaveRequestError.value) {
+    return null;
+  }
+  if (umamiSaveRequestError.value instanceof Error) {
+    return umamiSaveRequestError.value.message;
+  }
+  return '保存 Umami 配置失败，请稍后重试';
+});
+
+/**
+ * 启用开关（保证 boolean）
+ */
+const umamiEnabled = computed({
+  get: () => umamiForm.value.enabled !== false,
+  set: (value: boolean) => {
+    umamiForm.value.enabled = value;
+  },
+});
+
+/**
+ * 密码字段占位提示
+ */
+const umamiPasswordPlaceholder = computed(() =>
+  umamiForm.value.password === UMAMI_PASSWORD_MASK
+    ? '已保存（留空不修改）'
+    : '请输入密码',
+);
+
+/**
+ * 保存 Umami 对接配置
+ */
+async function handleSaveUmami(): Promise<void> {
+  if (umamiSaving.value) {
+    return;
+  }
+
+  try {
+    const saved = await saveUmamiRequest();
+    applyUmamiForm(saved);
+    layoutStore.notify({
+      title: '保存成功',
+      content: 'Umami 对接已更新，无需重新构建前端',
+      type: 'success',
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : umamiSaveError.value || '保存 Umami 配置失败，请稍后重试';
+    layoutStore.notify({
+      title: '保存失败',
+      content: message,
+      type: 'error',
+    });
+  }
+}
 </script>
 
 <template>
@@ -492,6 +655,108 @@ async function handleConfirmPermissionSave(): Promise<void> {
           {{ saving ? '保存中...' : '保存' }}
         </Button>
       </div>
+
+      <FieldGroup
+        v-if="isAdmin"
+        class="gap-4 border-t border-border pt-8"
+      >
+        <div>
+          <h3 class="text-sm font-semibold text-foreground">流量分析 / Umami</h3>
+          <p class="mt-1 text-xs text-muted-foreground">
+            对接自建 Umami 实例。保存后即时生效，无需重新构建。实例部署、Geo 与
+            IGNORE_IP 由运维侧完成。
+          </p>
+        </div>
+
+        <div v-if="umamiLoadError" class="text-sm text-destructive">
+          加载 Umami 配置失败，
+          <button
+            type="button"
+            class="underline text-link-blue"
+            @click="reloadUmamiConfig"
+          >
+            重试
+          </button>
+        </div>
+
+        <template v-else>
+          <Field orientation="horizontal">
+            <div class="flex-1">
+              <FieldLabel>启用 Tracker</FieldLabel>
+              <FieldDescription>
+                关闭后访客不再加载统计脚本；Dashboard 查询仍需凭证齐备
+              </FieldDescription>
+            </div>
+            <Switch v-model:checked="umamiEnabled" />
+          </Field>
+
+          <Field>
+            <FieldLabel>Umami 地址</FieldLabel>
+            <Input
+              v-model="umamiForm.baseUrl"
+              type="url"
+              placeholder="https://umami.example.com"
+              :disabled="umamiLoading"
+            />
+            <FieldDescription>无尾斜杠；用于 API 与默认 script 推导</FieldDescription>
+          </Field>
+
+          <Field>
+            <FieldLabel>Website ID</FieldLabel>
+            <Input
+              v-model="umamiForm.websiteId"
+              type="text"
+              placeholder="Website UUID"
+              :disabled="umamiLoading"
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel>Script URL（可选）</FieldLabel>
+            <Input
+              v-model="umamiForm.scriptUrl"
+              type="url"
+              placeholder="留空则使用 {baseUrl}/script.js"
+              :disabled="umamiLoading"
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel>用户名</FieldLabel>
+            <Input
+              v-model="umamiForm.username"
+              type="text"
+              autocomplete="off"
+              :disabled="umamiLoading"
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel>密码</FieldLabel>
+            <Input
+              v-model="umamiPasswordDraft"
+              type="password"
+              autocomplete="new-password"
+              :placeholder="umamiPasswordPlaceholder"
+              :disabled="umamiLoading"
+            />
+            <FieldDescription>
+              读回为脱敏态；留空表示不修改已保存密码
+            </FieldDescription>
+          </Field>
+
+          <FieldError v-if="umamiSaveError" :errors="[umamiSaveError]" />
+
+          <div class="flex justify-end">
+            <Button
+              :disabled="umamiSaving || umamiLoading"
+              @click="handleSaveUmami"
+            >
+              {{ umamiSaving ? '保存中...' : '保存 Umami 配置' }}
+            </Button>
+          </div>
+        </template>
+      </FieldGroup>
     </div>
 
     <Dialog v-model:open="permissionConfirmOpen">
@@ -518,5 +783,9 @@ async function handleConfirmPermissionSave(): Promise<void> {
 <style scoped>
 .system-settings {
   width: 100%;
+}
+
+.text-link-blue {
+  color: var(--color-link-blue, #0066cc);
 }
 </style>

@@ -2,29 +2,33 @@ import {
   Body,
   Controller,
   Get,
-  Post,
+  Put,
   Query,
   VERSION_NEUTRAL,
 } from '@nestjs/common';
 import { AuthRoles, UserParams } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
+import type { IUmamiConfig, IUmamiTrackerConfig } from '@applog/common';
 import { AnalyticsService } from './analytics.service';
 import {
-  ReportViewDto,
   QueryTrendDto,
   QueryTopDto,
+  QueryBreakdownDto,
+  SetUmamiConfigDto,
   type IAnalyticsSummaryDto,
   type IAnalyticsTrendPointDto,
   type IAnalyticsTopItemDto,
+  type IAnalyticsBreakdownItemDto,
 } from './dto';
 import {
+  ANALYTICS_DEFAULT_BREAKDOWN_LIMIT,
   ANALYTICS_DEFAULT_TOP_LIMIT,
   ANALYTICS_DEFAULT_TREND_DAYS,
 } from './analytics.constants';
 
 /**
  * Analytics 控制器
- * 公开上报 + 管理员查询
+ * 公开 Tracker 引导 + 管理员 Umami 代理查询与配置
  */
 @Controller({
   path: 'analytics',
@@ -34,17 +38,50 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   /**
-   * 上报内容浏览（公开，可选登录）
-   * @param dto - 上报参数
-   * @param user - 可选当前用户
-   * @returns 空对象
+   * 公开 Tracker 引导（无凭证）
+   * @returns enabled / scriptUrl / websiteId
    */
-  @Post('view')
-  async reportView(
-    @Body() dto: ReportViewDto,
-    @UserParams() user?: UserJwtPayload,
-  ): Promise<Record<string, never>> {
-    return this.analyticsService.reportView(dto, user);
+  @Get('tracker-config')
+  async getTrackerConfig(): Promise<IUmamiTrackerConfig> {
+    return this.analyticsService.getTrackerConfig();
+  }
+
+  /**
+   * 管理员读取脱敏 Umami 配置
+   * @param user - 当前管理员
+   * @returns 脱敏配置
+   */
+  @Get('umami-config')
+  @AuthRoles('admin')
+  async getUmamiConfig(
+    @UserParams() user: UserJwtPayload,
+  ): Promise<IUmamiConfig> {
+    return this.analyticsService.getUmamiConfig(user);
+  }
+
+  /**
+   * 管理员保存 Umami 配置
+   * @param dto - 表单配置
+   * @param user - 当前管理员
+   * @returns 脱敏后的最新配置
+   */
+  @Put('umami-config')
+  @AuthRoles('admin')
+  async setUmamiConfig(
+    @Body() dto: SetUmamiConfigDto,
+    @UserParams() user: UserJwtPayload,
+  ): Promise<IUmamiConfig> {
+    return this.analyticsService.setUmamiConfig(
+      {
+        baseUrl: dto.baseUrl,
+        websiteId: dto.websiteId,
+        scriptUrl: dto.scriptUrl ?? '',
+        username: dto.username,
+        password: dto.password ?? '',
+        enabled: dto.enabled,
+      },
+      user,
+    );
   }
 
   /**
@@ -73,17 +110,33 @@ export class AnalyticsController {
   }
 
   /**
-   * 内容 Top 榜
-   * @param query - type / days / limit
+   * 热门页面 Top（单栏）
+   * @param query - days / limit
    * @returns Top 列表
    */
   @Get('top')
   @AuthRoles('admin')
   async getTop(@Query() query: QueryTopDto): Promise<IAnalyticsTopItemDto[]> {
     return this.analyticsService.getTop(
-      query.type,
       query.days ?? ANALYTICS_DEFAULT_TREND_DAYS,
       query.limit ?? ANALYTICS_DEFAULT_TOP_LIMIT,
+    );
+  }
+
+  /**
+   * 设备 / OS / 地域分布
+   * @param query - dimension / days / limit
+   * @returns 分布列表
+   */
+  @Get('breakdown')
+  @AuthRoles('admin')
+  async getBreakdown(
+    @Query() query: QueryBreakdownDto,
+  ): Promise<IAnalyticsBreakdownItemDto[]> {
+    return this.analyticsService.getBreakdown(
+      query.dimension,
+      query.days ?? ANALYTICS_DEFAULT_TREND_DAYS,
+      query.limit ?? ANALYTICS_DEFAULT_BREAKDOWN_LIMIT,
     );
   }
 }
