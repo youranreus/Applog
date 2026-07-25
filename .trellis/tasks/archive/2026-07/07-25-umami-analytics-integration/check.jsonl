@@ -1,0 +1,6 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/backend/analytics-guidelines.md", "reason": "核对代理契约与 viewCount 分离"}
+{"file": ".trellis/spec/frontend/frontend/quality-guidelines.md", "reason": "前端质量门禁"}
+{"file": ".trellis/tasks/07-25-umami-analytics-integration/research/umami-api.md", "reason": "核对 Umami API 用法"}
+{"file": ".trellis/tasks/07-25-umami-analytics-integration/prd.md", "reason": "对照验收标准"}
+{"file": ".trellis/spec/common/shared/package-boundaries.md", "reason": "核对 common 配置边界"}

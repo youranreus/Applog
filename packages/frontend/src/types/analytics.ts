@@ -1,25 +1,11 @@
 /**
- * 统计内容类型
- */
-export type AnalyticsContentType = 'post' | 'page';
-
-/**
- * 上报浏览请求体
- */
-export interface IReportViewParams {
-  visitorId: string;
-  contentType: AnalyticsContentType;
-  contentId: number;
-}
-
-/**
- * 站点流量摘要
+ * 站点流量摘要（Umami Views / Visitors）
  */
 export interface IAnalyticsSummaryDto {
-  todayPv: number;
-  todayUv: number;
-  last7DaysPv: number;
-  last7DaysUv: number;
+  todayViews: number;
+  todayVisitors: number;
+  last7DaysViews: number;
+  last7DaysVisitors: number;
 }
 
 /**
@@ -27,27 +13,37 @@ export interface IAnalyticsSummaryDto {
  */
 export interface IAnalyticsTrendPointDto {
   date: string;
-  pv: number;
-  uv: number;
+  views: number;
+  visitors: number;
 }
 
 /**
- * Top 榜单项
+ * 热门页面单项
  */
 export interface IAnalyticsTopItemDto {
-  contentType: AnalyticsContentType;
-  contentId: number;
+  path: string;
   title: string;
-  slug: string;
-  pv: number;
-  uv: number;
+  views: number;
+  href: string;
 }
+
+/**
+ * 设备 / OS / 地域分布单项
+ */
+export interface IAnalyticsBreakdownItemDto {
+  name: string;
+  value: number;
+}
+
+/**
+ * Breakdown 维度
+ */
+export type AnalyticsBreakdownDimension = 'os' | 'device' | 'country';
 
 /**
  * Top 查询参数
  */
 export interface IQueryAnalyticsTopParams {
-  type: AnalyticsContentType;
   days?: number;
   limit?: number;
 }
@@ -57,4 +53,22 @@ export interface IQueryAnalyticsTopParams {
  */
 export interface IQueryAnalyticsTrendParams {
   days?: number;
+}
+
+/**
+ * Breakdown 查询参数
+ */
+export interface IQueryAnalyticsBreakdownParams {
+  dimension: AnalyticsBreakdownDimension;
+  days?: number;
+  limit?: number;
+}
+
+/**
+ * 公开 Tracker 引导
+ */
+export interface IAnalyticsTrackerConfigDto {
+  enabled: boolean;
+  scriptUrl: string;
+  websiteId: string;
 }

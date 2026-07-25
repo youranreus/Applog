@@ -19,7 +19,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Service injects `HLogger` via `HLOGGER_TOKEN` and wraps log helpers
 - [ ] Controller returns domain/DTO data; `TransformInterceptor` wraps `{ data, code, msg }`
 - [ ] Cross-package system-config contracts come from `@applog/common`
-- [ ] Traffic PV/UV uses `AnalyticsModule` (`POST /analytics/view` + admin queries) — not Post/Page `viewCount`
+- [ ] Traffic Views/Visitors uses `AnalyticsModule` Umami proxy (`GET /analytics/summary|trend|top|breakdown`) — not Post/Page `viewCount`; config via `SYSTEM_UMAMI_CONFIG`
 
 ---
 
@@ -44,7 +44,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Controller stays thin; logic lives in service
 - [ ] Input DTOs are classes with `class-validator`; response shapes are `I*` interfaces/types
 - [ ] API controllers use `version: [VERSION_NEUTRAL, '1']` unless intentionally raw (e.g. SEO XML)
-- [ ] Analytics aggregates use atomic upsert; day keys use `Asia/Shanghai`
+- [ ] Analytics: Umami proxy + Shanghai windows; never leak credentials; legacy analytics_* tables soft-disabled
 
 ---
 

@@ -20,7 +20,8 @@ Shared contracts: `@applog/common` (system config only today).
 - [ ] Lists/forms use `useRequest` / `useWatcher` appropriately
 - [ ] Types use `I*` interfaces and `as const` instead of `enum`
 - [ ] Theme tokens in `assets/base.css` (see Component Guidelines)
-- [ ] Content PV/UV: report via `hooks/analytics` + `api/analytics`; do not reuse `viewCount` for Dashboard traffic
+- [ ] Analytics: Umami tracker via public `GET /analytics/tracker-config` (non-admin only); Dashboard via admin proxy APIs — do not reuse `viewCount` for traffic UI
+
 
 ---
 

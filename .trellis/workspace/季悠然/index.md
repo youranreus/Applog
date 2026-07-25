@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 7
-- **Last Active**: 2026-07-23
+- **Total Sessions**: 8
+- **Last Active**: 2026-07-26
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~245 | Active |
+| `journal-1.md` | ~279 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 8 | 2026-07-26 | 接入 Umami 升级流量统计 | `9e0da36`, `c935d23` | `feat/umami-analytics-integration` |
 | 7 | 2026-07-23 | 博客 PV/UV 统计与后台展示 | `4be33b6`, `33efd3c` | `master` |
 | 6 | 2026-07-20 | 建站日期与备案号配置 | `6ba7090` | `master` |
 | 5 | 2026-07-19 | 修复文章阅读次数不更新 | `eeeb809` | `master` |

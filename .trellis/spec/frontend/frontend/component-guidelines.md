@@ -41,12 +41,13 @@ Reference: `packages/frontend/src/pages/user/Dashboard/components/SystemSettings
 
 ### Dashboard traffic (admin)
 
-- **PersonalStats**: append today / last-7d PV·UV as quiet stat rows (same list tone as post/page/comment counts) — not rainbow metric cards.
-- **TrafficStats** tab (admin-only): ~30-day **SVG** trend (no chart.js/echarts) + post/page Top 10 by PV.
+- **PersonalStats**: append today / last-7d Views·Visitors as quiet stat rows (same list tone as post/page/comment counts) — not rainbow metric cards.
+- **TrafficStats** tab (admin-only): ~30-day **SVG** trend (no chart.js/echarts) + single path Top 10 + OS / device / country breakdown.
 - Gate traffic summary + tab with admin role; non-admins must not see either.
-- Do not imply Dashboard PV equals public `viewCount`.
+- Do not imply Dashboard traffic equals public `viewCount`.
+- Empty/error when Umami未配置：引导至系统设置「流量分析 / Umami」。
 
-Reference: `pages/user/Dashboard/Dashboard.vue`, `PersonalStats.vue`, `TrafficStats.vue`.
+Reference: `pages/user/Dashboard/Dashboard.vue`, `PersonalStats.vue`, `TrafficStats.vue`, `SystemSettings.vue`.
 
 ---
 

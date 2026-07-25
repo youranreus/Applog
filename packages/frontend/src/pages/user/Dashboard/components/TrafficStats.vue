@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRequest } from 'alova/client';
-import { RouterLink } from 'vue-router';
-import { getAnalyticsTrend, getAnalyticsTop } from '@/api/analytics';
+import {
+  getAnalyticsTrend,
+  getAnalyticsTop,
+  getAnalyticsBreakdown,
+} from '@/api/analytics';
 import Loading from '@/components/ui/loading/index.vue';
 import { Button } from '@/components/ui/button';
-import { ROUTE_NAMES } from '@/constants/permission';
-import type { IAnalyticsTrendPointDto, IAnalyticsTopItemDto } from '@/types/analytics';
+import type {
+  IAnalyticsTrendPointDto,
+  IAnalyticsTopItemDto,
+  IAnalyticsBreakdownItemDto,
+} from '@/types/analytics';
 
 /**
  * 近 30 天趋势
@@ -21,36 +27,78 @@ const {
 });
 
 /**
- * 文章 Top 10
+ * 热门页面 Top 10
  */
 const {
-  loading: postTopLoading,
-  data: postTopData,
-  error: postTopError,
-  send: reloadPostTop,
-} = useRequest(() => getAnalyticsTop({ type: 'post', days: 30, limit: 10 }), {
+  loading: topLoading,
+  data: topData,
+  error: topError,
+  send: reloadTop,
+} = useRequest(() => getAnalyticsTop({ days: 30, limit: 10 }), {
   immediate: true,
 });
 
 /**
- * 页面 Top 10
+ * OS 分布
  */
 const {
-  loading: pageTopLoading,
-  data: pageTopData,
-  error: pageTopError,
-  send: reloadPageTop,
-} = useRequest(() => getAnalyticsTop({ type: 'page', days: 30, limit: 10 }), {
-  immediate: true,
-});
+  loading: osLoading,
+  data: osData,
+  error: osError,
+  send: reloadOs,
+} = useRequest(
+  () => getAnalyticsBreakdown({ dimension: 'os', days: 30, limit: 10 }),
+  { immediate: true },
+);
+
+/**
+ * 设备分布
+ */
+const {
+  loading: deviceLoading,
+  data: deviceData,
+  error: deviceError,
+  send: reloadDevice,
+} = useRequest(
+  () => getAnalyticsBreakdown({ dimension: 'device', days: 30, limit: 10 }),
+  { immediate: true },
+);
+
+/**
+ * 地域分布
+ */
+const {
+  loading: countryLoading,
+  data: countryData,
+  error: countryError,
+  send: reloadCountry,
+} = useRequest(
+  () => getAnalyticsBreakdown({ dimension: 'country', days: 30, limit: 10 }),
+  { immediate: true },
+);
 
 const loading = computed(
-  () => trendLoading.value || postTopLoading.value || pageTopLoading.value,
+  () =>
+    trendLoading.value ||
+    topLoading.value ||
+    osLoading.value ||
+    deviceLoading.value ||
+    countryLoading.value,
 );
 
-const hasError = computed(
-  () => !!trendError.value || !!postTopError.value || !!pageTopError.value,
+const primaryError = computed(
+  () =>
+    trendError.value ||
+    topError.value ||
+    osError.value ||
+    deviceError.value ||
+    countryError.value,
 );
+
+const isNotConfigured = computed(() => {
+  const message = primaryError.value?.message ?? '';
+  return message.includes('未配置');
+});
 
 /**
  * SVG 折线图视口尺寸
@@ -63,12 +111,12 @@ const CHART_PAD_Y = 16;
 /**
  * 将趋势点映射为折线 path
  * @param points - 日序列
- * @param key - pv | uv
+ * @param key - views | visitors
  * @returns SVG path d 字符串
  */
 function buildLinePath(
   points: IAnalyticsTrendPointDto[],
-  key: 'pv' | 'uv',
+  key: 'views' | 'visitors',
 ): string {
   if (points.length === 0) {
     return '';
@@ -83,19 +131,18 @@ function buildLinePath(
   return points
     .map((point, index) => {
       const x = CHART_PAD_X + index * step;
-      const y =
-        CHART_PAD_Y + innerH - (point[key] / maxVal) * innerH;
+      const y = CHART_PAD_Y + innerH - (point[key] / maxVal) * innerH;
       return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
     })
     .join(' ');
 }
 
-const pvPath = computed(() =>
-  buildLinePath(trendData.value ?? [], 'pv'),
+const viewsPath = computed(() =>
+  buildLinePath(trendData.value ?? [], 'views'),
 );
 
-const uvPath = computed(() =>
-  buildLinePath(trendData.value ?? [], 'uv'),
+const visitorsPath = computed(() =>
+  buildLinePath(trendData.value ?? [], 'visitors'),
 );
 
 const trendEmpty = computed(() => {
@@ -103,29 +150,40 @@ const trendEmpty = computed(() => {
   if (points.length === 0) {
     return true;
   }
-  return points.every((p) => p.pv === 0 && p.uv === 0);
+  return points.every((p) => p.views === 0 && p.visitors === 0);
 });
+
+/**
+ * 分布列表是否为空
+ * @param rows - 分布数据
+ * @returns 是否空
+ */
+function isBreakdownEmpty(
+  rows: IAnalyticsBreakdownItemDto[] | null | undefined,
+): boolean {
+  return !rows || rows.length === 0;
+}
 
 /**
  * 重试全部流量详情请求
  */
 async function handleRetry(): Promise<void> {
-  await Promise.all([reloadTrend(), reloadPostTop(), reloadPageTop()]);
+  await Promise.all([
+    reloadTrend(),
+    reloadTop(),
+    reloadOs(),
+    reloadDevice(),
+    reloadCountry(),
+  ]);
 }
 
 /**
- * Top 项公开链接
+ * Top 项前台链接（同源 path）
  * @param item - Top 项
- * @returns 路由 location
+ * @returns href
  */
-function getPublicLink(item: IAnalyticsTopItemDto): { name: string; params: { slug: string } } | null {
-  if (!item.slug) {
-    return null;
-  }
-  if (item.contentType === 'post') {
-    return { name: ROUTE_NAMES.POST_DETAIL, params: { slug: item.slug } };
-  }
-  return { name: ROUTE_NAMES.PAGE_DETAIL, params: { slug: item.slug } };
+function getTopHref(item: IAnalyticsTopItemDto): string {
+  return item.href || item.path || '/';
 }
 </script>
 
@@ -134,7 +192,7 @@ function getPublicLink(item: IAnalyticsTopItemDto): { name: string; params: { sl
     <div class="mb-6">
       <h2 class="text-xl font-semibold text-foreground mb-1">流量详情</h2>
       <p class="text-muted-foreground text-sm">
-        近 30 天站点趋势与内容排行（口径含 30 分钟去抖，与「N 次浏览」不同）
+        近 30 天趋势、热门页面与设备 / 地域（来自 Umami；实例与 Geo 由运维侧配置）
       </p>
     </div>
 
@@ -142,9 +200,19 @@ function getPublicLink(item: IAnalyticsTopItemDto): { name: string; params: { sl
       <Loading />
     </div>
 
-    <div v-else-if="hasError" class="text-center text-destructive py-12">
-      <p class="mb-4">加载失败，请稍后重试</p>
-      <Button variant="outline" @click="handleRetry">
+    <div v-else-if="primaryError" class="text-center py-12">
+      <p
+        class="mb-4"
+        :class="isNotConfigured ? 'text-muted-foreground' : 'text-destructive'"
+      >
+        <template v-if="isNotConfigured">
+          尚未配置 Umami，请前往「系统设置」填写对接信息后再查看流量。
+        </template>
+        <template v-else>
+          {{ primaryError.message || '加载失败，请稍后重试' }}
+        </template>
+      </p>
+      <Button v-if="!isNotConfigured" variant="outline" @click="handleRetry">
         重试
       </Button>
     </div>
@@ -152,102 +220,113 @@ function getPublicLink(item: IAnalyticsTopItemDto): { name: string; params: { sl
     <div v-else class="traffic-body">
       <section class="traffic-section" aria-labelledby="trend-heading">
         <h3 id="trend-heading" class="section-title">近 30 天趋势</h3>
-        <p v-if="trendEmpty" class="empty-hint">暂无流量数据，上线后从今日起累计</p>
+        <p v-if="trendEmpty" class="empty-hint">暂无流量数据</p>
         <div v-else class="chart-wrap">
           <svg
             class="trend-chart"
             :viewBox="`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`"
             role="img"
-            aria-label="近 30 天 PV 与 UV 趋势折线图"
+            aria-label="近 30 天浏览与访客趋势折线图"
           >
             <path
-              class="trend-line trend-line--pv"
-              :d="pvPath"
+              class="trend-line trend-line--views"
+              :d="viewsPath"
               fill="none"
             />
             <path
-              class="trend-line trend-line--uv"
-              :d="uvPath"
+              class="trend-line trend-line--visitors"
+              :d="visitorsPath"
               fill="none"
             />
           </svg>
           <ul class="chart-legend" aria-label="图例">
             <li class="legend-item">
-              <span class="legend-swatch legend-swatch--pv" aria-hidden="true" />
-              PV
+              <span class="legend-swatch legend-swatch--views" aria-hidden="true" />
+              浏览
             </li>
             <li class="legend-item">
-              <span class="legend-swatch legend-swatch--uv" aria-hidden="true" />
-              UV
+              <span class="legend-swatch legend-swatch--visitors" aria-hidden="true" />
+              访客
             </li>
           </ul>
         </div>
       </section>
 
-      <section class="traffic-section" aria-labelledby="post-top-heading">
-        <h3 id="post-top-heading" class="section-title">文章 Top 10</h3>
+      <section class="traffic-section" aria-labelledby="top-heading">
+        <h3 id="top-heading" class="section-title">热门页面 Top 10</h3>
         <ul
-          v-if="postTopData && postTopData.length > 0"
+          v-if="topData && topData.length > 0"
           class="top-list"
-          aria-label="文章流量排行"
+          aria-label="热门页面排行"
         >
-          <li v-for="(item, index) in postTopData" :key="item.contentId">
-            <RouterLink
-              v-if="getPublicLink(item)"
-              :to="getPublicLink(item)!"
-              class="top-row"
-            >
+          <li v-for="(item, index) in topData" :key="item.path">
+            <a :href="getTopHref(item)" class="top-row">
               <span class="top-rank">{{ index + 1 }}</span>
-              <span class="top-title">{{ item.title }}</span>
+              <span class="top-title" :title="item.path">{{ item.title }}</span>
               <span class="top-meta">
-                <span class="top-metric">PV {{ item.pv }}</span>
-                <span class="top-metric top-metric--muted">UV {{ item.uv }}</span>
+                <span class="top-metric">{{ item.views }}</span>
               </span>
-            </RouterLink>
-            <div v-else class="top-row">
-              <span class="top-rank">{{ index + 1 }}</span>
-              <span class="top-title">{{ item.title }}</span>
-              <span class="top-meta">
-                <span class="top-metric">PV {{ item.pv }}</span>
-                <span class="top-metric top-metric--muted">UV {{ item.uv }}</span>
-              </span>
-            </div>
+            </a>
           </li>
         </ul>
-        <p v-else class="empty-hint">暂无文章流量</p>
+        <p v-else class="empty-hint">暂无热门页面</p>
       </section>
 
-      <section class="traffic-section" aria-labelledby="page-top-heading">
-        <h3 id="page-top-heading" class="section-title">页面 Top 10</h3>
+      <section class="traffic-section" aria-labelledby="os-heading">
+        <h3 id="os-heading" class="section-title">操作系统</h3>
         <ul
-          v-if="pageTopData && pageTopData.length > 0"
-          class="top-list"
-          aria-label="页面流量排行"
+          v-if="!isBreakdownEmpty(osData)"
+          class="breakdown-list"
+          aria-label="操作系统分布"
         >
-          <li v-for="(item, index) in pageTopData" :key="item.contentId">
-            <RouterLink
-              v-if="getPublicLink(item)"
-              :to="getPublicLink(item)!"
-              class="top-row"
-            >
-              <span class="top-rank">{{ index + 1 }}</span>
-              <span class="top-title">{{ item.title }}</span>
-              <span class="top-meta">
-                <span class="top-metric">PV {{ item.pv }}</span>
-                <span class="top-metric top-metric--muted">UV {{ item.uv }}</span>
-              </span>
-            </RouterLink>
-            <div v-else class="top-row">
-              <span class="top-rank">{{ index + 1 }}</span>
-              <span class="top-title">{{ item.title }}</span>
-              <span class="top-meta">
-                <span class="top-metric">PV {{ item.pv }}</span>
-                <span class="top-metric top-metric--muted">UV {{ item.uv }}</span>
-              </span>
-            </div>
+          <li
+            v-for="item in osData"
+            :key="`os-${item.name}`"
+            class="breakdown-row"
+          >
+            <span class="breakdown-name">{{ item.name }}</span>
+            <span class="breakdown-value">{{ item.value }}</span>
           </li>
         </ul>
-        <p v-else class="empty-hint">暂无页面流量</p>
+        <p v-else class="empty-hint">暂无数据</p>
+      </section>
+
+      <section class="traffic-section" aria-labelledby="device-heading">
+        <h3 id="device-heading" class="section-title">设备</h3>
+        <ul
+          v-if="!isBreakdownEmpty(deviceData)"
+          class="breakdown-list"
+          aria-label="设备分布"
+        >
+          <li
+            v-for="item in deviceData"
+            :key="`device-${item.name}`"
+            class="breakdown-row"
+          >
+            <span class="breakdown-name">{{ item.name }}</span>
+            <span class="breakdown-value">{{ item.value }}</span>
+          </li>
+        </ul>
+        <p v-else class="empty-hint">暂无数据</p>
+      </section>
+
+      <section class="traffic-section" aria-labelledby="country-heading">
+        <h3 id="country-heading" class="section-title">地理位置</h3>
+        <ul
+          v-if="!isBreakdownEmpty(countryData)"
+          class="breakdown-list"
+          aria-label="国家 / 地区分布"
+        >
+          <li
+            v-for="item in countryData"
+            :key="`country-${item.name}`"
+            class="breakdown-row"
+          >
+            <span class="breakdown-name">{{ item.name }}</span>
+            <span class="breakdown-value">{{ item.value }}</span>
+          </li>
+        </ul>
+        <p v-else class="empty-hint">暂无数据（需在 Umami 侧配置 Geo）</p>
       </section>
     </div>
   </div>
@@ -296,11 +375,11 @@ function getPublicLink(item: IAnalyticsTopItemDto): { name: string; params: { sl
   stroke-linejoin: round;
 }
 
-.trend-line--pv {
+.trend-line--views {
   stroke: var(--color-apple-blue, #0071e3);
 }
 
-.trend-line--uv {
+.trend-line--visitors {
   stroke: var(--color-carbon, #1d1d1f);
   stroke-dasharray: 4 4;
   opacity: 0.55;
@@ -328,22 +407,24 @@ function getPublicLink(item: IAnalyticsTopItemDto): { name: string; params: { sl
   border-radius: 1px;
 }
 
-.legend-swatch--pv {
+.legend-swatch--views {
   background: var(--color-apple-blue, #0071e3);
 }
 
-.legend-swatch--uv {
+.legend-swatch--visitors {
   background: var(--color-carbon, #1d1d1f);
   opacity: 0.55;
 }
 
-.top-list {
+.top-list,
+.breakdown-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.top-row {
+.top-row,
+.breakdown-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -372,7 +453,8 @@ a.top-row:focus-visible {
   color: var(--muted-foreground);
 }
 
-.top-title {
+.top-title,
+.breakdown-name {
   flex: 1;
   min-width: 0;
   font-size: 0.9375rem;
@@ -389,14 +471,11 @@ a.top-row:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.top-metric {
+.top-metric,
+.breakdown-value {
   font-size: 0.8125rem;
   font-weight: 600;
-}
-
-.top-metric--muted {
-  font-weight: 400;
-  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {

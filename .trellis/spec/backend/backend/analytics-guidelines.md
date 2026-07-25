@@ -1,135 +1,127 @@
 # Analytics Guidelines
 
-> Site/content PV·UV reporting and admin queries for `@applog/backend`.
+> Umami-backed traffic reporting and admin queries for `@applog/backend`.
 
 ---
 
 ## Overview
 
 Module: `packages/backend/src/module/analytics/`.  
-Entities: `AnalyticsDailyStatEntity`, `AnalyticsDailyVisitorEntity`, `AnalyticsViewHitEntity` under `src/entities/`.
+Legacy entities (`AnalyticsDailyStatEntity`, `AnalyticsDailyVisitorEntity`, `AnalyticsViewHitEntity`) remain registered for schema compatibility but are **no longer written or queried**. Dashboard traffic comes from a self-hosted **Umami** instance via `UmamiClient`.
 
-**Separation from `viewCount`**: lifetime `Post`/`Page.viewCount` still increments on public detail GET. Dashboard PV/UV uses this Analytics module (independent report + daily aggregates). Do **not** treat the two metrics as equal.
+**Separation from `viewCount`**: lifetime `Post`/`Page.viewCount` still increments on public detail GET. Dashboard Views/Visitors use Umami (independent). Do **not** treat the two metrics as equal.
 
 ---
 
-## Scenario: Content view report + admin traffic queries
+## Scenario: Umami tracker + admin proxy queries
 
 ### 1. Scope / Trigger
 
-- Trigger: new cross-layer analytics API + three MySQL tables (TypeORM `synchronize: true`).
-- Affects: public detail pages (report), admin Dashboard (summary / trend / top).
+- Trigger: admin-configurable Umami对接 + public tracker bootstrap + admin Dashboard APIs.
+- Affects: public SPA (tracker script), admin System Settings, admin Dashboard summary/trend/top/breakdown.
+- Config source: `SYSTEM_UMAMI_CONFIG` in DB（`IUmamiConfig` in `@applog/common`）— **not** `VITE_` / `.env`.
 
 ### 2. Signatures
 
 | Method | Path | Auth |
 |--------|------|------|
-| `POST` | `/analytics/view` | Public (optional JWT) |
+| `GET` | `/analytics/tracker-config` | Public |
+| `GET` | `/analytics/umami-config` | `@AuthRoles('admin')` |
+| `PUT` | `/analytics/umami-config` | `@AuthRoles('admin')` |
 | `GET` | `/analytics/summary` | `@AuthRoles('admin')` |
 | `GET` | `/analytics/trend` | `@AuthRoles('admin')` |
 | `GET` | `/analytics/top` | `@AuthRoles('admin')` |
+| `GET` | `/analytics/breakdown` | `@AuthRoles('admin')` |
 
 Controller: `version: [VERSION_NEUTRAL, '1']`.
 
-**Tables**
-
-| Table | Unique key | Role |
-|-------|------------|------|
-| `analytics_daily_stat` | `(date, scope, scopeId)` | Daily PV/UV aggregates |
-| `analytics_daily_visitor` | `(date, scope, scopeId, visitorId)` | Daily UV dedupe |
-| `analytics_view_hit` | `(visitorId, contentType, contentId)` | 30-minute PV debounce |
-
-- `date`: `YYYY-MM-DD` in **`Asia/Shanghai`**
-- `scope`: `site` \| `post` \| `page`; site uses `scopeId = 0`
+**Removed**: `POST /analytics/view`（旧自建上报）.
 
 ### 3. Contracts
 
-**`POST /analytics/view` body**
+**`GET /analytics/tracker-config` → `data`**
 
-| Field | Type | Constraints |
-|-------|------|-------------|
-| `visitorId` | string | UUID v4 |
-| `contentType` | `'post' \| 'page'` | enum |
-| `contentId` | number | int ≥ 1 |
+```ts
+{ enabled: boolean; scriptUrl: string; websiteId: string } // 无凭证
+```
 
-Response `data`: `{}` (always success envelope for valid DTO; business no-ops still return `{}`).
+未配齐或 `enabled === false` → `{ enabled: false, scriptUrl: '', websiteId: '' }`.
+
+**`GET/PUT /analytics/umami-config`**
+
+- Body/response: `IUmamiConfig`（`baseUrl`, `websiteId`, `scriptUrl?`, `username`, `password`, `enabled?`）
+- Read: password 脱敏为 `********`（`UMAMI_PASSWORD_MASK`）
+- Write: 空密码或占位 = 不修改已存密码
+- 通用 `GET /config/:key` 对 `SYSTEM_UMAMI_CONFIG`：**非 admin 拒绝**；admin 读回亦脱敏
 
 **`GET /analytics/summary` → `data`**
 
 ```ts
-{ todayPv, todayUv, last7DaysPv, last7DaysUv } // numbers
+{ todayViews, todayVisitors, last7DaysViews, last7DaysVisitors }
 ```
 
 **`GET /analytics/trend?days=30` → `data`**
 
 ```ts
-Array<{ date: string; pv: number; uv: number }> // ascending, missing days filled with 0
+Array<{ date: string; views: number; visitors: number }> // Asia/Shanghai，缺日补 0
 ```
 
-**`GET /analytics/top?type=post|page&days=30&limit=10` → `data`**
+**`GET /analytics/top?days=30&limit=10` → `data`**
 
 ```ts
-Array<{ contentType; contentId; title; slug; pv; uv }>
+Array<{ path: string; title: string; views: number; href: string }>
 ```
 
-Sorted by sum(pv) desc over the window. Missing titles → `已删除内容 #<id>`.
+Path 标题映射：`/archives/{slug}.html` → post；`/{slug}.html` → page；否则 `title = path`。
 
-**Env**: none beyond existing MySQL. Schema via `synchronize: true` — no manual migration for greenfield tables.
+**`GET /analytics/breakdown?dimension=os|device|country&days=30&limit=10` → `data`**
+
+```ts
+Array<{ name: string; value: number }> // value = Umami metrics.y（visitors）
+```
 
 ### 4. Validation & Error Matrix
 
 | Condition | Behavior |
 |-----------|----------|
-| Invalid DTO (`visitorId` / type / id) | ValidationPipe → business validation error |
-| Content missing or not `published` | **no-op** `{}` (do not leak existence) |
-| JWT present and `user.id === authorId` | **no-op** `{}` (author self-view excluded) |
-| Same visitor+content within 30 min | **no-op** `{}` (debounce via `analytics_view_hit`) |
-| First hit of day for visitor+scope | insert visitor row → `uv += 1` on that scope |
-| Valid counted hit | atomic upsert: `pv = pv + 1`, `uv = uv + delta` on **site** and **content** scopes |
-| Non-admin calls summary/trend/top | Auth guard rejection |
-| Unexpected DB/runtime error on report | `BusinessException('上报浏览失败，请稍后重试')` |
+| Umami 未配置 / 凭证不齐 | `BusinessException('流量服务未配置…')` |
+| Umami 登录/401 | `BusinessException` 鉴权失败（不泄露密码） |
+| Umami 超时 / 非 2xx | `BusinessException('流量服务暂时不可用…')` |
+| 非 admin 调 summary/trend/top/breakdown/umami-config | Auth guard 拒绝 |
+| 非 admin 经 `getConfig(SYSTEM_UMAMI_CONFIG)` | `BusinessException('Umami 配置仅允许管理员访问')` |
+| 经通用 `setConfig` 写 `SYSTEM_UMAMI_CONFIG` | `BusinessException`：须走 `/analytics/umami-config`（防脱敏占位覆盖明文） |
 
 ### 5. Good / Base / Bad Cases
 
-- **Good**: Anonymous visitor opens published post → site + post daily `pv` (+ `uv` if first that day).
-- **Base**: Same visitor refreshes same post within 30 min → no PV/UV change.
-- **Bad**: Increment Analytics inside Post/Page `findOne`; or `find` → `pv++` → `save` without atomic upsert (race under concurrency).
+- **Good**: 管理端保存齐备配置 → 非 admin 公开页注入 script → admin Dashboard 看到 Views/Visitors。
+- **Base**: admin 登录浏览 → 不注入 tracker（并可写 `umami.disabled`）。
+- **Bad**: 在 Post/Page `findOne` 里调 Umami；或把 username/password 放进 `tracker-config` / `VITE_`。
 
 ### 6. Tests Required
 
 | Layer | Assertion points |
 |-------|------------------|
-| Unit/service | Shanghai date key; debounce window; author exclusion; unpublished no-op |
-| Integration | Concurrent reports do not lose PV (upsert); UV only +1 once per visitor/day/scope |
-| Manual smoke | Admin Dashboard summary moves; non-admin sees no traffic UI |
+| Unit | Shanghai windows；密码脱敏 / 空密码保留；path→title 映射 |
+| Integration | Token 401 刷新重试；未配置错误文案 |
+| Manual smoke | 非 admin 有采集；admin 无 script；非 admin 读不到密码；viewCount 仍增 |
 
 ### 7. Wrong vs Correct
 
 #### Wrong
 
 ```typescript
-// Couples lifetime viewCount to dashboard analytics
-entity.viewCount += 1;
-await repo.save(entity);
-await analytics.bumpFromDetail(entity); // do not piggyback GET
+// 把凭证塞进公开引导
+return { enabled: true, scriptUrl, websiteId, username, password };
 
-// Non-atomic aggregate update
-const row = await repo.findOne(...);
-row.pv += 1;
-await repo.save(row);
+// 继续写自建日聚合
+await dailyStatRepo.save(...);
 ```
 
 #### Correct
 
 ```typescript
-// Detail GET: only viewCount (unchanged rules)
-if (entity.status === 'published' && !allowUnpublished) {
-  entity.viewCount += 1;
-  await repo.save(entity);
-}
-
-// Separate public POST /analytics/view → transaction:
-// hit debounce → daily visitor orIgnore → atomic ON DUPLICATE KEY UPDATE for stats
+return toUmamiTrackerConfig(raw); // 仅 enabled/scriptUrl/websiteId
+// admin 查询 → UmamiClient.getStats / getPageviews / getMetrics
 ```
 
 ---
@@ -138,32 +130,33 @@ if (entity.status === 'published' && !allowUnpublished) {
 
 | Decision | Choice | Why |
 |----------|--------|-----|
-| Collection | Dedicated `POST /analytics/view` | Decouple from GET; carry `visitorId`; exclude author cleanly |
-| Storage | Daily aggregates + visitor dedupe + hit table | Personal blog volume; no full event log in MVP |
-| Timezone | Fixed `Asia/Shanghai` | Stable “today” for CN audience |
-| Bots / rate limit | Trust JS client path; no UA blacklist / IP limit in MVP | Crawlers without JS rarely hit POST |
-| Self traffic | Logged-in author of that content excluded entirely | Editing/proofreading would pollute daily stats |
+| Collection | Browser → Umami tracker | 不自建事件管道 |
+| Config | 管理端 SYSTEM_UMAMI_CONFIG | 无需重建前端；凭证不进构建产物 |
+| Query | Backend proxy + Bearer login | 前端不持有密码 |
+| Timezone | Fixed `Asia/Shanghai` | 与旧「今日」口径一致 |
+| Legacy tables | Soft-disable（不硬删） | 可回滚；另开清理任务 |
 
 ---
 
 ## Common Mistakes
 
-**Symptom**: Dashboard PV stays 0 while public “N 次浏览” grows.
+**Symptom**: Dashboard 显示未配置，但 tracker 已加载。
 
-**Cause**: Only `viewCount` path runs; frontend never calls `/analytics/view`, or author is always logged in while testing.
+**Cause**: Tracker 只需要 websiteId+scriptUrl；查询还需要 username/password。
 
-**Prevention**: Smoke with anonymous browser / cleared auth; confirm `applog_vid` in `localStorage` and Network POST.
+**Prevention**: 空态文案区分；系统设置一次填齐。
 
-**Symptom**: UV never increases on second content same day.
+**Symptom**: admin 测试时 UV 不涨。
 
-**Cause**: Misreading site UV vs content UV; or `orIgnore` success detection wrong (`affectedRows` / `identifiers`).
+**Cause**: admin 故意不加载 tracker。
 
-**Prevention**: Assert site and content scopes separately; prefer MySQL `affectedRows` then `identifiers` fallback.
+**Prevention**: 用匿名/无痕窗口验证采集。
 
 ---
 
 ## Related
 
 - Lifetime detail counts: [Database Guidelines — viewCount](./database-guidelines.md)
-- Frontend report + Dashboard UI: `frontend/frontend/hook-guidelines.md`, `frontend/frontend/component-guidelines.md`
-- Task artifacts: `.trellis/tasks/archive/**/07-21-pv-uv-analytics/` (after archive)
+- Frontend tracker + Dashboard: `frontend/frontend/hook-guidelines.md`, `frontend/frontend/component-guidelines.md`
+- Config contract: `common/shared/package-boundaries.md`
+- Task: `.trellis/tasks/07-25-umami-analytics-integration/`
