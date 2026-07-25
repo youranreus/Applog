@@ -20,7 +20,7 @@ Prefer low domain coupling. Current set:
 | `useJsonLd.ts` | JSON-LD structured data |
 | `useImagePreview.ts` | Click-to-preview images in a container |
 | `usePageDetail.ts` | Fetch page by slug + SEO (slightly domain-specific but shared by page routes) |
-| `analytics/useAnalyticsViewReport.ts` | After published detail load, silent `POST /analytics/view` (shared by post + page) |
+| `analytics/useUmamiTracker.ts` | After auth init, fetch public tracker-config and inject Umami script for non-admin |
 
 Reference directory: `packages/frontend/src/hooks/`.
 
@@ -43,13 +43,14 @@ Live next to the feature:
 
 Pattern: `.vue` files call the hook; hook owns `useRequest`/`useWatcher`, derived state, and submit handlers.
 
-### Analytics view report
+### Analytics / Umami
 
-- Visitor id: `utils/visitor-id.ts` → `localStorage` key `applog_vid` (UUID).
-- Call `useAnalyticsViewReport(contentRef, 'post' | 'page')` from detail hooks after data is available.
-- Failures are silent; clear in-memory “already reported” marker on failure so a later retry can fire.
-- Do not block reading UX on analytics network errors.
-- API modules: `src/api/analytics/*` (alova). Admin queries require admin JWT.
+- Public bootstrap: `GET /analytics/tracker-config` → `{ enabled, scriptUrl, websiteId }` (no credentials).
+- Call `setupUmamiTracker(authInitPromise)` from `main.ts` after auth init.
+- **Admin** must not load tracker (skip inject + optional `umami.disabled`).
+- Do not use `VITE_UMAMI_*`; config is admin-managed in System Settings.
+- Old `useAnalyticsViewReport` / `applog_vid` / `POST /analytics/view` are removed.
+- Admin Dashboard APIs: `src/api/analytics/*` (alova); require admin JWT.
 
 ---
 

@@ -86,7 +86,7 @@ status === 'published' && !canViewUnpublished(user, includeUnpublished)
 
 Keep Post and Page `viewCount` conditions identical.
 
-Dashboard **PV/UV** is a separate product surface: public `POST /analytics/view` + daily aggregate tables. Do **not** replace or drive Analytics from the detail GET `viewCount++` path, and do not assume the two counters match (debounce, author exclusion, and start-from-now differ). See [Analytics Guidelines](./analytics-guidelines.md).
+Dashboard **Views/Visitors** is a separate product surface: Umami tracker + backend proxy (`GET /analytics/*`). Do **not** replace or drive Analytics from the detail GET `viewCount++` path, and do not assume the two counters match. See [Analytics Guidelines](./analytics-guidelines.md).
 
 #### Wrong vs Correct
 

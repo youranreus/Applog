@@ -14,9 +14,9 @@ Common is a **cross-layer contract** package, not a dumping ground for duplicate
 
 | Kind | Current examples |
 |------|------------------|
-| Shared value shapes | `ISystemBaseConfig` (`src/types/system-config.ts`) |
-| Shared key constants | `SYSTEM_CONFIG_KEYS`, `SYSTEM_CONFIG_PREFIX_DEFAULT` |
-| Pure key helpers | `getSystemConfigKey`, `isSystemConfigKey`, `isSystemConfigKeySuffix` |
+| Shared value shapes | `ISystemBaseConfig`, `IUmamiConfig`, `IUmamiTrackerConfig` (`src/types/system-config.ts`) |
+| Shared key constants | `SYSTEM_CONFIG_KEYS`, `SYSTEM_CONFIG_PREFIX_DEFAULT`, `UMAMI_PASSWORD_MASK` |
+| Pure key / Umami helpers | `getSystemConfigKey`, `isSystemConfigKey`, `toUmamiTrackerConfig`, `maskUmamiConfigPassword`, … |
 
 Criteria (all should be true):
 1. Frontend **and** backend need the same definition, or will soon.
@@ -40,7 +40,9 @@ Criteria (all should be true):
 
 ---
 
-## Current Shared Contract (system config)
+## Current Shared Contracts
+
+### System base config
 
 - DB/config key example: `SYSTEM_BASE_CONFIG` = prefix + `SYSTEM_CONFIG_KEYS.BASE_CONFIG`
 - Stored value JSON matches `ISystemBaseConfig`:
@@ -50,13 +52,23 @@ Criteria (all should be true):
 - Backend currently concatenates `${prefix}${SYSTEM_CONFIG_KEYS.BASE_CONFIG}` (semantically equivalent; prefer reusing the helper when touching that code)
 - Old configs missing optional fields are treated as unconfigured (`|| ''` / omit display)
 
+### Umami config
+
+- Key: `SYSTEM_UMAMI_CONFIG` = prefix + `SYSTEM_CONFIG_KEYS.UMAMI_CONFIG`
+- Shape: `IUmamiConfig`（`baseUrl`, `websiteId`, `scriptUrl?`, `username`, `password`, `enabled?`）
+- **权限例外**：完整配置（含凭证）仅 admin；通用 `getConfig` 对非 admin 拒绝；读回密码脱敏 `UMAMI_PASSWORD_MASK`；通用 `setConfig` **禁止**写入该 key（须走 `/analytics/umami-config`）
+- 公开引导：`IUmamiTrackerConfig` via `GET /analytics/tracker-config`（无凭证）
+- Helpers: `toUmamiTrackerConfig`, `maskUmamiConfigPassword`, `isUmamiQueryConfigured`, …
+
 References:
 - `packages/common/src/types/system-config.ts`
 - `packages/common/src/constants/system-config.ts`
 - `packages/common/src/utils/system-config.ts`
+- `packages/common/src/utils/umami-config.ts`
 - `packages/backend/src/module/system-config/system-config.service.ts`
 - `packages/frontend/src/stores/useSystemStore/index.ts`
 - `packages/frontend/src/api/system-config/getConfig.ts`
+- `packages/frontend/src/api/analytics/umamiConfig.ts`
 
 ---
 
