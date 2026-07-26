@@ -15,12 +15,12 @@
   "branch": null,
   "base_branch": "master",
   "worktree_path": null,
-  "commit": null,
+  "commit": "7174e52",
   "pr_url": null,
   "subtasks": [],
   "children": [],
   "parent": null,
   "relatedFiles": [],
-  "notes": "",
+  "notes": "功能提交 6bec37f；文档坐标滚动修复 7174e52。",
   "meta": {}
 }
