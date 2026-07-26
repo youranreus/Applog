@@ -8,16 +8,16 @@ import { RouterLink } from 'vue-router';
 import type { ILandingSocialLink } from '../types';
 
 defineProps<{
-  siteTitle: string;
-  bio: string | null;
+  title: string;
+  subtitle: string | null;
   socialLinks: ILandingSocialLink[];
 }>();
 </script>
 
 <template>
   <section class="landing-profile" aria-labelledby="landing-profile-title">
-    <p v-if="bio" class="landing-profile__label">{{ siteTitle }}</p>
-    <h1 id="landing-profile-title">{{ bio || siteTitle }}</h1>
+    <h1 id="landing-profile-title">{{ title }}</h1>
+    <p v-if="subtitle" class="landing-profile__subtitle">{{ subtitle }}</p>
 
     <nav
       v-if="socialLinks.length > 0"
@@ -55,25 +55,28 @@ defineProps<{
   padding-top: clamp(2.25rem, 6vw, 3.75rem);
 }
 
-.landing-profile__label {
-  color: var(--landing-muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.45;
-  letter-spacing: -0.016em;
-}
-
 .landing-profile h1 {
   max-width: 25ch;
-  margin-top: 0.75rem;
   color: var(--landing-text);
   font-family: var(--landing-font-heading);
   font-size: clamp(1.75rem, 1.5rem + 1.1vw, 2.5rem);
   font-weight: 600;
   line-height: 1.17;
-  letter-spacing: -0.02em;
+  letter-spacing: clamp(0.01225rem, calc(0.0072rem + 0.0224vw), 0.0275rem);
   overflow-wrap: anywhere;
   text-wrap: balance;
+}
+
+.landing-profile__subtitle {
+  max-width: 42ch;
+  margin-top: 0.75rem;
+  color: var(--landing-muted);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: -0.016em;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
 .landing-profile__socials {

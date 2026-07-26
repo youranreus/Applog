@@ -325,6 +325,7 @@ export class SystemConfigService {
         allowComment: true,
         siteFoundedDate: '',
         icpFilingNumber: '',
+        landingTitle: '',
         landingBio: '',
         landingSlogan: '',
         weatherCity: '',

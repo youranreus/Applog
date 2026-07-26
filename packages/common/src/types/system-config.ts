@@ -21,13 +21,18 @@ export interface ISystemBaseConfig {
    */
   icpFilingNumber?: string;
   /**
-   * 个人首页一句话简介
-   * 空字符串或未设置时，Landing 不展示简介
+   * 个人首页标题
+   * 空字符串或未设置时，Landing 使用系统标题
+   */
+  landingTitle?: string;
+  /**
+   * 个人首页副标题
+   * 空字符串时隐藏；未设置时沿用兼容默认文案
    */
   landingBio?: string;
   /**
    * 个人首页底部 Slogan
-   * 空字符串或未设置时，Landing 不展示 Slogan
+   * 空字符串时隐藏；未设置时沿用兼容默认文案
    */
   landingSlogan?: string;
   /**
@@ -42,7 +47,7 @@ export interface ISystemBaseConfig {
   personalHomepageUrl?: string;
   /** Bilibili 主页链接；空字符串或未设置时隐藏 */
   bilibiliUrl?: string;
-  /** GitHub 主页链接；空字符串或未设置时隐藏 */
+  /** GitHub 主页链接；空字符串时隐藏，未设置时沿用兼容默认链接 */
   githubUrl?: string;
 }
 

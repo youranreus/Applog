@@ -195,6 +195,26 @@ Reference: `packages/frontend/src/pages/user/PostList/`, `packages/frontend/src/
 
 ## Site settings + Footer meta
 
+### Convention: Shared public content width
+
+**What**: Public reading surfaces that must align with Footer use `common-page-container`. When their text should reach the same horizontal edges as Footer, add `common-page-container--flush` instead of restating max-width and breakpoint padding in page-local CSS.
+
+**Why**: `common-page-container` changes from 654px to 898px across tablet and large-desktop breakpoints. A page-local fixed max-width may match one viewport while drifting from Footer at the others.
+
+**Example**:
+
+```vue
+<main>
+  <div class="common-page-container common-page-container--flush page-shell">
+    <!-- public content -->
+  </div>
+</main>
+```
+
+Page-local CSS may override vertical padding only. The shared modifier owns horizontal padding, including the 24px mobile gutter.
+
+**Related**: `packages/frontend/src/assets/container.css`, `components/Layout/Footer.vue`, `pages/Landing/index.vue`.
+
 ### Convention: Date fields use shadcn Calendar + Popover
 
 **What**: Admin date inputs (e.g. 建站日期) use `Popover` + `Calendar` + trigger `Button`, not native `<input type="date">`. Persist as `YYYY-MM-DD` string on `ISystemBaseConfig`; clear sets `''`.

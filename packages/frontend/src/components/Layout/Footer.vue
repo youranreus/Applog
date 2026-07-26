@@ -59,7 +59,7 @@ onUnmounted(() => {
 
 <template>
   <footer class="bg-[#f5f5f7]">
-    <div class="common-page-container footer-container flex flex-col justify-center gap-y-4">
+    <div class="common-page-container common-page-container--flush footer-container flex flex-col justify-center gap-y-4">
       <!-- 上行：备案 / 运行时间（仅配置后展示） -->
       <div
         v-if="showMetaRow"
@@ -70,7 +70,7 @@ onUnmounted(() => {
           :href="ICP_FILING_URL"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-xs text-gray-500! hover:underline"
+          class="text-xs text-[#707070]! hover:underline"
         >
           {{ icpFilingNumber }}
         </a>
@@ -81,7 +81,7 @@ onUnmounted(() => {
         >
           ·
         </span>
-        <p v-if="uptimeText" class="text-xs text-gray-500">
+        <p v-if="uptimeText" class="text-xs text-[#707070]">
           {{ uptimeText }}
         </p>
       </div>
@@ -122,7 +122,7 @@ onUnmounted(() => {
           <p class="text-xs text-gray-600 sm:order-1">
             Copyright © {{ currentYear }} {{ systemStore.config?.title || 'AppLog' }}.
           </p>
-          <p v-if="buildInfo" class="text-xs text-gray-400 sm:ml-auto sm:order-3">
+          <p v-if="buildInfo" class="text-xs text-[#707070] sm:ml-auto sm:order-3">
             {{ buildInfo }}
           </p>
         </div>
@@ -136,14 +136,5 @@ onUnmounted(() => {
   /* 覆盖 common-page-container 的 padding-top: 2rem；仅保留页脚自身上下边距 */
   padding-top: 1rem;
   padding-bottom: 1rem;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-@media screen and (max-width: 768px) {
-  .footer-container {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
 }
 </style>

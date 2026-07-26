@@ -48,7 +48,7 @@ Criteria (all should be true):
 - Stored value JSON matches `ISystemBaseConfig`:
   - Required: `title`, `description`, `allowUserLogin`, `allowComment`
   - Optional site meta: `siteFoundedDate?` (`YYYY-MM-DD` or `''`), `icpFilingNumber?` (display string or `''`)
-  - Optional Landing meta: `landingBio?`, `landingSlogan?`, `weatherCity?`, `personalHomepageUrl?`, `bilibiliUrl?`, `githubUrl?`
+  - Optional Landing meta: `landingTitle?`, `landingBio?`, `landingSlogan?`, `weatherCity?`, `personalHomepageUrl?`, `bilibiliUrl?`, `githubUrl?`
 - Frontend prefers `getSystemConfigKey(...)` when calling config APIs
 - Backend currently concatenates `${prefix}${SYSTEM_CONFIG_KEYS.BASE_CONFIG}` (semantically equivalent; prefer reusing the helper when touching that code)
 - Old configs missing optional fields follow each field's contract below; do not collapse missing and explicit empty with `||`
@@ -90,7 +90,8 @@ References:
 |-------|------|-------------|
 | `siteFoundedDate` | `string?` | ISO date `YYYY-MM-DD` or `''`; empty / missing = Footer hides uptime |
 | `icpFilingNumber` | `string?` | Free text or `''`; empty / missing = Footer hides ICP link |
-| `landingBio` | `string?` | Missing = legacy default copy; trimmed empty = hide |
+| `landingTitle` | `string?` | Missing/empty = system title; otherwise Landing H1 |
+| `landingBio` | `string?` | Landing subtitle; missing = legacy default copy; trimmed empty = hide |
 | `landingSlogan` | `string?` | Missing = legacy default copy; trimmed empty = hide |
 | `weatherCity` | `string?` | Missing/non-string/empty = weather disabled; backend trims before provider lookup |
 | `personalHomepageUrl` | `string?` | Missing = `/about.html`; empty = hide; allow `/...` or HTTP(S) |

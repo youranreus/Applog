@@ -28,7 +28,10 @@ const siteTitle = computed(() => {
 const siteDescription = computed(() => {
   return systemStore.config?.description?.trim() || LANDING_DEFAULTS.bio;
 });
-const bio = computed(() => {
+const profileTitle = computed(() => {
+  return systemStore.config?.landingTitle?.trim() || siteTitle.value;
+});
+const profileSubtitle = computed(() => {
   return resolveLandingText(systemStore.config?.landingBio, LANDING_DEFAULTS.bio);
 });
 const slogan = computed(() => {
@@ -68,15 +71,15 @@ useWebSiteJsonLd({
 
 <template>
   <main class="landing-page">
-    <div class="landing-shell">
+    <div class="common-page-container common-page-container--flush landing-shell">
       <LandingMeta
         :weather="weather"
         :online-visitors="onlineVisitors"
         :uptime-text="uptimeText"
       />
       <LandingProfile
-        :site-title="siteTitle"
-        :bio="bio"
+        :title="profileTitle"
+        :subtitle="profileSubtitle"
         :social-links="socialLinks"
       />
       <LandingRecentPosts
@@ -109,14 +112,7 @@ useWebSiteJsonLd({
 }
 
 .landing-shell {
-  width: min(calc(100% - 2.5rem), 45rem);
-  margin-inline: auto;
-  padding-block: clamp(3.5rem, 9vw, 6.5rem) clamp(5rem, 12vw, 8rem);
-}
-
-@media (max-width: 23rem) {
-  .landing-shell {
-    width: min(calc(100% - 2rem), 45rem);
-  }
+  padding-top: clamp(3.5rem, 9vw, 6.5rem);
+  padding-bottom: clamp(5rem, 12vw, 8rem);
 }
 </style>

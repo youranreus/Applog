@@ -82,10 +82,10 @@ function handleCoverError(postId: number): void {
 .landing-posts__header h2 {
   color: var(--landing-text);
   font-family: var(--landing-font-heading);
-  font-size: 1.3125rem;
+  font-size: 1.75rem;
   font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.005em;
+  line-height: 1.18;
+  letter-spacing: 0.007em;
 }
 
 .landing-posts__header a {
@@ -104,6 +104,7 @@ function handleCoverError(postId: number): void {
 }
 
 .landing-posts__state {
+  max-width: 70ch;
   margin-top: 1rem;
   padding: 1.5rem;
   border-radius: 8px;
@@ -156,13 +157,14 @@ function handleCoverError(postId: number): void {
   font-size: clamp(1.125rem, 1.03rem + 0.35vw, 1.3125rem);
   font-weight: 600;
   line-height: 1.35;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.005em;
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
 
 .landing-post-card p {
   display: -webkit-box;
+  max-width: 70ch;
   margin-top: 0.75rem;
   overflow: hidden;
   color: var(--landing-muted);

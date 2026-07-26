@@ -7,6 +7,12 @@
   padding-top: 2rem;
 }
 
+/* 前台需要与页脚文字边缘对齐的无内缩容器 */
+.common-page-container--flush {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 /**
  * 管理端内容页容器
  * 与顶导对齐：max-w-7xl + px-4 sm:px-6 lg:px-8
@@ -37,6 +43,11 @@
 /* 移动端稍宽 padding（仅前台 common-page-container） */
 @media (max-width: 767px) {
   .common-page-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .common-page-container--flush {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }

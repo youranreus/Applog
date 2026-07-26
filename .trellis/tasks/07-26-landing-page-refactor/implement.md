@@ -44,3 +44,10 @@ git diff --check
 - [x] 390px、768px、1440px 浏览器验收通过；完整态与失败/空配置态均无横向溢出。
 - [x] Trellis 与 Standards/Spec 双轴代码审查完成，复核后阻塞项为 0。
 - [x] Conventional Commit 已创建。
+
+## Follow-up — 容器与标题层级
+
+- [x] Landing 与 Footer 复用相同容器宽度及水平 padding。
+- [x] 管理后台支持个人首页标题与副标题；旧 `landingBio` 无迁移兼容。
+- [x] scoped lint、类型检查、构建与响应式浏览器验收通过。
+- [x] Follow-up Conventional Commit 已创建。

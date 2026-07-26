@@ -7,6 +7,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 
+const landingTitle = defineModel<string>('landingTitle', { default: '' });
 const landingBio = defineModel<string>('landingBio', { default: '' });
 const landingSlogan = defineModel<string>('landingSlogan', { default: '' });
 const weatherCity = defineModel<string>('weatherCity', { default: '' });
@@ -22,17 +23,28 @@ const githubUrl = defineModel<string>('githubUrl', { default: '' });
     <div>
       <h3 class="text-sm font-semibold text-foreground">个人首页</h3>
       <p class="mt-1 text-xs text-muted-foreground">
-        配置窄栏首页的个人介绍、天气城市与社交入口；留空的内容不会展示
+        配置窄栏首页的标题、副标题、天气城市与社交入口
       </p>
     </div>
 
     <Field>
-      <FieldLabel>一句话简介</FieldLabel>
+      <FieldLabel>标题</FieldLabel>
+      <Input
+        v-model="landingTitle"
+        type="text"
+        maxlength="80"
+        placeholder="留空时使用站点标题"
+      />
+      <FieldDescription>个人首页的主标题</FieldDescription>
+    </Field>
+
+    <Field>
+      <FieldLabel>副标题</FieldLabel>
       <Input
         v-model="landingBio"
         type="text"
         maxlength="160"
-        placeholder="简单介绍你和这个站点"
+        placeholder="简单介绍你和这个站点；留空后隐藏"
       />
       <FieldDescription>建议控制在 40–80 个汉字</FieldDescription>
     </Field>

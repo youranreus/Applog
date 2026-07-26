@@ -128,6 +128,7 @@ const formData = ref<ISystemBaseConfig>({
   allowComment: true,
   siteFoundedDate: '',
   icpFilingNumber: '',
+  landingTitle: '',
   landingBio: '',
   landingSlogan: '',
   weatherCity: '',
@@ -281,12 +282,13 @@ function initializeFormData(): void {
       allowComment: config.allowComment ?? true,
       siteFoundedDate: config.siteFoundedDate || '',
       icpFilingNumber: config.icpFilingNumber || '',
-      landingBio: config.landingBio || '',
-      landingSlogan: config.landingSlogan || '',
+      landingTitle: config.landingTitle || '',
+      landingBio: config.landingBio,
+      landingSlogan: config.landingSlogan,
       weatherCity: config.weatherCity || '',
       personalHomepageUrl: config.personalHomepageUrl ?? '/about.html',
       bilibiliUrl: config.bilibiliUrl || '',
-      githubUrl: config.githubUrl || '',
+      githubUrl: config.githubUrl,
     };
   } else {
     formData.value = {
@@ -296,6 +298,7 @@ function initializeFormData(): void {
       allowComment: true,
       siteFoundedDate: '',
       icpFilingNumber: '',
+      landingTitle: '',
       landingBio: '',
       landingSlogan: '',
       weatherCity: '',
@@ -642,6 +645,7 @@ async function handleSaveUmami(): Promise<void> {
       </FieldGroup>
 
       <LandingSettingsFields
+        v-model:landing-title="formData.landingTitle"
         v-model:landing-bio="formData.landingBio"
         v-model:landing-slogan="formData.landingSlogan"
         v-model:weather-city="formData.weatherCity"

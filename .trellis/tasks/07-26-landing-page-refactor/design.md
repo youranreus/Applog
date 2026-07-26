@@ -7,7 +7,7 @@ SYSTEM_BASE_CONFIG
   ├─ frontend admin SystemSettings (write)
   ├─ frontend useSystemStore (public read)
   ├─ backend WeatherService (read weatherCity)
-  └─ Landing (bio, slogan, links, founded date)
+  └─ Landing (title, subtitle, slogan, links, founded date)
 
 Umami config → UmamiClient.getActiveVisitors()
              → GET /analytics/active (public safe DTO)
@@ -23,6 +23,7 @@ weatherCity → WeatherService (Open-Meteo geocoding + current weather cache)
 扩展 `@applog/common` 的 `ISystemBaseConfig`，字段全部可选，以兼容旧 JSON：
 
 ```ts
+landingTitle?: string;
 landingBio?: string;
 landingSlogan?: string;
 weatherCity?: string;
@@ -31,7 +32,7 @@ bilibiliUrl?: string;
 githubUrl?: string;
 ```
 
-仍使用一个 `SYSTEM_BASE_CONFIG` JSON 文档，不增加新配置 key。新初始化配置与管理端表单除个人主页外默认均为空字符串；兼容旧配置时，字段缺失与显式空字符串必须区分：缺失的简介、Slogan、个人主页和 GitHub 使用改造前稳定默认值，显式空字符串隐藏；个人主页缺省回退 `/about.html`。
+仍使用一个 `SYSTEM_BASE_CONFIG` JSON 文档，不增加新配置 key。新初始化配置与管理端表单除个人主页外默认均为空字符串；`landingTitle` 缺失或为空时使用系统标题，现有 `landingBio` 作为副标题继续使用。兼容旧配置时，副标题、Slogan、个人主页和 GitHub 的字段缺失与显式空字符串必须区分：缺失使用改造前稳定默认值，显式空字符串隐藏；个人主页缺省回退 `/about.html`。
 
 ## Public Online Contract
 
@@ -72,13 +73,13 @@ GET /weather/current
 
 ## Admin Settings
 
-`SystemSettings.vue` 在“站点信息”下增加“个人首页”字段组：简介、Slogan、天气城市、三个 URL。使用现有 `Input`、`Field` 与统一保存按钮，不增加第二个配置请求或新 toast 路径。
+`SystemSettings.vue` 在“站点信息”下增加“个人首页”字段组：标题、副标题、Slogan、天气城市、三个 URL。`landingTitle` 留空时回退系统标题；现有 `landingBio` 作为副标题继续使用，旧数据无需迁移。使用现有 `Input`、`Field` 与统一保存按钮，不增加第二个配置请求或新 toast 路径。
 
 ## Visual Contract
 
-- 页面 Canvas 使用 Frost，内部窄栏最大宽度约 720px。
+- 页面 Canvas 使用 Frost；Landing 与 Footer 共用 `common-page-container` 和 flush 修饰类，在所有断点保持相同宽度与文字边缘。
 - Meta 是轻量文本行，使用间距与中点分隔，不为每个指标画边框。
-- 简介是页面主视觉，使用较大但克制的标题级排版；社交图标为 ghost link。
+- 标题是页面主视觉，副标题以 17px 舒适正文承接；社交图标为 ghost link。
 - 最近文章使用白色/极浅表面和 8px 圆角，可用轻微背景差异，尽量无边框、无阴影。
 - Slogan 留出明显上下空白，以较安静的 Ash 文本收束。
 - `ursb.me` 只贡献窄栏、直接信息与纵向节奏；颜色、字体和交互完全服从 `DESIGN.md`。
