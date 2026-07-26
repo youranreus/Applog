@@ -663,7 +663,7 @@ async function handleSaveUmami(): Promise<void> {
               关闭后，访客将无法登录（请确认你仍能管理站点）
             </FieldDescription>
           </div>
-          <Switch v-model:checked="formData.allowUserLogin" />
+          <Switch v-model="formData.allowUserLogin" />
         </Field>
 
         <Field orientation="horizontal">
@@ -673,7 +673,7 @@ async function handleSaveUmami(): Promise<void> {
               关闭后，公开内容将无法发表新评论
             </FieldDescription>
           </div>
-          <Switch v-model:checked="formData.allowComment" />
+          <Switch v-model="formData.allowComment" />
         </Field>
       </FieldGroup>
 
@@ -719,7 +719,7 @@ async function handleSaveUmami(): Promise<void> {
                 关闭后访客不再加载统计脚本；Dashboard 查询仍需凭证齐备
               </FieldDescription>
             </div>
-            <Switch v-model:checked="umamiEnabled" />
+            <Switch v-model="umamiEnabled" />
           </Field>
 
           <Field>

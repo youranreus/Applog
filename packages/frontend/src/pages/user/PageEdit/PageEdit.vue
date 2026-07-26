@@ -243,7 +243,7 @@ const formatDate = (date: Date | string): string => {
                     控制页面是否在导航栏中显示
                   </FieldDescription>
                 </div>
-                <Switch v-model:checked="formData.showInNav" />
+                <Switch v-model="formData.showInNav" />
               </Field>
 
               <Field orientation="horizontal">
@@ -253,7 +253,7 @@ const formatDate = (date: Date | string): string => {
                     控制页面是否在 Footer 中显示
                   </FieldDescription>
                 </div>
-                <Switch v-model:checked="formData.showInFooter" />
+                <Switch v-model="formData.showInFooter" />
               </Field>
             </CardContent>
           </Card>
