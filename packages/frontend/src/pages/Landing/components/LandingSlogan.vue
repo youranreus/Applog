@@ -26,5 +26,6 @@ defineProps<{
   line-height: 1.5;
   letter-spacing: -0.01em;
   text-wrap: balance;
+  opacity: 0.5;
 }
 </style>
