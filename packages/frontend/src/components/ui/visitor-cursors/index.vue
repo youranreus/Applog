@@ -34,7 +34,7 @@ function getCursorStyle(cursor: IVisitorCursorResponse): Record<string, string> 
 
 <style scoped>
 .visitor-cursor-layer {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: var(--z-visitor-cursor);
   overflow: hidden;
@@ -43,19 +43,16 @@ function getCursorStyle(cursor: IVisitorCursorResponse): Record<string, string> 
 
 .visitor-cursor {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: calc(var(--visitor-cursor-y) * 1%);
+  left: calc(var(--visitor-cursor-x) * 1%);
   width: 20px;
   height: 20px;
   color: var(--visitor-cursor-color);
   pointer-events: none;
-  transform: translate3d(
-    calc(var(--visitor-cursor-x) * 1vw),
-    calc(var(--visitor-cursor-y) * 1vh),
-    0
-  );
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
+  transition:
+    top 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    left 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: top, left;
 }
 
 .visitor-cursor__icon {

@@ -56,7 +56,7 @@ useHead({
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="relative min-h-screen flex flex-col">
     <template v-if="showLayout">
       <Header v-if="layoutStore.currentNavGroup === 'user'" />
       <UserHeader v-else />

@@ -110,12 +110,14 @@ Before implementation:
 - [ ] Identified all layer boundaries
 - [ ] Defined format at each boundary
 - [ ] Decided where validation happens
+- [ ] For spatial data, named the coordinate space (viewport, document, container, or screen) and matched capture, serialization, and rendering to the same positioning context
 
 After implementation:
 
 - [ ] Tested with edge cases (null, empty, invalid)
 - [ ] Verified error handling at each boundary
 - [ ] Checked data survives round-trip
+- [ ] For spatial data, changed scroll/resize independently and verified the intended anchor stays stable
 - [ ] Checked that consumers import shared decoders / projections instead of
       casting payload fields locally
 - [ ] Checked that derived state points back to the source event identifier

@@ -130,11 +130,12 @@ export function useVisitorCursors() {
       return
     }
 
-    const width = Math.max(window.innerWidth, 1)
-    const height = Math.max(window.innerHeight, 1)
+    const documentRoot = document.documentElement
+    const width = Math.max(documentRoot.scrollWidth, window.innerWidth, 1)
+    const height = Math.max(documentRoot.scrollHeight, window.innerHeight, 1)
     latestPosition.value = {
-      x: Math.min(1, Math.max(0, event.clientX / width)),
-      y: Math.min(1, Math.max(0, event.clientY / height)),
+      x: Math.min(1, Math.max(0, (event.clientX + window.scrollX) / width)),
+      y: Math.min(1, Math.max(0, (event.clientY + window.scrollY) / height)),
     }
   }
 
