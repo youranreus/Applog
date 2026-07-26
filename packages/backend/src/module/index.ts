@@ -6,3 +6,4 @@ export * from './system-config/system-config.module';
 export * from './seo/seo.module';
 export * from './analytics/analytics.module';
 export * from './weather/weather.module';
+export * from './visitor-cursor/visitor-cursor.module';

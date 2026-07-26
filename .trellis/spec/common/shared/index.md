@@ -6,7 +6,7 @@
 
 ## Overview
 
-`@applog/common` is a **pure TypeScript ESM library** with zero runtime framework dependencies. It holds cross-layer contracts consumed by both `@applog/backend` and `@applog/frontend`. Today the only domain is **system config**.
+`@applog/common` is a **pure TypeScript ESM library** with zero runtime framework dependencies. It holds cross-layer contracts consumed by both `@applog/backend` and `@applog/frontend`, including system config and visitor cursor presence.
 
 Build output: `dist/` (`main`: `dist/index.js`, `types`: `dist/index.d.ts`). Turbo `dependsOn: ["^build"]` builds this package before dependents.
 
@@ -31,6 +31,7 @@ Build output: `dist/` (`main`: `dist/index.js`, `types`: `dist/index.d.ts`). Tur
 | [Package Boundaries](./package-boundaries.md) | What belongs (and does not) in common | Filled |
 | [Type Safety](./type-safety.md) | Naming and export patterns | Filled |
 | [System Config Contracts](./system-config-contracts.md) | Cross-layer field formats and compatibility rules | Filled |
+| [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Shared presence types, constants, expiry, and polling rules | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Build, imports, anti-patterns | Filled |
 
 ---

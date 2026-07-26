@@ -8,7 +8,7 @@
 
 Stack: Vue 3 + Composition API (`<script setup>`), Pinia, Vue Router, Alova, Tailwind CSS v4, shadcn-vue (Reka UI). Path alias `@/*` → `src/*`.
 
-Shared contracts: `@applog/common` (system config only today).
+Shared contracts: `@applog/common` (system config and visitor cursor presence).
 
 ---
 
@@ -21,6 +21,7 @@ Shared contracts: `@applog/common` (system config only today).
 - [ ] Types use `I*` interfaces and `as const` instead of `enum`
 - [ ] Theme tokens in `assets/base.css` (see Component Guidelines)
 - [ ] Analytics: Umami tracker via public `GET /analytics/tracker-config` (non-admin only); Dashboard via admin proxy APIs — do not reuse `viewCount` for traffic UI
+- [ ] Visitor cursor changes follow the cross-layer [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md)
 
 
 ---
@@ -35,6 +36,7 @@ Shared contracts: `@applog/common` (system config only today).
 | [State Management](./state-management.md) | Pinia stores + API layering | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Forbidden patterns, lint/typecheck | Filled |
 | [Type Safety](./type-safety.md) | Types, constants, `@applog/common` | Filled |
+| [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Public-route cursor identity, polling, API, and rendering | Filled |
 
 ---
 

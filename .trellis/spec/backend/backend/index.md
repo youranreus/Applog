@@ -20,6 +20,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Controller returns domain/DTO data; `TransformInterceptor` wraps `{ data, code, msg }`
 - [ ] Cross-package system-config contracts come from `@applog/common`
 - [ ] Traffic Views/Visitors uses `AnalyticsModule` Umami proxy (`GET /analytics/summary|trend|top|breakdown`) — not Post/Page `viewCount`; config via `SYSTEM_UMAMI_CONFIG`
+- [ ] Visitor cursor changes follow [Visitor Cursor Cross-Layer Contract](./visitor-cursor-guidelines.md)
 
 ---
 
@@ -34,6 +35,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 | [Error Handling](./error-handling.md) | `BusinessException`, validation, filters | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Naming, JSDoc, forbidden patterns | Filled |
 | [Logging Guidelines](./logging-guidelines.md) | `HLogger` usage in services | Filled |
+| [Visitor Cursor Guidelines](./visitor-cursor-guidelines.md) | Ephemeral presence API, lifecycle, validation, and tests | Filled |
 
 ---
 

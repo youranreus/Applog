@@ -6,7 +6,7 @@
 
 ## Overview
 
-Organize by artifact kind, then by domain file name. Current domain: `system-config` only.
+Organize by artifact kind, then by domain file name. Current domains: `system-config` and `visitor-cursor`.
 
 ---
 
@@ -19,9 +19,11 @@ packages/common/
 └── src/
     ├── index.ts          # barrel: export * from types/constants/utils
     ├── types/
-    │   └── system-config.ts      # ISystemBaseConfig
+    │   ├── system-config.ts      # ISystemBaseConfig
+    │   └── visitor-cursor.ts     # cross-layer presence contracts
     ├── constants/
-    │   └── system-config.ts      # SYSTEM_CONFIG_* keys/prefix
+    │   ├── system-config.ts      # SYSTEM_CONFIG_* keys/prefix
+    │   └── visitor-cursor.ts     # polling, expiry, result limits
     └── utils/
         └── system-config.ts      # getSystemConfigKey, isSystemConfigKey, …
 ```
