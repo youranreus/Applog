@@ -215,13 +215,13 @@ Page-local CSS may override vertical padding only. The shared modifier owns hori
 
 **Related**: `packages/frontend/src/assets/container.css`, `components/Layout/Footer.vue`, `pages/Landing/index.vue`.
 
-### Convention: Date fields use shadcn Calendar + Popover
+### Convention: Date and time fields use standard themed controls
 
-**What**: Admin date inputs (e.g. 建站日期) use `Popover` + `Calendar` + trigger `Button`, not native `<input type="date">`. Persist as `YYYY-MM-DD` string on `ISystemBaseConfig`; clear sets `''`.
+**What**: Admin date inputs use `Popover` + `Calendar` + trigger `Button`, not native `<input type="date">`. When minute precision is required (e.g. 建站时间), pair it with the themed `Input type="time"` using `step="60"`. `siteFoundedDate` persists local `YYYY-MM-DDTHH:mm`; legacy `YYYY-MM-DD` remains valid as `00:00`; clear sets `''`.
 
-**Why**: Matches shadcn-vue / Apple-theme chrome; supports explicit clear UX.
+**Why**: Matches shadcn-vue / Apple-theme chrome, keeps the standard time affordance, supports explicit clear UX, and avoids losing minutes or introducing UTC shifts.
 
-**Related**: `@internationalized/date` `CalendarDate` ↔ string helpers live next to the form (`SystemSettings.vue`).
+**Related**: `@internationalized/date` handles `CalendarDate`; `utils/site-uptime.ts` is the single parsing/validation source. Full field contract: `../../common/shared/system-config-contracts.md`.
 
 ### Convention: Footer Row1 vs Row2
 

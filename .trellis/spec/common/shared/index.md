@@ -30,6 +30,7 @@ Build output: `dist/` (`main`: `dist/index.js`, `types`: `dist/index.d.ts`). Tur
 | [Directory Structure](./directory-structure.md) | `types` / `constants` / `utils` layout | Filled |
 | [Package Boundaries](./package-boundaries.md) | What belongs (and does not) in common | Filled |
 | [Type Safety](./type-safety.md) | Naming and export patterns | Filled |
+| [System Config Contracts](./system-config-contracts.md) | Cross-layer field formats and compatibility rules | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Build, imports, anti-patterns | Filled |
 
 ---
