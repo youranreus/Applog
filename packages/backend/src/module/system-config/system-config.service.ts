@@ -71,6 +71,17 @@ export class SystemConfigService {
   }
 
   /**
+   * 完整系统基础配置 key（含前缀）
+   * @returns 如 SYSTEM_BASE_CONFIG
+   */
+  getBaseConfigKey(): string {
+    return getSystemConfigKey(
+      SYSTEM_CONFIG_KEYS.BASE_CONFIG,
+      this.systemKeyPrefix,
+    );
+  }
+
+  /**
    * 判断是否为 Umami 对接配置 key（含/不含前缀）
    * @param configKey - 请求中的 key
    * @returns 是否 Umami 配置
@@ -289,7 +300,7 @@ export class SystemConfigService {
    * @throws {BusinessException} 如果系统已初始化，则抛出异常
    */
   async initializeSystem(user: UserJwtPayload): Promise<string> {
-    const configKey = `${this.systemKeyPrefix}${SYSTEM_CONFIG_KEYS.BASE_CONFIG}`;
+    const configKey = this.getBaseConfigKey();
     this.log(`准备初始化系统配置: ${configKey}`);
 
     // 校验管理员权限
@@ -314,6 +325,12 @@ export class SystemConfigService {
         allowComment: true,
         siteFoundedDate: '',
         icpFilingNumber: '',
+        landingBio: '',
+        landingSlogan: '',
+        weatherCity: '',
+        personalHomepageUrl: '/about.html',
+        bilibiliUrl: '',
+        githubUrl: '',
       };
 
       // 创建配置实体
@@ -337,6 +354,29 @@ export class SystemConfigService {
       }
       this.error(`系统配置初始化失败: ${err.message}`);
       throw new BusinessException('系统初始化失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 服务端读取系统基础配置。
+   * @returns 配置；未初始化或 JSON 非法时返回 null
+   */
+  async getBaseConfigRaw(): Promise<ISystemBaseConfig | null> {
+    const configKey = this.getBaseConfigKey();
+    try {
+      const entity = await this.configRepo.findOne({ where: { configKey } });
+      if (isNil(entity)) {
+        return null;
+      }
+
+      const parsed = JSON.parse(entity.configValue) as unknown;
+      if (!parsed || typeof parsed !== 'object') {
+        return null;
+      }
+      return parsed as ISystemBaseConfig;
+    } catch (err) {
+      this.error(`读取系统基础配置失败: ${(err as Error).message}`);
+      return null;
     }
   }
 

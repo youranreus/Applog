@@ -47,6 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import LandingSettingsFields from './LandingSettingsFields.vue';
 
 /**
  * 建站日期展示用格式化器（本地时区）
@@ -127,6 +128,12 @@ const formData = ref<ISystemBaseConfig>({
   allowComment: true,
   siteFoundedDate: '',
   icpFilingNumber: '',
+  landingBio: '',
+  landingSlogan: '',
+  weatherCity: '',
+  personalHomepageUrl: '/about.html',
+  bilibiliUrl: '',
+  githubUrl: '',
 });
 
 /**
@@ -274,6 +281,12 @@ function initializeFormData(): void {
       allowComment: config.allowComment ?? true,
       siteFoundedDate: config.siteFoundedDate || '',
       icpFilingNumber: config.icpFilingNumber || '',
+      landingBio: config.landingBio || '',
+      landingSlogan: config.landingSlogan || '',
+      weatherCity: config.weatherCity || '',
+      personalHomepageUrl: config.personalHomepageUrl ?? '/about.html',
+      bilibiliUrl: config.bilibiliUrl || '',
+      githubUrl: config.githubUrl || '',
     };
   } else {
     formData.value = {
@@ -283,6 +296,12 @@ function initializeFormData(): void {
       allowComment: true,
       siteFoundedDate: '',
       icpFilingNumber: '',
+      landingBio: '',
+      landingSlogan: '',
+      weatherCity: '',
+      personalHomepageUrl: '/about.html',
+      bilibiliUrl: '',
+      githubUrl: '',
     };
   }
 }
@@ -621,6 +640,15 @@ async function handleSaveUmami(): Promise<void> {
           </FieldDescription>
         </Field>
       </FieldGroup>
+
+      <LandingSettingsFields
+        v-model:landing-bio="formData.landingBio"
+        v-model:landing-slogan="formData.landingSlogan"
+        v-model:weather-city="formData.weatherCity"
+        v-model:personal-homepage-url="formData.personalHomepageUrl"
+        v-model:bilibili-url="formData.bilibiliUrl"
+        v-model:github-url="formData.githubUrl"
+      />
 
       <FieldGroup class="gap-4">
         <h3 class="text-sm font-semibold text-foreground">访问与互动</h3>

@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/common/shared/quality-guidelines.md", "reason": "共享契约构建与导出检查"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "NestJS API、DTO、构建与错误处理复核"}
+{"file": ".trellis/spec/frontend/frontend/quality-guidelines.md", "reason": "前端 lint、类型、构建与分层门禁"}
+{"file": ".trellis/spec/frontend/frontend/type-safety.md", "reason": "公开 Meta 与配置字段类型安全"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "运行时间、Umami 与组件复用检查"}
+{"file": ".trellis/spec/backend/backend/analytics-guidelines.md", "reason": "公开 active 的 0/null、版本回退与软降级契约"}
+{"file": ".trellis/spec/backend/backend/weather-guidelines.md", "reason": "城市天气、缓存、single-flight 与失败行为"}
+{"file": ".trellis/spec/common/shared/package-boundaries.md", "reason": "Landing 配置缺失与显式空字符串语义"}

@@ -8,6 +8,7 @@ import {
   ANALYTICS_TIMEZONE,
   UMAMI_HTTP_TIMEOUT_MS,
 } from './analytics.constants';
+import { normalizeUmamiActiveVisitors } from './umami-active.utils';
 
 /**
  * Umami /stats 原始响应（兼容 value 包装）
@@ -260,7 +261,18 @@ export class UmamiClient {
   private async authorizedGet<T>(
     config: IUmamiConfig,
     path: string,
-  ): Promise<T> {
+    options: { notFoundAsNull: true },
+  ): Promise<T | null>;
+  private async authorizedGet<T>(
+    config: IUmamiConfig,
+    path: string,
+    options?: { notFoundAsNull?: false },
+  ): Promise<T>;
+  private async authorizedGet<T>(
+    config: IUmamiConfig,
+    path: string,
+    options: { notFoundAsNull?: boolean } = {},
+  ): Promise<T | null> {
     const http = this.createHttp(config.baseUrl);
 
     /**
@@ -281,6 +293,10 @@ export class UmamiClient {
         this.log('Umami token 失效，尝试重新登录');
         token = await this.getToken(config, true);
         response = await requestOnce(token);
+      }
+
+      if (response.status === 404 && options.notFoundAsNull) {
+        return null;
       }
 
       if (response.status < 200 || response.status >= 300) {
@@ -313,6 +329,29 @@ export class UmamiClient {
       pageviews: unwrapUmamiNumber(raw.pageviews),
       visitors: unwrapUmamiNumber(raw.visitors),
     };
+  }
+
+  /**
+   * 获取 Umami 当前活跃访客数。
+   * @returns 非负整数；响应形态无法识别时返回 null
+   */
+  async getActiveVisitors(): Promise<number | null> {
+    const config = await this.requireQueryConfig();
+    const websiteId = encodeURIComponent(config.websiteId);
+    const realtimeRaw = await this.authorizedGet<unknown>(
+      config,
+      `/api/realtime/${websiteId}`,
+      { notFoundAsNull: true },
+    );
+    if (realtimeRaw !== null) {
+      return normalizeUmamiActiveVisitors(realtimeRaw);
+    }
+
+    const legacyRaw = await this.authorizedGet<unknown>(
+      config,
+      `/api/websites/${websiteId}/active`,
+    );
+    return normalizeUmamiActiveVisitors(legacyRaw);
   }
 
   /**

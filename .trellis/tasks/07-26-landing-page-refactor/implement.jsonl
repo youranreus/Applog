@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/common/shared/package-boundaries.md", "reason": "扩展跨前后端系统配置契约"}
+{"file": ".trellis/spec/backend/backend/analytics-guidelines.md", "reason": "复用 Umami 查询、凭证与公开安全边界"}
+{"file": ".trellis/spec/backend/backend/error-handling.md", "reason": "第三方服务失败降级与业务异常规范"}
+{"file": ".trellis/spec/backend/backend/logging-guidelines.md", "reason": "天气与 Umami 服务日志约束"}
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "后台表单与 Landing 组件视觉规范"}
+{"file": ".trellis/spec/frontend/frontend/hook-guidelines.md", "reason": "Landing API 与页面 Hook 分层"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "配置到 API 到 Landing 的跨层数据流"}

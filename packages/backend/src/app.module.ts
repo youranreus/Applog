@@ -13,6 +13,7 @@ import {
   SystemConfigModule,
   SeoModule,
   AnalyticsModule,
+  WeatherModule,
 } from '@/module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -46,6 +47,7 @@ import { ENTITY_LIST } from '@/entities';
     SystemConfigModule,
     SeoModule,
     AnalyticsModule,
+    WeatherModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],

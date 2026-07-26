@@ -10,6 +10,7 @@ import { SystemConfigService } from '@/module/system-config/system-config.servic
 import { UmamiClient } from './umami.client';
 import type {
   IAnalyticsSummaryDto,
+  IAnalyticsActiveDto,
   IAnalyticsTrendPointDto,
   IAnalyticsTopItemDto,
   IAnalyticsBreakdownItemDto,
@@ -20,6 +21,7 @@ import {
   ANALYTICS_DEFAULT_TOP_LIMIT,
   ANALYTICS_DEFAULT_TREND_DAYS,
   ANALYTICS_SUMMARY_DAYS,
+  ANALYTICS_ACTIVE_CACHE_TTL_MS,
 } from './analytics.constants';
 import {
   buildShanghaiDateRange,
@@ -55,6 +57,16 @@ export class AnalyticsService {
     private readonly systemConfigService: SystemConfigService,
   ) {}
 
+  private activeVisitorsCache: {
+    expiresAt: number;
+    value: number | null;
+  } | null = null;
+  private activeVisitorsGeneration = 0;
+  private activeVisitorsInFlight: {
+    generation: number;
+    promise: Promise<IAnalyticsActiveDto>;
+  } | null = null;
+
   /**
    * 记录日志
    * @param text - 日志内容
@@ -89,6 +101,64 @@ export class AnalyticsService {
   }
 
   /**
+   * 公开读取当前在线人数。
+   * Umami 未配置或暂时不可用时降级为 null，不影响公开首页。
+   * @returns 在线人数 DTO
+   */
+  async getActiveVisitors(): Promise<IAnalyticsActiveDto> {
+    const now = Date.now();
+    const generation = this.activeVisitorsGeneration;
+    if (this.activeVisitorsCache?.expiresAt > now) {
+      return { visitors: this.activeVisitorsCache.value };
+    }
+
+    if (this.activeVisitorsInFlight?.generation === generation) {
+      return this.activeVisitorsInFlight.promise;
+    }
+
+    const promise = this.loadActiveVisitors(generation);
+    this.activeVisitorsInFlight = { generation, promise };
+    try {
+      return await promise;
+    } finally {
+      if (this.activeVisitorsInFlight?.promise === promise) {
+        this.activeVisitorsInFlight = null;
+      }
+    }
+  }
+
+  /**
+   * 实际读取并缓存当前在线人数。
+   * @returns 在线人数 DTO
+   */
+  private async loadActiveVisitors(
+    generation: number,
+  ): Promise<IAnalyticsActiveDto> {
+    try {
+      const visitors = await this.umamiClient.getActiveVisitors();
+      if (visitors === null) {
+        this.error('Umami 当前在线人数响应无法识别');
+      }
+      if (generation === this.activeVisitorsGeneration) {
+        this.activeVisitorsCache = {
+          expiresAt: Date.now() + ANALYTICS_ACTIVE_CACHE_TTL_MS,
+          value: visitors,
+        };
+      }
+      return { visitors };
+    } catch (error) {
+      this.error(`查询当前在线人数失败: ${(error as Error).message}`);
+      if (generation === this.activeVisitorsGeneration) {
+        this.activeVisitorsCache = {
+          expiresAt: Date.now() + ANALYTICS_ACTIVE_CACHE_TTL_MS,
+          value: null,
+        };
+      }
+      return { visitors: null };
+    }
+  }
+
+  /**
    * 管理员读取脱敏 Umami 配置
    * @param user - 当前管理员
    * @returns 脱敏配置
@@ -109,6 +179,9 @@ export class AnalyticsService {
   ): Promise<IUmamiConfig> {
     const saved = await this.systemConfigService.setUmamiConfig(payload, user);
     this.umamiClient.invalidateTokenCache();
+    this.activeVisitorsGeneration += 1;
+    this.activeVisitorsCache = null;
+    this.activeVisitorsInFlight = null;
     this.log('Umami 配置已更新，token 缓存已失效');
     return saved;
   }

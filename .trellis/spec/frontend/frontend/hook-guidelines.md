@@ -52,6 +52,13 @@ Pattern: `.vue` files call the hook; hook owns `useRequest`/`useWatcher`, derive
 - Old `useAnalyticsViewReport` / `applog_vid` / `POST /analytics/view` are removed.
 - Admin Dashboard APIs: `src/api/analytics/*` (alova); require admin JWT.
 
+### Landing public Meta
+
+- `pages/Landing/hooks/useLandingMeta.ts` owns weather, active visitors, and uptime composition.
+- Weather and active visitors use independent public Alova APIs and independently degrade to `null`; one failed request must not hide the other Meta items.
+- Active visitors refresh every 30 seconds and clear the timer on unmount; `0` remains visible, only `null` hides.
+- Uptime must call `getSiteUptimeText` from `src/utils/site-uptime.ts`, matching Footer exactly; do not introduce a second timer formula.
+
 ---
 
 ## Alova Request Hooks

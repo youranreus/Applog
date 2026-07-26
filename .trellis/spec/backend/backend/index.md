@@ -30,6 +30,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 | [Directory Structure](./directory-structure.md) | `src/` layout, module layout, entities | Filled |
 | [Database Guidelines](./database-guidelines.md) | TypeORM entities, queries, pagination | Filled |
 | [Analytics Guidelines](./analytics-guidelines.md) | PV/UV report, daily aggregates, admin APIs | Filled |
+| [Weather Guidelines](./weather-guidelines.md) | Public current weather proxy, caching, failure behavior | Filled |
 | [Error Handling](./error-handling.md) | `BusinessException`, validation, filters | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Naming, JSDoc, forbidden patterns | Filled |
 | [Logging Guidelines](./logging-guidelines.md) | `HLogger` usage in services | Filled |

@@ -16,6 +16,7 @@ import {
   QueryBreakdownDto,
   SetUmamiConfigDto,
   type IAnalyticsSummaryDto,
+  type IAnalyticsActiveDto,
   type IAnalyticsTrendPointDto,
   type IAnalyticsTopItemDto,
   type IAnalyticsBreakdownItemDto,
@@ -44,6 +45,15 @@ export class AnalyticsController {
   @Get('tracker-config')
   async getTrackerConfig(): Promise<IUmamiTrackerConfig> {
     return this.analyticsService.getTrackerConfig();
+  }
+
+  /**
+   * 公开读取当前在线人数（不下发 Umami 凭证）。
+   * @returns visitors；不可用时为 null
+   */
+  @Get('active')
+  async getActiveVisitors(): Promise<IAnalyticsActiveDto> {
+    return this.analyticsService.getActiveVisitors();
   }
 
   /**

@@ -9,6 +9,13 @@ export interface IAnalyticsSummaryDto {
 }
 
 /**
+ * 公开当前在线人数；null 表示 Umami 不可用。
+ */
+export interface IAnalyticsActiveDto {
+  visitors: number | null;
+}
+
+/**
  * 趋势日序列单点
  */
 export interface IAnalyticsTrendPointDto {

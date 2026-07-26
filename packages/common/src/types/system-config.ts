@@ -20,6 +20,30 @@ export interface ISystemBaseConfig {
    * 空字符串或未设置时，前台不展示备案信息
    */
   icpFilingNumber?: string;
+  /**
+   * 个人首页一句话简介
+   * 空字符串或未设置时，Landing 不展示简介
+   */
+  landingBio?: string;
+  /**
+   * 个人首页底部 Slogan
+   * 空字符串或未设置时，Landing 不展示 Slogan
+   */
+  landingSlogan?: string;
+  /**
+   * 作者所在城市，用于服务端查询当前天气
+   * 空字符串或未设置时，Landing 不展示天气
+   */
+  weatherCity?: string;
+  /**
+   * 个人主页链接
+   * 字段缺失时前端回退 `/about.html`；显式空字符串表示隐藏
+   */
+  personalHomepageUrl?: string;
+  /** Bilibili 主页链接；空字符串或未设置时隐藏 */
+  bilibiliUrl?: string;
+  /** GitHub 主页链接；空字符串或未设置时隐藏 */
+  githubUrl?: string;
 }
 
 /**

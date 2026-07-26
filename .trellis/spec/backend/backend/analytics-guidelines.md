@@ -26,6 +26,7 @@ Legacy entities (`AnalyticsDailyStatEntity`, `AnalyticsDailyVisitorEntity`, `Ana
 | Method | Path | Auth |
 |--------|------|------|
 | `GET` | `/analytics/tracker-config` | Public |
+| `GET` | `/analytics/active` | Public |
 | `GET` | `/analytics/umami-config` | `@AuthRoles('admin')` |
 | `PUT` | `/analytics/umami-config` | `@AuthRoles('admin')` |
 | `GET` | `/analytics/summary` | `@AuthRoles('admin')` |
@@ -46,6 +47,17 @@ Controller: `version: [VERSION_NEUTRAL, '1']`.
 ```
 
 未配齐或 `enabled === false` → `{ enabled: false, scriptUrl: '', websiteId: '' }`.
+
+**`GET /analytics/active` → `data`**
+
+```ts
+{ visitors: number | null }
+```
+
+- 优先请求 Umami `/api/realtime/:websiteId` 并读取 `totals.visitors`。
+- 仅新版端点返回 404 时回退 `/api/websites/:websiteId/active`。
+- `0` 是有效在线人数；未配置、上游失败或响应无法识别时返回 `null`。
+- Service 使用 15 秒成功/失败缓存与 single-flight；配置更新时 generation 失效旧请求，旧响应不得回写新缓存。
 
 **`GET/PUT /analytics/umami-config`**
 
@@ -87,6 +99,9 @@ Array<{ name: string; value: number }> // value = Umami metrics.y（visitors）
 | Umami 未配置 / 凭证不齐 | `BusinessException('流量服务未配置…')` |
 | Umami 登录/401 | `BusinessException` 鉴权失败（不泄露密码） |
 | Umami 超时 / 非 2xx | `BusinessException('流量服务暂时不可用…')` |
+| 公开 `/analytics/active` 的未配置 / 鉴权 / 超时 / 非法响应 | 吞掉内部 `BusinessException`，记录无凭证日志，返回 `{ visitors: null }` |
+| active visitors 为 `0` | 返回 `{ visitors: 0 }`，不得当作不可用 |
+| 新版 realtime 为 404 | 仅此条件回退旧 `/active`；其他错误不得双请求 |
 | 非 admin 调 summary/trend/top/breakdown/umami-config | Auth guard 拒绝 |
 | 非 admin 经 `getConfig(SYSTEM_UMAMI_CONFIG)` | `BusinessException('Umami 配置仅允许管理员访问')` |
 | 经通用 `setConfig` 写 `SYSTEM_UMAMI_CONFIG` | `BusinessException`：须走 `/analytics/umami-config`（防脱敏占位覆盖明文） |
@@ -96,12 +111,16 @@ Array<{ name: string; value: number }> // value = Umami metrics.y（visitors）
 - **Good**: 管理端保存齐备配置 → 非 admin 公开页注入 script → admin Dashboard 看到 Views/Visitors。
 - **Base**: admin 登录浏览 → 不注入 tracker（并可写 `umami.disabled`）。
 - **Bad**: 在 Post/Page `findOne` 里调 Umami；或把 username/password 放进 `tracker-config` / `VITE_`。
+- **Active good**: 新版 realtime 返回 `totals.visitors = 0` → 公开接口保留 0；并发首页请求只访问 Umami 一次。
+- **Active base**: Umami 未配置/暂时不可用 → 公开首页仅隐藏在线人数。
+- **Active bad**: 鉴权失败时继续请求旧端点，或把失败伪装成 0。
 
 ### 6. Tests Required
 
 | Layer | Assertion points |
 |-------|------------------|
 | Unit | Shanghai windows；密码脱敏 / 空密码保留；path→title 映射 |
+| Unit | active 新旧响应规范化；0/null；single-flight；配置更新时旧请求不得污染新缓存 |
 | Integration | Token 401 刷新重试；未配置错误文案 |
 | Manual smoke | 非 admin 有采集；admin 无 script；非 admin 读不到密码；viewCount 仍增 |
 
@@ -115,6 +134,9 @@ return { enabled: true, scriptUrl, websiteId, username, password };
 
 // 继续写自建日聚合
 await dailyStatRepo.save(...);
+
+// 公开接口把失败伪装为无人在线
+return { visitors: 0 };
 ```
 
 #### Correct
@@ -122,6 +144,9 @@ await dailyStatRepo.save(...);
 ```typescript
 return toUmamiTrackerConfig(raw); // 仅 enabled/scriptUrl/websiteId
 // admin 查询 → UmamiClient.getStats / getPageviews / getMetrics
+
+// 公开 active 是软降级特例，0 与 null 语义不同
+return { visitors: await safeGetActiveVisitors() }; // number | null
 ```
 
 ---

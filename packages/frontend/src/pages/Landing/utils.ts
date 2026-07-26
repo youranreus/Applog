@@ -1,101 +1,55 @@
-import type { ILandingGridItem, LandingBgImageMode } from './types';
+import type { ILandingLink } from './types';
 
-/**
- * 根据 colSpan 生成栅格列跨度 class
- * 移动端单列；平板 2 列；桌面 3 列
- * @param item - 栅格项配置
- * @returns Tailwind 栅格列跨度 class 字符串
- */
-export function getColSpanClass(item: ILandingGridItem): string {
-  const span = item.colSpan ?? 1;
-  if (span === 1) return 'col-span-1';
-  if (span === 2) return 'col-span-1 md:col-span-2';
-  return 'col-span-1 md:col-span-2 lg:col-span-3';
+interface INormalizeLandingLinkOptions {
+  fallback?: string;
+  allowInternal?: boolean;
 }
 
 /**
- * 根据 rowSpan 生成栅格行跨度 class
- * @param item - 栅格项配置
- * @returns Tailwind 栅格行跨度 class 字符串
+ * 解析可选 Landing 文案：字段缺失使用默认值，显式空串隐藏。
+ * @param value - 后台配置值
+ * @param fallback - 旧配置缺字段时的默认值
+ * @returns 可展示文本或 null
  */
-export function getRowSpanClass(item: ILandingGridItem): string {
-  const span = item.rowSpan ?? 1;
-  return span === 2 ? 'row-span-2' : 'row-span-1';
+export function resolveLandingText(
+  value: string | undefined,
+  fallback: string,
+): string | null {
+  const source = value === undefined ? fallback : value;
+  return source.trim() || null;
 }
 
 /**
- * 根据 theme 生成卡片容器 class
- * @param theme - 卡片视觉主题
- * @returns 卡片容器 class 字符串
+ * 规范化 Landing 链接并过滤危险协议。
+ * @param value - 后台配置值
+ * @param options - 缺省值与站内路径开关
+ * @returns 安全链接；显式空串或非法协议返回 null
  */
-export function getCardThemeClass(
-  theme: ILandingGridItem['theme'],
-): string {
-  switch (theme) {
-    case 'text':
-      return 'landing-card landing-card--text';
-    case 'image':
-      return 'landing-card landing-card--image';
-    case 'accent':
-      return 'landing-card landing-card--accent';
-    default:
-      return 'landing-card landing-card--text';
+export function normalizeLandingLink(
+  value: string | undefined,
+  options: INormalizeLandingLinkOptions = {},
+): ILandingLink | null {
+  const source = value === undefined ? (options.fallback ?? '') : value;
+  const trimmed = source.trim();
+  if (!trimmed) {
+    return null;
   }
-}
 
-export type HrefType = 'external' | 'internal' | 'none';
-
-/**
- * href 类型判断
- * - http(s):// 开头 → external
- * - / 开头 → internal
- * - 其他/无 → none
- */
-export function getHrefType(href?: string): HrefType {
-  if (!href) return 'none';
-  if (/^https?:\/\//.test(href)) return 'external';
-  if (href.startsWith('/')) return 'internal';
-  return 'none';
-}
-
-/**
- * 根据 bgImage + bgImageMode 生成内联 CSS 背景图属性
- * @param bgImage - 背景图 URL
- * @param bgImageMode - 展示模式
- * @returns 内联 style 对象（backgroundImage / backgroundSize / backgroundPosition）
- */
-export function getBgImageStyle(
-  bgImage?: string,
-  bgImageMode?: LandingBgImageMode,
-): Record<string, string> {
-  if (!bgImage) return {};
-  const mode = bgImageMode ?? 'cover';
-  const style: Record<string, string> = {
-    backgroundImage: `url(${bgImage})`,
-    backgroundRepeat: 'no-repeat',
-  };
-  if (mode === 'cover') {
-    style.backgroundSize = 'cover';
-    style.backgroundPosition = 'center';
-  } else {
-    style.backgroundSize = 'auto';
-    style.backgroundPosition = mode.replace('-', ' ');
+  if (
+    options.allowInternal &&
+    trimmed.startsWith('/') &&
+    !trimmed.startsWith('//')
+  ) {
+    return { href: trimmed, external: false };
   }
-  return style;
-}
 
-/**
- * 综合 bgColor 和 bgImage，生成卡片容器 style 对象
- * @param item - 栅格项配置
- * @returns 内联 style 对象
- */
-export function getCardBgStyle(item: ILandingGridItem): Record<string, string> {
-  const style: Record<string, string> = {};
-  if (item.bgColor) {
-    style.backgroundColor = item.bgColor;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return null;
+    }
+    return { href: url.toString(), external: true };
+  } catch {
+    return null;
   }
-  return {
-    ...style,
-    ...getBgImageStyle(item.bgImage, item.bgImageMode),
-  };
 }

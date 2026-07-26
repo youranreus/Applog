@@ -1,74 +1,10 @@
-import type { ILandingGridItem } from './types'
-
-/** Landing 页主标题（标题区） */
-export const LANDING_HERO_TITLE = '三叶の小窝'
-
-/** Landing 页副标题（可选，标题区下方小字） */
-export const LANDING_HERO_SUBTITLE = ''
-
 /**
- * Landing 页栅格项默认配置
- * 可通过修改此数组调整首页栅格内容、顺序与占位
+ * 兼容旧系统配置缺少 Landing 字段时使用的稳定默认内容。
+ * 管理后台显式保存空字符串后，对应内容会隐藏。
  */
-export const LANDING_GRID_ITEMS: ILandingGridItem[] = [
-  {
-    id: '1',
-    theme: 'text',
-    description: '谁是季悠然？',
-    colSpan: 2,
-    rowSpan: 1,
-    iconColor: 'rgba(250, 250, 250, 0.8)',
-    bgImage: 'https://cdn.exia.xyz/img/poster/self.png?x-oss-process=image/format,webp',
-    href: '/about.html',
-    badge: {
-      emoji: '👦🏻',
-      label: '02年生少年',
-      position: 'bottom-left',
-      labelColor: 'rgba(250, 250, 250, 0.8)',
-    },
-  },
-  {
-    id: 'card-2',
-    theme: 'image',
-    colSpan: 1,
-    rowSpan: 1,
-    bgImage: 'https://cdn.exia.xyz/img/poster/map.png?x-oss-process=image/format,webp',
-    badge: {
-      emoji: '📍',
-      label: '坐标 深圳',
-      position: 'bottom-right',
-    },
-  },
-  {
-    id: 'card-3',
-    theme: 'text',
-    colSpan: 1,
-    rowSpan: 1,
-    description: '在哪儿搬砖？',
-    iconColor: 'rgba(250, 250, 250, 1)',
-    bgColor: '#e8f4f8',
-    bgImage: 'https://cdn.exia.xyz/img/poster/with_tencent.png?x-oss-process=image/format,webp',
-    badge: {
-      emoji: '',
-      label: '腾讯牛马',
-      position: 'bottom-left',
-      labelColor: 'rgba(250, 250, 250, 1)',
-    },
-  },
-  {
-    id: 'card-4',
-    theme: 'image',
-    colSpan: 2,
-    rowSpan: 1,
-    bgImage: 'https://cdn.exia.xyz/img/poster/coding.png?x-oss-process=image/format,webp',
-    href: 'https://github.com/youranreus',
-    description: '搬的什么砖？',
-    iconColor: 'rgba(250, 250, 250, 1)',
-    badge: {
-      emoji: '🌏',
-      label: '小鸡啄米工程师',
-      position: 'bottom-right',
-      labelColor: 'rgba(250, 250, 250, 1)',
-    },
-  },
-]
+export const LANDING_DEFAULTS = {
+  bio: '生活在深圳的软件工程师。这里记录日常生活里的观察，也留下阅读、旅行和持续探索过程中产生的想法。',
+  slogan: '更新得不算快，但希望每一篇都值得安静地读一会儿。',
+  personalHomepageUrl: '/about.html',
+  githubUrl: 'https://github.com/youranreus',
+} as const;

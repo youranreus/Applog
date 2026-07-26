@@ -17,5 +17,8 @@ export const ANALYTICS_TIMEZONE = 'Asia/Shanghai';
 /** Umami HTTP 超时（毫秒） */
 export const UMAMI_HTTP_TIMEOUT_MS = 15_000;
 
+/** 公开在线人数缓存时间（毫秒） */
+export const ANALYTICS_ACTIVE_CACHE_TTL_MS = 15_000;
+
 /** breakdown 默认条数 */
 export const ANALYTICS_DEFAULT_BREAKDOWN_LIMIT = 10;

@@ -1,212 +1,122 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import type { IProps, IEmits } from './types'
-import { LANDING_GRID_ITEMS } from './constants'
-import { useLanding } from './hooks/useLanding'
-import { useSystemStore } from '@/stores/useSystemStore'
-import { useSeoHead } from '@/hooks/useSeoHead'
-import { useWebSiteJsonLd } from '@/hooks/useJsonLd'
+import { computed } from 'vue';
+import LandingMeta from './components/LandingMeta.vue';
+import LandingProfile from './components/LandingProfile.vue';
+import LandingRecentPosts from './components/LandingRecentPosts.vue';
+import LandingSlogan from './components/LandingSlogan.vue';
+import { LANDING_DEFAULTS } from './constants';
+import { useLanding } from './hooks/useLanding';
+import { useLandingMeta } from './hooks/useLandingMeta';
+import type { ILandingSocialLink } from './types';
+import { normalizeLandingLink, resolveLandingText } from './utils';
+import { useSystemStore } from '@/stores/useSystemStore';
+import { useSeoHead } from '@/hooks/useSeoHead';
+import { useWebSiteJsonLd } from '@/hooks/useJsonLd';
 
 defineOptions({
   name: 'Landing',
-})
+});
 
-const props = defineProps<IProps>()
-const emits = defineEmits<IEmits>() as IEmits
+const systemStore = useSystemStore();
+const { recentPosts, postsLoading, hasPostError } = useLanding();
+const { weather, onlineVisitors, uptimeText } = useLandingMeta();
+const SITE_URL = import.meta.env.VITE_SITE_URL || '';
 
-const { getColSpanClass, getRowSpanClass, getCardThemeClass, getCardBgStyle, getHrefType } =
-  useLanding(props, emits)
+const siteTitle = computed(() => {
+  return systemStore.config?.title?.trim() || 'AppLog';
+});
+const siteDescription = computed(() => {
+  return systemStore.config?.description?.trim() || LANDING_DEFAULTS.bio;
+});
+const bio = computed(() => {
+  return resolveLandingText(systemStore.config?.landingBio, LANDING_DEFAULTS.bio);
+});
+const slogan = computed(() => {
+  return resolveLandingText(
+    systemStore.config?.landingSlogan,
+    LANDING_DEFAULTS.slogan,
+  );
+});
+const socialLinks = computed<ILandingSocialLink[]>(() => {
+  const links: Array<ILandingSocialLink | null> = [];
+  const homepage = normalizeLandingLink(
+    systemStore.config?.personalHomepageUrl,
+    { fallback: LANDING_DEFAULTS.personalHomepageUrl, allowInternal: true },
+  );
+  const bilibili = normalizeLandingLink(systemStore.config?.bilibiliUrl);
+  const github = normalizeLandingLink(systemStore.config?.githubUrl, {
+    fallback: LANDING_DEFAULTS.githubUrl,
+  });
 
-const systemStore = useSystemStore()
-const SITE_URL = import.meta.env.VITE_SITE_URL || ''
+  if (homepage) links.push({ ...homepage, kind: 'home', label: '个人主页' });
+  if (bilibili) links.push({ ...bilibili, kind: 'bilibili', label: 'Bilibili' });
+  if (github) links.push({ ...github, kind: 'github', label: 'GitHub' });
+  return links.filter((link): link is ILandingSocialLink => Boolean(link));
+});
 
 useSeoHead({
-  description: () => systemStore.config?.description,
+  description: () => siteDescription.value,
   canonicalPath: '/landing',
-})
+});
 
 useWebSiteJsonLd({
-  name: systemStore.config?.title || 'AppLog',
-  description: systemStore.config?.description,
+  name: siteTitle.value,
+  description: siteDescription.value,
   url: SITE_URL,
-})
+});
 </script>
 
 <template>
-  <div class="landing-page">
-    <div class="landing-scroll-content">
-      <!-- 栅格区 -->
-      <section class="landing-grid-wrap">
-        <div class="landing-grid">
-          <component
-            :is="
-              getHrefType(item.href) === 'external'
-                ? 'a'
-                : getHrefType(item.href) === 'internal'
-                  ? RouterLink
-                  : 'div'
-            "
-            v-for="item in LANDING_GRID_ITEMS"
-            :key="item.id"
-            :class="[getColSpanClass(item), getRowSpanClass(item), getCardThemeClass(item.theme), item.href ? 'cursor-pointer' : '']"
-            :style="getCardBgStyle(item)"
-            :href="getHrefType(item.href) === 'external' ? item.href : undefined"
-            :to="getHrefType(item.href) === 'internal' ? item.href : undefined"
-            :target="getHrefType(item.href) === 'external' ? '_blank' : undefined"
-            :rel="getHrefType(item.href) === 'external' ? 'noopener noreferrer' : undefined"
-          >
-            <!-- 右上角导航箭头 -->
-            <span v-if="item.href" class="landing-card__nav-arrow">
-              <ion-icon name="arrow-forward-outline" />
-            </span>
-
-            <!-- icon + description 横排行 -->
-            <div v-if="item.icon || item.description" class="landing-card__info-row">
-              <span v-if="item.icon" class="landing-card__icon" :style="item.iconColor ? { color: item.iconColor } : undefined">
-                <ion-icon :name="item.icon" />
-              </span>
-              <span v-if="item.description" class="landing-card__description" :style="(item.descriptionColor || item.iconColor) ? { color: item.descriptionColor ?? item.iconColor } : undefined">
-                {{ item.description }}
-              </span>
-            </div>
-
-            <!-- 图片区 -->
-            <div v-if="item.image && item.theme === 'image'" class="landing-card__image-wrap">
-              <img :src="item.image" alt="" class="landing-card__image" />
-            </div>
-
-            <!-- badge 浮层 -->
-            <div
-              v-if="item.badge && (item.badge.emoji || item.badge.label)"
-              :class="[
-                'landing-card__badge',
-                item.badge.position === 'bottom-right'
-                  ? 'landing-card__badge--bottom-right'
-                  : 'landing-card__badge--bottom-left',
-              ]"
-            >
-              <span v-if="item.badge.emoji" class="landing-card__badge-emoji">{{
-                item.badge.emoji
-              }}</span>
-              <span v-if="item.badge.label" class="landing-card__badge-label" :style="item.badge.labelColor ? { color: item.badge.labelColor } : undefined">{{
-                item.badge.label
-              }}</span>
-            </div>
-          </component>
-        </div>
-      </section>
+  <main class="landing-page">
+    <div class="landing-shell">
+      <LandingMeta
+        :weather="weather"
+        :online-visitors="onlineVisitors"
+        :uptime-text="uptimeText"
+      />
+      <LandingProfile
+        :site-title="siteTitle"
+        :bio="bio"
+        :social-links="socialLinks"
+      />
+      <LandingRecentPosts
+        :posts="recentPosts"
+        :loading="postsLoading"
+        :has-error="hasPostError"
+      />
+      <LandingSlogan v-if="slogan" :slogan="slogan" />
     </div>
-  </div>
+  </main>
 </template>
 
 <style scoped>
-@reference "tailwindcss";
-
 .landing-page {
-  @apply w-full min-h-[calc(100vh-64px)] relative py-[20vh];
+  --landing-canvas: var(--color-frost);
+  --landing-surface: var(--color-card);
+  --landing-surface-soft: var(--color-ice);
+  --landing-text: var(--color-carbon);
+  --landing-muted: var(--color-ash);
+  --landing-primary: var(--color-apple-blue);
+  --landing-link: var(--color-link-blue);
+  --landing-font: 'SF Pro Text', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --landing-font-heading: 'SF Pro Display', var(--landing-font);
+
+  width: 100%;
+  min-height: 100vh;
+  background: var(--landing-canvas);
+  color: var(--landing-text);
+  font-family: var(--landing-font);
 }
 
-.landing-scroll-content {
-  @apply relative w-full min-h-full z-1 px-4 sm:px-6 lg:px-8;
+.landing-shell {
+  width: min(calc(100% - 2.5rem), 45rem);
+  margin-inline: auto;
+  padding-block: clamp(3.5rem, 9vw, 6.5rem) clamp(5rem, 12vw, 8rem);
 }
 
-/* 栅格区 - 响应式容器宽度（较阅读页更宽以容纳三列网格） */
-.landing-grid-wrap {
-  @apply mx-auto;
-  max-width: 1060px;
-}
-
-@media screen and (min-width: 768px) and (max-width: 1250px) {
-  .landing-grid-wrap {
-    max-width: 960px;
+@media (max-width: 23rem) {
+  .landing-shell {
+    width: min(calc(100% - 2rem), 45rem);
   }
-}
-
-@media screen and (min-width: 1251px) and (max-width: 1599px) {
-  .landing-grid-wrap {
-    max-width: 1060px;
-  }
-}
-
-@media screen and (min-width: 1600px) and (max-width: 1799px) {
-  .landing-grid-wrap {
-    max-width: 1152px;
-  }
-}
-
-@media screen and (min-width: 1800px) and (max-width: 1919px) {
-  .landing-grid-wrap {
-    max-width: 1200px;
-  }
-}
-
-@media screen and (min-width: 1920px) {
-  .landing-grid-wrap {
-    max-width: 1280px;
-  }
-}
-
-.landing-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
-}
-
-.landing-card {
-  @apply relative rounded-xl p-5 aspect-square md:aspect-auto md:min-h-[400px] flex flex-col overflow-hidden transition-transform duration-300 ease-out hover:-translate-y-2;
-}
-
-.landing-card--text {
-  @apply bg-gray-100 text-gray-900;
-}
-
-.landing-card--image {
-  @apply bg-gray-200 text-gray-900;
-}
-
-.landing-card--accent {
-  @apply bg-amber-400 text-black;
-}
-
-.landing-card__nav-arrow {
-  @apply absolute top-3 right-3 text-base opacity-50;
-}
-
-.landing-card__info-row {
-  @apply flex flex-row items-center gap-2 mb-2;
-}
-
-.landing-card__icon {
-  @apply text-sm text-gray-500;
-}
-
-.landing-card__description {
-  @apply text-sm opacity-90 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-md;
-}
-
-.landing-card__image-wrap {
-  @apply mt-3 rounded-lg overflow-hidden flex-1 min-h-[120px];
-}
-
-.landing-card__image {
-  @apply w-full h-full object-cover;
-}
-
-.landing-card__badge {
-  @apply absolute flex flex-col gap-2;
-}
-
-.landing-card__badge--bottom-left {
-  @apply bottom-5 left-5 items-start;
-}
-
-.landing-card__badge--bottom-right {
-  @apply bottom-5 right-5 items-end;
-}
-
-.landing-card__badge-emoji {
-  @apply text-[64px] leading-none;
-}
-
-.landing-card__badge-label {
-  @apply text-[32px] font-medium text-[#1d1d1f] px-3 py-1 rounded-2xl bg-white/20 backdrop-blur-md;
 }
 </style>

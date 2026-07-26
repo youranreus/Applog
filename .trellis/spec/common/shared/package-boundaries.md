@@ -48,9 +48,10 @@ Criteria (all should be true):
 - Stored value JSON matches `ISystemBaseConfig`:
   - Required: `title`, `description`, `allowUserLogin`, `allowComment`
   - Optional site meta: `siteFoundedDate?` (`YYYY-MM-DD` or `''`), `icpFilingNumber?` (display string or `''`)
+  - Optional Landing meta: `landingBio?`, `landingSlogan?`, `weatherCity?`, `personalHomepageUrl?`, `bilibiliUrl?`, `githubUrl?`
 - Frontend prefers `getSystemConfigKey(...)` when calling config APIs
 - Backend currently concatenates `${prefix}${SYSTEM_CONFIG_KEYS.BASE_CONFIG}` (semantically equivalent; prefer reusing the helper when touching that code)
-- Old configs missing optional fields are treated as unconfigured (`|| ''` / omit display)
+- Old configs missing optional fields follow each field's contract below; do not collapse missing and explicit empty with `||`
 
 ### Umami config
 
@@ -72,10 +73,10 @@ References:
 
 ---
 
-## Scenario: Extending `ISystemBaseConfig` site meta (founded date / ICP)
+## Scenario: Extending `ISystemBaseConfig` site meta (Footer / Landing)
 
 ### 1. Scope / Trigger
-- Trigger: Adding optional fields that both admin settings and public Footer consume via the same `SYSTEM_BASE_CONFIG` JSON blob (cross-layer contract change).
+- Trigger: Adding optional fields that admin settings and public Footer/Landing consume via the same `SYSTEM_BASE_CONFIG` JSON blob (cross-layer contract change).
 
 ### 2. Signatures
 - Type: `ISystemBaseConfig` in `packages/common/src/types/system-config.ts`
@@ -89,25 +90,37 @@ References:
 |-------|------|-------------|
 | `siteFoundedDate` | `string?` | ISO date `YYYY-MM-DD` or `''`; empty / missing = Footer hides uptime |
 | `icpFilingNumber` | `string?` | Free text or `''`; empty / missing = Footer hides ICP link |
+| `landingBio` | `string?` | Missing = legacy default copy; trimmed empty = hide |
+| `landingSlogan` | `string?` | Missing = legacy default copy; trimmed empty = hide |
+| `weatherCity` | `string?` | Missing/non-string/empty = weather disabled; backend trims before provider lookup |
+| `personalHomepageUrl` | `string?` | Missing = `/about.html`; empty = hide; allow `/...` or HTTP(S) |
+| `bilibiliUrl` | `string?` | Missing/empty = hide; HTTP(S) only |
+| `githubUrl` | `string?` | Missing = legacy GitHub default; empty = hide; HTTP(S) only |
 | Uptime display | Frontend-only | Local `YYYY-MM-DDT00:00:00` start; text `本站已运行 {d} 天 {h} 时 {m} 分 {s} 秒`; clamp future to 0 |
 | ICP link | Frontend-only | `https://beian.miit.gov.cn/` + `target="_blank"` + `rel="noopener noreferrer"` |
 
 ### 4. Validation & Error Matrix
 | Condition | Behavior |
 |-----------|----------|
-| Missing optional fields on old JSON | Treat as unconfigured; do not throw |
+| Missing optional Footer fields on old JSON | Treat as unconfigured; do not throw |
 | Illegal date string (non `YYYY-MM-DD` / invalid calendar day) | Do not show uptime; admin Calendar parses to `undefined` |
 | Empty string after clear + save | Persist `''`; hide corresponding Footer item |
 | Future founded date | Show zeroed uptime (no negative) |
+| Old JSON missing Landing fields | Apply the documented legacy defaults; do not mutate stored JSON merely by reading |
+| Explicit empty Landing text/link | Persist `''` and hide; never replace it with a fallback via `||` |
+| Invalid or dangerous URL protocol | Frontend normalizer returns `null`; do not render `href` |
 
 ### 5. Good/Base/Bad Cases
 - Good: both fields set → Footer Row2 shows ICP then uptime (desktop ` · `; mobile two lines)
 - Base: both empty → no Row2; Row1 Copyright \| Nav unchanged
 - Bad: inventing a second `SYSTEM_*` key for these fields, or computing uptime on the server
+- Landing good: missing legacy fields retain the previous homepage copy; admin saving `''` hides exactly that item.
+- Landing bad: using `value || fallback`, which makes an explicit empty string impossible to distinguish from a missing field.
 
 ### 6. Tests Required
 - Unit: `site-uptime` helpers — empty/illegal → `null`; 1-day delta copy; future → zeros
 - Manual/E2E: save/clear in SystemSettings; Footer visibility matrix (only ICP / only date / both / neither)
+- Unit/manual: Landing missing-vs-empty semantics; internal homepage vs external URL; dangerous protocol hidden; malformed `weatherCity` soft-disables weather.
 - Type-check after `pnpm --filter @applog/common run build`
 
 ### 7. Wrong vs Correct
@@ -121,6 +134,9 @@ interface ILocalConfig { founded: Date }
 // Extend shared ISystemBaseConfig; store YYYY-MM-DD string; FE Calendar ↔ string
 siteFoundedDate?: string;
 icpFilingNumber?: string;
+
+// Missing and explicit empty stay distinguishable.
+const source = value === undefined ? legacyFallback : value;
 ```
 
 ---
