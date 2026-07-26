@@ -352,3 +352,37 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: 访客鼠标位置展示
+
+**Date**: 2026-07-26
+**Task**: 访客鼠标位置展示
+**Branch**: `master`
+
+### Summary
+
+实现同路径访客鼠标的低频同步、随机身份与绝对定位展示；修复滚动后视口坐标漂移，统一为文档坐标，并完成双标签页回归、构建、类型检查和后端单测。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6bec37f` | (see git log) |
+| `7174e52` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
