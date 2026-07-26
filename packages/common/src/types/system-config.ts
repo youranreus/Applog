@@ -11,7 +11,7 @@ export interface ISystemBaseConfig {
   /** 是否允许评论 */
   allowComment: boolean;
   /**
-   * 建站日期（ISO 日期 `YYYY-MM-DD`）
+   * 建站时间（本地时间 `YYYY-MM-DDTHH:mm`，兼容旧的 `YYYY-MM-DD`）
    * 空字符串或未设置时，前台不展示运行时间
    */
   siteFoundedDate?: string;

@@ -23,6 +23,7 @@ import {
 } from '@applog/common';
 import { USER_ROLES } from '@/constants/permission';
 import { cn } from '@/lib/utils';
+import { parseSiteFoundedLocalTime } from '@/utils/site-uptime';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -67,34 +68,25 @@ const calendarDefaultPlaceholder = today(getLocalTimeZone());
 const siteFoundedDateOpen = ref(false);
 
 /**
- * 将 YYYY-MM-DD 解析为 CalendarDate
- * @param ymd - ISO 日期字符串
+ * 从建站时间中解析 CalendarDate
+ * @param value - 本地建站时间，兼容旧的纯日期值
  * @returns 有效日期或 undefined（非法日历日不抛错）
  */
-function parseYmdToCalendarDate(ymd: string): DateValue | undefined {
-  const trimmed = ymd.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return undefined;
-  }
-
-  const [yearText, monthText, dayText] = trimmed.split('-');
-  const year = Number(yearText);
-  const month = Number(monthText);
-  const day = Number(dayText);
-
-  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+function parseSiteFoundedCalendarDate(value: string): DateValue | undefined {
+  const parsed = parseSiteFoundedLocalTime(value);
+  if (!parsed) {
     return undefined;
   }
 
   try {
-    return new CalendarDate(year, month, day);
+    return new CalendarDate(parsed.year, parsed.month, parsed.day);
   } catch {
     return undefined;
   }
 }
 
 /**
- * 将 DateValue 转为 YYYY-MM-DD 存储字符串
+ * 将 DateValue 转为 YYYY-MM-DD 日期字符串
  * @param date - 日历选中值
  * @returns ISO 日期或空串
  */
@@ -106,6 +98,20 @@ function calendarDateToYmd(date: DateValue | null | undefined): string {
   const month = String(date.month).padStart(2, '0');
   const day = String(date.day).padStart(2, '0');
   return `${date.year}-${month}-${day}`;
+}
+
+/**
+ * 读取建站时间的时分部分
+ * @param value - 本地建站时间
+ * @returns HH:mm；旧纯日期或非法值回退到 00:00
+ */
+function getSiteFoundedTime(value: string): string {
+  const parsed = parseSiteFoundedLocalTime(value);
+  if (!parsed) {
+    return '00:00';
+  }
+
+  return `${String(parsed.hour).padStart(2, '0')}:${String(parsed.minute).padStart(2, '0')}`;
 }
 
 /**
@@ -141,7 +147,21 @@ const formData = ref<ISystemBaseConfig>({
  * 表单绑定的建站日期（Calendar 用 DateValue，只读；写入走 handleSiteFoundedDateSelect）
  */
 const siteFoundedCalendarDate = computed<DateValue | undefined>(() => {
-  return parseYmdToCalendarDate(formData.value.siteFoundedDate || '');
+  return parseSiteFoundedCalendarDate(formData.value.siteFoundedDate || '');
+});
+
+/**
+ * 表单绑定的建站时分（仅在已选日期时写入）
+ */
+const siteFoundedTime = computed<string>({
+  get: () => getSiteFoundedTime(formData.value.siteFoundedDate || ''),
+  set: (time) => {
+    const date = siteFoundedCalendarDate.value;
+    if (!date || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+      return;
+    }
+    formData.value.siteFoundedDate = `${calendarDateToYmd(date)}T${time}`;
+  },
 });
 
 /**
@@ -160,7 +180,10 @@ const siteFoundedDateLabel = computed(() => {
  * @param value - 选中的日期
  */
 function handleSiteFoundedDateSelect(value: DateValue | undefined): void {
-  formData.value.siteFoundedDate = calendarDateToYmd(value);
+  const date = calendarDateToYmd(value);
+  formData.value.siteFoundedDate = date
+    ? `${date}T${siteFoundedTime.value}`
+    : '';
   siteFoundedDateOpen.value = false;
 }
 
@@ -590,17 +613,18 @@ async function handleSaveUmami(): Promise<void> {
         </Field>
 
         <Field>
-          <FieldLabel>建站日期</FieldLabel>
-          <div class="flex items-center gap-2">
+          <FieldLabel>建站时间</FieldLabel>
+          <div class="flex flex-wrap items-center gap-2">
             <Popover v-model:open="siteFoundedDateOpen">
               <PopoverTrigger as-child>
                 <Button
                   type="button"
                   variant="outline"
                   :class="cn(
-                    'h-8 w-full max-w-xs justify-start rounded-[8px] border-input bg-frost px-2.5 font-normal text-foreground shadow-none hover:bg-frost',
+                    'h-8 w-full min-w-52 max-w-xs flex-1 justify-start rounded-[8px] border-input bg-frost px-2.5 font-normal text-foreground shadow-none hover:bg-frost',
                     !siteFoundedCalendarDate && 'text-muted-foreground',
                   )"
+                  aria-label="选择建站日期"
                 >
                   <CalendarIcon class="size-4 opacity-60" />
                   {{ siteFoundedDateLabel }}
@@ -615,19 +639,27 @@ async function handleSaveUmami(): Promise<void> {
                 />
               </PopoverContent>
             </Popover>
+            <Input
+              v-model="siteFoundedTime"
+              type="time"
+              step="60"
+              class="w-32"
+              aria-label="选择建站时间"
+              :disabled="!siteFoundedCalendarDate"
+            />
             <Button
               v-if="siteFoundedCalendarDate"
               type="button"
               variant="ghost"
               size="icon-sm"
-              aria-label="清除建站日期"
+              aria-label="清除建站时间"
               @click="clearSiteFoundedDate"
             >
               <XIcon class="size-4" />
             </Button>
           </div>
           <FieldDescription>
-            配置后将在页面底部展示实时运行时间；清空后不展示
+            精确到分钟；配置后将在页面底部展示实时运行时间，清空后不展示
           </FieldDescription>
         </Field>
 

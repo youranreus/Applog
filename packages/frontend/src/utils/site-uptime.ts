@@ -9,27 +9,62 @@ export interface ISiteUptimeParts {
 }
 
 /**
- * 将建站日期字符串解析为本地零点时间戳
- * @param siteFoundedDate - ISO 日期 `YYYY-MM-DD`
+ * 本地建站时间的解析结果
+ */
+export interface ISiteFoundedLocalTime {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  timestamp: number;
+}
+
+/**
+ * 解析并校验本地建站时间
+ * @param siteFoundedDate - 本地时间 `YYYY-MM-DDTHH:mm`，兼容旧的 `YYYY-MM-DD`
+ * @returns 有效的日期时间分量与时间戳，否则返回 null
+ */
+export function parseSiteFoundedLocalTime(siteFoundedDate: string): ISiteFoundedLocalTime | null {
+  const trimmed = siteFoundedDate.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(trimmed);
+  if (!match) {
+    return null;
+  }
+
+  const [, yearText, monthText, dayText, hourText = '00', minuteText = '00'] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const foundedAt = new Date(year, month - 1, day, hour, minute, 0, 0);
+
+  if (
+    foundedAt.getFullYear() !== year ||
+    foundedAt.getMonth() !== month - 1 ||
+    foundedAt.getDate() !== day ||
+    foundedAt.getHours() !== hour ||
+    foundedAt.getMinutes() !== minute
+  ) {
+    return null;
+  }
+
+  return { year, month, day, hour, minute, timestamp: foundedAt.getTime() };
+}
+
+/**
+ * 将建站时间字符串解析为本地时间戳
+ * @param siteFoundedDate - 本地时间 `YYYY-MM-DDTHH:mm`，兼容旧的 `YYYY-MM-DD`
  * @returns 有效则返回毫秒时间戳，否则返回 null
  *
  * 逻辑说明：
- * 1. 校验非空且匹配 YYYY-MM-DD
- * 2. 用 `T00:00:00` 拼成本地午夜，避免 UTC 偏移
- * 3. 无效 Date 返回 null
+ * 1. 旧的纯日期值按本地 00:00 解析
+ * 2. 新值保留到分钟，不引入 UTC 偏移
+ * 3. 校验日历日与时间分量，拒绝 Date 自动滚动修正的非法值
  */
 export function parseSiteFoundedTimestamp(siteFoundedDate: string): number | null {
-  const trimmed = siteFoundedDate.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return null;
-  }
-
-  const timestamp = new Date(`${trimmed}T00:00:00`).getTime();
-  if (Number.isNaN(timestamp)) {
-    return null;
-  }
-
-  return timestamp;
+  return parseSiteFoundedLocalTime(siteFoundedDate)?.timestamp ?? null;
 }
 
 /**
@@ -63,7 +98,7 @@ export function formatSiteUptimeText(parts: ISiteUptimeParts): string {
 
 /**
  * 由建站日期与当前时间生成页脚运行时间文案
- * @param siteFoundedDate - ISO 日期或空
+ * @param siteFoundedDate - 本地建站时间或空
  * @param now - 当前时间戳（毫秒）
  * @returns 可展示文案；无法解析时返回 null
  */
