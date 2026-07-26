@@ -277,3 +277,37 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: 重构 Landing 页面阅读体验
+
+**Date**: 2026-07-26
+**Task**: 重构 Landing 页面阅读体验
+**Branch**: `master`
+
+### Summary
+
+完成 Landing 窄栏个人首页重构：新增可配置标题、副标题、Slogan、天气城市及社交链接，接入服务端天气与 Umami 在线人数，复用站点运行时间，并完成响应式布局、降级策略和代码规范更新。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1aa0fe2` | (see git log) |
+| `ed4ad8e` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
