@@ -19,7 +19,10 @@
 
 ### Main Changes
 
-- Detailed change bullets were not supplied; see the summary above.
+- 后台系统设置新增分钟级时间选择器，与日历控件共同编辑建站时间。
+- 建站时间保存为本地 `YYYY-MM-DDTHH:mm`，兼容旧 `YYYY-MM-DD` 值。
+- 表单和页脚共用统一解析器，严格拒绝非法日期、时分与多余后缀。
+- 更新 Trellis 前端控件规范和跨层系统配置契约。
 
 ### Git Commits
 
@@ -31,7 +34,11 @@
 
 ### Testing
 
-- Validation was not recorded for this session.
+- `pnpm --filter @applog/common run build`
+- `pnpm --filter @applog/frontend run type-check`
+- `pnpm --filter @applog/frontend run build-only`
+- `pnpm --filter @applog/backend run build`
+- 相关文件 oxlint / ESLint 通过；建站时间解析边界断言通过。
 
 ### Status
 
@@ -299,6 +306,40 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 |------|---------|
 | `1aa0fe2` | (see git log) |
 | `ed4ad8e` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 10: 建站时间精确到分钟
+
+**Date**: 2026-07-26
+**Task**: 建站时间精确到分钟
+**Branch**: `master`
+
+### Summary
+
+后台系统设置新增分钟级时间选择器，建站时间以本地 YYYY-MM-DDTHH:mm 保存并兼容旧日期格式；统一表单与页脚解析校验，补充跨层配置契约。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `037a46e` | (see git log) |
+| `b7dd60d` | (see git log) |
 
 ### Testing
 
