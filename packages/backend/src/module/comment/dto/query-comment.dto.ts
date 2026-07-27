@@ -1,5 +1,6 @@
-import { IsInt, IsOptional, Min, Max, IsDefined } from 'class-validator';
+import { IsInt, IsOptional, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsExactlyOneCommentTarget } from './comment-target.validator';
 
 /**
  * 评论状态类型
@@ -26,6 +27,15 @@ export class QueryCommentDto {
   @IsInt()
   @Min(1, { message: '文章ID必须大于0' })
   @Type(() => Number)
-  @IsDefined({ message: '文章ID不能为空' })
-  postId: number;
+  @IsOptional()
+  postId?: number;
+
+  @IsInt()
+  @Min(1, { message: '页面ID必须大于0' })
+  @Type(() => Number)
+  @IsOptional()
+  pageId?: number;
+
+  @IsExactlyOneCommentTarget()
+  private readonly commentTarget?: never;
 }

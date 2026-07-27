@@ -148,7 +148,7 @@ watch(
         </div>
 
         <FieldDescription>
-          评论依赖已迁移文章的 Typecho 原始 ID；找不到对应文章的评论会跳过并计入结果。
+          评论依赖已迁移文章或页面的 Typecho 原始 ID；找不到对应目标的评论会跳过并计入结果。
         </FieldDescription>
 
         <p v-if="error" class="text-destructive m-0" role="alert">{{ error.message }}</p>
@@ -173,12 +173,20 @@ watch(
               <dd class="m-0 font-semibold">{{ result.data.commentsMissingPost }}</dd>
             </div>
             <div class="grid gap-0.5">
+              <dt class="text-muted-foreground text-xs">缺少页面</dt>
+              <dd class="m-0 font-semibold">{{ result.data.commentsMissingPage }}</dd>
+            </div>
+            <div class="grid gap-0.5">
               <dt class="text-muted-foreground text-xs">缺少父评论</dt>
               <dd class="m-0 font-semibold">{{ result.data.commentsMissingParent }}</dd>
             </div>
             <div class="grid gap-0.5">
               <dt class="text-muted-foreground text-xs">类型跳过</dt>
               <dd class="m-0 font-semibold">{{ result.data.commentsSkippedByType }}</dd>
+            </div>
+            <div class="grid gap-0.5">
+              <dt class="text-muted-foreground text-xs">目标类型跳过</dt>
+              <dd class="m-0 font-semibold">{{ result.data.commentsSkippedByTargetType }}</dd>
             </div>
             <div class="grid gap-0.5">
               <dt class="text-muted-foreground text-xs">状态跳过</dt>

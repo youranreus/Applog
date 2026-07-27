@@ -1,6 +1,9 @@
 import type { IPagination } from './post'
 
 export type CommentStatus = 'pending' | 'approved' | 'rejected'
+export type ICommentTarget =
+  | { type: 'post'; id: number }
+  | { type: 'page'; id: number }
 
 export interface ICommentAuthor {
   id?: number
@@ -12,7 +15,8 @@ export interface ICommentAuthor {
 export interface IPublicComment {
   id: number
   content: string
-  postId: number
+  postId?: number
+  pageId?: number
   parentId?: number
   status: 'approved' | 'pending'
   author: ICommentAuthor
@@ -21,14 +25,16 @@ export interface IPublicComment {
   replies?: IPublicComment[]
 }
 
-export interface ICreateComment {
+export interface ICommentSubmission {
   content: string
-  postId: number
   parentId?: number
   guestName?: string
   guestEmail?: string
   guestSite?: string
 }
+
+export type ICreateComment = ICommentSubmission &
+  ({ postId: number; pageId?: never } | { pageId: number; postId?: never })
 
 export interface ICreateCommentResponse {
   comment: IPublicComment
@@ -51,6 +57,7 @@ export interface IAdminComment extends Omit<IPublicComment, 'author' | 'status'>
   source?: string
   sourceId?: string
   post?: { id: number; title: string; slug: string }
+  page?: { id: number; title: string; slug: string }
   descendantCount: number
 }
 

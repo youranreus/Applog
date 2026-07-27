@@ -10,11 +10,13 @@ import {
 } from 'typeorm';
 import { UserEntity } from './User';
 import { PostEntity } from './Post';
+import { PageEntity } from './Page';
 
 export interface CommentExportData {
   id: number;
   content: string;
-  postId: number;
+  postId?: number;
+  pageId?: number;
   authorId?: number;
   author?: {
     id: number;
@@ -41,6 +43,8 @@ export interface CommentExportData {
 })
 @Index('IDX_comments_post_status_parent', ['postId', 'status', 'parentId'])
 @Index('IDX_comments_post_ip_created', ['postId', 'ip', 'createdAt'])
+@Index('IDX_comments_page_status_parent', ['pageId', 'status', 'parentId'])
+@Index('IDX_comments_page_ip_created', ['pageId', 'ip', 'createdAt'])
 @Index('UQ_comments_source_sourceId', ['source', 'sourceId'], { unique: true })
 export class CommentEntity {
   @PrimaryGeneratedColumn()
@@ -115,15 +119,30 @@ export class CommentEntity {
 
   // 关联文章（多对一）
   @Column({
-    nullable: false,
+    nullable: true,
+    type: 'int',
   })
-  postId: number;
+  postId?: number;
 
   @ManyToOne(() => PostEntity, (post) => post.comments, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'postId' })
-  post: PostEntity;
+  post?: PostEntity;
+
+  // 关联独立页面（与 postId 恰有一个非空）
+  @Column({
+    nullable: true,
+    type: 'int',
+  })
+  pageId?: number;
+
+  @ManyToOne(() => PageEntity, (page) => page.comments, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'pageId' })
+  page?: PageEntity;
 
   // 关联作者（多对一）
   @Column({
@@ -164,6 +183,7 @@ export class CommentEntity {
       id: this.id,
       content: this.content,
       postId: this.postId,
+      pageId: this.pageId,
       authorId: this.authorId,
       parentId: this.parentId,
       status: this.status,

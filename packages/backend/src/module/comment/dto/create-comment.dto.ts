@@ -10,6 +10,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsExactlyOneCommentTarget } from './comment-target.validator';
 
 /**
  * 创建评论 DTO
@@ -23,7 +24,17 @@ export class CreateCommentDto {
   @IsInt()
   @Min(1, { message: '文章ID必须大于0' })
   @Type(() => Number)
-  postId: number;
+  @IsOptional()
+  postId?: number;
+
+  @IsInt()
+  @Min(1, { message: '页面ID必须大于0' })
+  @Type(() => Number)
+  @IsOptional()
+  pageId?: number;
+
+  @IsExactlyOneCommentTarget()
+  private readonly commentTarget?: never;
 
   @IsInt()
   @Min(1, { message: '父评论ID必须大于0' })

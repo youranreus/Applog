@@ -1,10 +1,14 @@
 import type { IAdminComment } from '@/types/comment'
 
-/** Build a public article link without anchoring non-approved comments. */
+/** Build the public post/page link without anchoring non-approved comments. */
 export function getAdminCommentLocation(
-  item: Pick<IAdminComment, 'id' | 'status' | 'post'>,
+  item: Pick<IAdminComment, 'id' | 'status' | 'post' | 'page'>,
 ): string | undefined {
-  if (!item.post) return undefined
-  const path = `/archives/${item.post.slug}.html`
+  const path = item.post
+    ? `/archives/${item.post.slug}.html`
+    : item.page
+      ? `/${item.page.slug}.html`
+      : undefined
+  if (!path) return undefined
   return item.status === 'approved' ? `${path}#comment-${item.id}` : path
 }

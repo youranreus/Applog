@@ -11,7 +11,12 @@ import {
 } from '@applog/common';
 import { DataSource, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { paginate, type Pagination } from 'nestjs-typeorm-paginate';
-import { CommentEntity, PostEntity, SystemConfigEntity } from '@/entities';
+import {
+  CommentEntity,
+  PageEntity,
+  PostEntity,
+  SystemConfigEntity,
+} from '@/entities';
 import type {
   AdminQueryCommentDto,
   ApproveCommentDto,
@@ -30,11 +35,16 @@ import {
   matchesWithdrawToken,
 } from './comment-security.utils';
 
+export type CommentTarget =
+  | { postId: number; pageId?: never }
+  | { pageId: number; postId?: never };
+
 @Injectable()
 export class CommentService {
   @InjectRepository(CommentEntity)
   private commentRepo: Repository<CommentEntity>;
   @InjectRepository(PostEntity) private postRepo: Repository<PostEntity>;
+  @InjectRepository(PageEntity) private pageRepo: Repository<PageEntity>;
   @InjectRepository(SystemConfigEntity)
   private configRepo: Repository<SystemConfigEntity>;
   @Inject(HLOGGER_TOKEN) private logger: HLogger;
@@ -61,8 +71,9 @@ export class CommentService {
     user: UserJwtPayload | undefined,
     requestContext: { ip: string; agent?: string },
   ): Promise<ICreateCommentResponseDto> {
+    const target = this.resolveTarget(dto);
     this.log(
-      `开始创建评论，文章ID: ${dto.postId}，父评论ID: ${dto.parentId ?? '无'}`,
+      `开始创建评论，目标: ${this.targetKey(target)}，父评论ID: ${dto.parentId ?? '无'}`,
     );
     try {
       if (!(await this.isCommentAllowed())) {
@@ -72,18 +83,15 @@ export class CommentService {
       const content = dto.content.trim();
       if (!content) throw new BusinessException('评论内容不能为空');
 
-      const post = await this.postRepo.findOne({
-        where: { id: dto.postId, status: 'published' },
-      });
-      if (!post) throw new BusinessException('文章不存在或未发布');
+      await this.assertPublishedTarget(target);
 
       if (dto.parentId) {
         const parent = await this.commentRepo.findOne({
           where: { id: dto.parentId },
         });
         if (!parent) throw new BusinessException('父评论不存在');
-        if (parent.postId !== dto.postId)
-          throw new BusinessException('父评论不属于该文章');
+        if (!this.hasTarget(parent, target))
+          throw new BusinessException('父评论不属于该评论目标');
         if (parent.status !== 'approved')
           throw new BusinessException('不能回复未公开的评论');
       }
@@ -96,7 +104,7 @@ export class CommentService {
       if (!this.isAdmin(user)) {
         const recent = await this.commentRepo.count({
           where: {
-            postId: dto.postId,
+            ...target,
             ip: requestContext.ip,
             createdAt: MoreThanOrEqual(new Date(Date.now() - 60_000)),
           },
@@ -108,7 +116,7 @@ export class CommentService {
       const token = isGuest ? randomBytes(32).toString('base64url') : undefined;
       const comment = this.commentRepo.create({
         content,
-        postId: dto.postId,
+        ...target,
         parentId: dto.parentId,
         authorId: user?.id,
         status: isGuest ? 'pending' : 'approved',
@@ -125,7 +133,9 @@ export class CommentService {
         where: { id: saved.id },
         relations: ['author'],
       });
-      this.log(`评论创建成功，评论ID: ${saved.id}，文章ID: ${dto.postId}`);
+      this.log(
+        `评论创建成功，评论ID: ${saved.id}，目标: ${this.targetKey(target)}`,
+      );
       const publicComment = this.toPublic(hydrated ?? saved);
       return token
         ? { comment: publicComment, withdrawToken: token }
@@ -139,10 +149,12 @@ export class CommentService {
 
   async findAll(dto: QueryCommentDto): Promise<Pagination<IPublicCommentDto>> {
     try {
+      const target = this.resolveTarget(dto);
+      const [field, id] = this.targetEntry(target);
       const rootsQuery = this.commentRepo
         .createQueryBuilder('comment')
         .leftJoinAndSelect('comment.author', 'author')
-        .where('comment.postId = :postId', { postId: dto.postId })
+        .where(`comment.${field} = :targetId`, { targetId: id })
         .andWhere('comment.status = :status', { status: 'approved' })
         .andWhere('comment.parentId IS NULL')
         .orderBy('comment.createdAt', 'DESC')
@@ -154,6 +166,7 @@ export class CommentService {
       const descendants = await this.findDescendants(
         roots.items.map((item) => item.id),
         'approved',
+        target,
       );
       const items = this.buildPublicTree([...roots.items, ...descendants]);
       return { items, meta: roots.meta, links: roots.links };
@@ -169,10 +182,11 @@ export class CommentService {
       relations: ['author'],
     });
     if (!comment) throw new BusinessException('评论不存在');
-    if (!(await this.hasPublicAncestorChain(comment))) {
+    const target = this.tryResolveTarget(comment);
+    if (!target || !(await this.hasPublicAncestorChain(comment, target))) {
       throw new BusinessException('评论不存在');
     }
-    const descendants = await this.findDescendants([id], 'approved');
+    const descendants = await this.findDescendants([id], 'approved', target);
     return (
       this.buildPublicTree([comment, ...descendants])[0] ??
       this.toPublic(comment)
@@ -182,9 +196,11 @@ export class CommentService {
   async findLocation(id: number, limit: number): Promise<ICommentLocationDto> {
     const comment = await this.commentRepo.findOne({
       where: { id, status: 'approved' },
-      select: ['id', 'postId', 'parentId'],
+      select: ['id', 'postId', 'pageId', 'parentId'],
     });
     if (!comment) throw new BusinessException('评论不存在');
+    const target = this.tryResolveTarget(comment);
+    if (!target) throw new BusinessException('评论不存在');
 
     let root = comment;
     const visited = new Set<number>([comment.id]);
@@ -196,10 +212,10 @@ export class CommentService {
       const parent = await this.commentRepo.findOne({
         where: {
           id: root.parentId,
-          postId: comment.postId,
+          ...target,
           status: 'approved',
         },
-        select: ['id', 'postId', 'parentId', 'createdAt'],
+        select: ['id', 'postId', 'pageId', 'parentId', 'createdAt'],
       });
       if (!parent) throw new BusinessException('评论不存在');
       root = parent;
@@ -209,13 +225,14 @@ export class CommentService {
       ? root
       : await this.commentRepo.findOne({
           where: { id: root.id, status: 'approved' },
-          select: ['id', 'postId', 'parentId', 'createdAt'],
+          select: ['id', 'postId', 'pageId', 'parentId', 'createdAt'],
         });
     if (!hydratedRoot) throw new BusinessException('评论不存在');
 
+    const [field, targetId] = this.targetEntry(target);
     const newerRootCount = await this.commentRepo
       .createQueryBuilder('comment')
-      .where('comment.postId = :postId', { postId: comment.postId })
+      .where(`comment.${field} = :targetId`, { targetId })
       .andWhere('comment.status = :status', { status: 'approved' })
       .andWhere('comment.parentId IS NULL')
       .andWhere(
@@ -280,11 +297,14 @@ export class CommentService {
       .createQueryBuilder('comment')
       .leftJoinAndSelect('comment.author', 'author')
       .leftJoinAndSelect('comment.post', 'post')
+      .leftJoinAndSelect('comment.page', 'page')
       .orderBy('comment.createdAt', 'DESC');
     if (dto.status)
       query.andWhere('comment.status = :status', { status: dto.status });
     if (dto.postId)
       query.andWhere('comment.postId = :postId', { postId: dto.postId });
+    if (dto.pageId)
+      query.andWhere('comment.pageId = :pageId', { pageId: dto.pageId });
     const page = await paginate(query, { page: dto.page, limit: dto.limit });
     const all = await this.commentRepo.find({ select: ['id', 'parentId'] });
     const counts = this.descendantCounts(all);
@@ -300,7 +320,7 @@ export class CommentService {
   async approve(id: number, dto: ApproveCommentDto): Promise<IAdminCommentDto> {
     const comment = await this.commentRepo.findOne({
       where: { id },
-      relations: ['author', 'post'],
+      relations: ['author', 'post', 'page'],
     });
     if (!comment) throw new BusinessException('评论不存在');
     comment.status = dto.status;
@@ -316,7 +336,7 @@ export class CommentService {
   async update(id: number, content: string): Promise<IAdminCommentDto> {
     const comment = await this.commentRepo.findOne({
       where: { id },
-      relations: ['author', 'post'],
+      relations: ['author', 'post', 'page'],
     });
     if (!comment) throw new BusinessException('评论不存在');
     comment.content = content.trim();
@@ -333,7 +353,8 @@ export class CommentService {
       relations: ['author'],
     });
     if (!comment) throw new BusinessException('评论不存在');
-    if (!(await this.hasPublicAncestorChain(comment))) {
+    const target = this.tryResolveTarget(comment);
+    if (!target || !(await this.hasPublicAncestorChain(comment, target))) {
       throw new BusinessException('评论不存在');
     }
     comment.likeCount += 1;
@@ -383,6 +404,10 @@ export class CommentService {
     return this.commentRepo.count({ where: { postId } });
   }
 
+  async countByPageId(pageId: number): Promise<number> {
+    return this.commentRepo.count({ where: { pageId } });
+  }
+
   private async isCommentAllowed(): Promise<boolean> {
     const entity = await this.configRepo.findOne({
       where: { configKey: this.baseConfigKey },
@@ -404,6 +429,7 @@ export class CommentService {
 
   private async hasPublicAncestorChain(
     comment: Pick<CommentEntity, 'parentId'>,
+    target: CommentTarget,
   ): Promise<boolean> {
     let parentId = comment.parentId;
     const visited = new Set<number>();
@@ -411,8 +437,8 @@ export class CommentService {
       if (visited.has(parentId)) return false;
       visited.add(parentId);
       const parent = await this.commentRepo.findOne({
-        where: { id: parentId, status: 'approved' },
-        select: ['id', 'parentId'],
+        where: { id: parentId, status: 'approved', ...target },
+        select: ['id', 'postId', 'pageId', 'parentId'],
       });
       if (!parent) return false;
       parentId = parent.parentId;
@@ -423,14 +449,21 @@ export class CommentService {
   private async findDescendants(
     parentIds: number[],
     status?: CommentEntity['status'],
+    target?: CommentTarget,
   ): Promise<CommentEntity[]> {
-    return this.findDescendantsWithRepo(this.commentRepo, parentIds, status);
+    return this.findDescendantsWithRepo(
+      this.commentRepo,
+      parentIds,
+      status,
+      target,
+    );
   }
 
   private async findDescendantsWithRepo(
     repo: Repository<CommentEntity>,
     parentIds: number[],
     status?: CommentEntity['status'],
+    target?: CommentTarget,
   ): Promise<CommentEntity[]> {
     const result: CommentEntity[] = [];
     let frontier = parentIds;
@@ -440,6 +473,10 @@ export class CommentService {
         .leftJoinAndSelect('comment.author', 'author')
         .where('comment.parentId IN (:...frontier)', { frontier });
       if (status) query.andWhere('comment.status = :status', { status });
+      if (target) {
+        const [field, targetId] = this.targetEntry(target);
+        query.andWhere(`comment.${field} = :targetId`, { targetId });
+      }
       const children = await query
         .orderBy('comment.createdAt', 'ASC')
         .getMany();
@@ -470,6 +507,7 @@ export class CommentService {
       id: comment.id,
       content: comment.content,
       postId: comment.postId,
+      pageId: comment.pageId,
       parentId: comment.parentId,
       status: comment.status === 'pending' ? 'pending' : 'approved',
       author: comment.author
@@ -498,6 +536,7 @@ export class CommentService {
       id: comment.id,
       content: comment.content,
       postId: comment.postId,
+      pageId: comment.pageId,
       parentId: comment.parentId,
       authorId: comment.authorId,
       author: comment.author
@@ -526,8 +565,67 @@ export class CommentService {
             slug: comment.post.slug,
           }
         : undefined,
+      page: comment.page
+        ? {
+            id: comment.page.id,
+            title: comment.page.title,
+            slug: comment.page.slug,
+          }
+        : undefined,
       descendantCount,
     };
+  }
+
+  private resolveTarget(input: {
+    postId?: number;
+    pageId?: number;
+  }): CommentTarget {
+    const target = this.tryResolveTarget(input);
+    if (!target) {
+      throw new BusinessException('必须且只能指定文章或页面');
+    }
+    return target;
+  }
+
+  private tryResolveTarget(input: {
+    postId?: number;
+    pageId?: number;
+  }): CommentTarget | undefined {
+    if (input.postId && !input.pageId) return { postId: input.postId };
+    if (input.pageId && !input.postId) return { pageId: input.pageId };
+    return undefined;
+  }
+
+  private targetEntry(target: CommentTarget): ['postId' | 'pageId', number] {
+    return 'postId' in target
+      ? ['postId', target.postId]
+      : ['pageId', target.pageId];
+  }
+
+  private targetKey(target: CommentTarget): string {
+    const [field, id] = this.targetEntry(target);
+    return `${field === 'postId' ? 'post' : 'page'}:${id}`;
+  }
+
+  private hasTarget(
+    comment: Pick<CommentEntity, 'postId' | 'pageId'>,
+    target: CommentTarget,
+  ): boolean {
+    return comment.postId === target.postId && comment.pageId === target.pageId;
+  }
+
+  private async assertPublishedTarget(target: CommentTarget): Promise<void> {
+    if ('postId' in target) {
+      const post = await this.postRepo.findOne({
+        where: { id: target.postId, status: 'published' },
+      });
+      if (!post) throw new BusinessException('文章不存在或未发布');
+      return;
+    }
+    const page = await this.pageRepo.findOne({
+      where: { id: target.pageId, status: 'published' },
+    });
+    if (!page) throw new BusinessException('页面不存在或未发布');
   }
 
   private descendantCounts(

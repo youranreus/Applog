@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, IsNull, Not } from 'typeorm';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
 import { PostEntity, PageEntity, UserEntity, CommentEntity } from '@/entities';
@@ -118,8 +118,10 @@ export class MigrationService {
         commentsImported: 0,
         commentsExisting: 0,
         commentsSkippedByType: 0,
+        commentsSkippedByTargetType: 0,
         commentsSkippedByStatus: 0,
         commentsMissingPost: 0,
+        commentsMissingPage: 0,
         commentsMissingParent: 0,
         commentsFailed: 0,
         duration: '',
@@ -212,10 +214,23 @@ export class MigrationService {
     if (
       resources.includes('posts') &&
       !resources.includes('comments') &&
-      (await this.commentRepo.count()) > 0
+      (await this.commentRepo.count({
+        where: { postId: Not(IsNull()) },
+      })) > 0
     ) {
       throw new BusinessException(
         '清空文章会级联删除评论，请同时选择 comments 资源',
+      );
+    }
+    if (
+      resources.includes('pages') &&
+      !resources.includes('comments') &&
+      (await this.commentRepo.count({
+        where: { pageId: Not(IsNull()) },
+      })) > 0
+    ) {
+      throw new BusinessException(
+        '清空页面会级联删除评论，请同时选择 comments 资源',
       );
     }
     const queryRunner = this.dataSource.createQueryRunner();
@@ -523,8 +538,10 @@ export class MigrationService {
     commentsImported: number;
     commentsExisting: number;
     commentsSkippedByType: number;
+    commentsSkippedByTargetType: number;
     commentsSkippedByStatus: number;
     commentsMissingPost: number;
+    commentsMissingPage: number;
     commentsMissingParent: number;
     commentsFailed: number;
   }> {
@@ -532,8 +549,10 @@ export class MigrationService {
       commentsImported: 0,
       commentsExisting: 0,
       commentsSkippedByType: 0,
+      commentsSkippedByTargetType: 0,
       commentsSkippedByStatus: 0,
       commentsMissingPost: 0,
+      commentsMissingPage: 0,
       commentsMissingParent: 0,
       commentsFailed: 0,
     };
@@ -543,7 +562,9 @@ export class MigrationService {
     try {
       const commentRepo = runner.manager.getRepository(CommentEntity);
       const postRepo = runner.manager.getRepository(PostEntity);
+      const pageRepo = runner.manager.getRepository(PageEntity);
       const posts = await postRepo.find();
+      const pages = await pageRepo.find();
       const postBySourceId = new Map<number, number>();
       for (const post of posts) {
         const originalId = Number(post.extra?.originalId);
@@ -554,21 +575,37 @@ export class MigrationService {
           postBySourceId.set(originalId, post.id);
         }
       }
+      const pageBySourceId = new Map<number, number>();
+      for (const page of pages) {
+        const originalId = Number(page.extra?.originalId);
+        if (
+          page.extra?.migratedFrom === 'typecho' &&
+          Number.isFinite(originalId)
+        ) {
+          pageBySourceId.set(originalId, page.id);
+        }
+      }
 
       const existing = await commentRepo.find({ where: { source: 'typecho' } });
       const commentIdBySourceId = new Map<number, number>();
-      const commentPostBySourceId = new Map<number, number>();
+      const commentTargetBySourceId = new Map<number, string>();
       for (const comment of existing) {
         const sourceId = Number(comment.sourceId);
         if (Number.isFinite(sourceId)) {
           commentIdBySourceId.set(sourceId, comment.id);
-          commentPostBySourceId.set(sourceId, comment.postId);
+          const targetKey = comment.postId
+            ? `post:${comment.postId}`
+            : comment.pageId
+              ? `page:${comment.pageId}`
+              : undefined;
+          if (targetKey) commentTargetBySourceId.set(sourceId, targetKey);
         }
       }
 
       const valid: Array<{
         raw: IRawComment;
-        postId: number;
+        target: { postId: number } | { pageId: number };
+        targetKey: string;
         status: CommentEntity['status'];
       }> = [];
       for (const raw of rawComments) {
@@ -581,18 +618,38 @@ export class MigrationService {
           stats.commentsSkippedByStatus++;
           continue;
         }
-        const postId = postBySourceId.get(Number(raw.cid));
-        if (!postId) {
-          stats.commentsMissingPost++;
+        let target: { postId: number } | { pageId: number };
+        let targetKey: string;
+        if (raw.targetType === 'post') {
+          const postId = postBySourceId.get(Number(raw.cid));
+          if (!postId) {
+            stats.commentsMissingPost++;
+            continue;
+          }
+          target = { postId };
+          targetKey = `post:${postId}`;
+        } else if (raw.targetType === 'page') {
+          const pageId = pageBySourceId.get(Number(raw.cid));
+          if (!pageId) {
+            stats.commentsMissingPage++;
+            continue;
+          }
+          target = { pageId };
+          targetKey = `page:${pageId}`;
+        } else {
+          stats.commentsSkippedByTargetType++;
           continue;
         }
         if (commentIdBySourceId.has(Number(raw.coid))) {
           stats.commentsExisting++;
           continue;
         }
-        valid.push({ raw, postId, status });
+        valid.push({ raw, target, targetKey, status });
       }
 
+      const validSourceIds = new Set(
+        valid.map((item) => Number(item.raw.coid)),
+      );
       let pending = valid;
       let progressed = true;
       while (pending.length && progressed) {
@@ -603,16 +660,24 @@ export class MigrationService {
           const parentId = parentSourceId
             ? commentIdBySourceId.get(parentSourceId)
             : undefined;
-          if (parentSourceId && !parentId) {
+          if (
+            parentSourceId &&
+            !parentId &&
+            validSourceIds.has(parentSourceId)
+          ) {
             next.push(item);
             continue;
           }
-          if (
+          let resolvedParentId = parentId;
+          if (parentSourceId && !parentId) {
+            stats.commentsMissingParent++;
+            resolvedParentId = undefined;
+          } else if (
             parentSourceId &&
-            commentPostBySourceId.get(parentSourceId) !== item.postId
+            commentTargetBySourceId.get(parentSourceId) !== item.targetKey
           ) {
             stats.commentsMissingParent++;
-            continue;
+            resolvedParentId = undefined;
           }
           try {
             const timestamp = new Date(Number(item.raw.created) * 1000);
@@ -621,8 +686,8 @@ export class MigrationService {
                 content: item.raw.text || '',
                 status: item.status,
                 likeCount: 0,
-                postId: item.postId,
-                parentId,
+                ...item.target,
+                parentId: resolvedParentId,
                 authorId: undefined,
                 guestName: item.raw.author || '游客',
                 guestEmail: item.raw.mail || undefined,
@@ -640,7 +705,7 @@ export class MigrationService {
               }),
             );
             commentIdBySourceId.set(Number(item.raw.coid), saved.id);
-            commentPostBySourceId.set(Number(item.raw.coid), item.postId);
+            commentTargetBySourceId.set(Number(item.raw.coid), item.targetKey);
             stats.commentsImported++;
             progressed = true;
           } catch (error) {
@@ -649,10 +714,17 @@ export class MigrationService {
             });
             if (duplicate) {
               commentIdBySourceId.set(Number(item.raw.coid), duplicate.id);
-              commentPostBySourceId.set(
-                Number(item.raw.coid),
-                duplicate.postId,
-              );
+              const duplicateTargetKey = duplicate.postId
+                ? `post:${duplicate.postId}`
+                : duplicate.pageId
+                  ? `page:${duplicate.pageId}`
+                  : undefined;
+              if (duplicateTargetKey) {
+                commentTargetBySourceId.set(
+                  Number(item.raw.coid),
+                  duplicateTargetKey,
+                );
+              }
               stats.commentsExisting++;
               progressed = true;
             } else {
@@ -665,7 +737,45 @@ export class MigrationService {
         }
         pending = next;
       }
-      stats.commentsMissingParent += pending.length;
+      if (pending.length) {
+        stats.commentsMissingParent += pending.length;
+        for (const item of pending) {
+          try {
+            const timestamp = new Date(Number(item.raw.created) * 1000);
+            const saved = await commentRepo.save(
+              commentRepo.create({
+                content: item.raw.text || '',
+                status: item.status,
+                likeCount: 0,
+                ...item.target,
+                parentId: undefined,
+                authorId: undefined,
+                guestName: item.raw.author || '游客',
+                guestEmail: item.raw.mail || undefined,
+                guestSite: item.raw.url || undefined,
+                ip: item.raw.ip || undefined,
+                agent: item.raw.agent?.slice(0, 255) || undefined,
+                source: 'typecho',
+                sourceId: String(item.raw.coid),
+                extra: {
+                  typechoAuthorId: item.raw.authorId,
+                  typechoOwnerId: item.raw.ownerId,
+                },
+                createdAt: timestamp,
+                updatedAt: timestamp,
+              }),
+            );
+            commentIdBySourceId.set(Number(item.raw.coid), saved.id);
+            commentTargetBySourceId.set(Number(item.raw.coid), item.targetKey);
+            stats.commentsImported++;
+          } catch (error) {
+            stats.commentsFailed++;
+            this.warn(
+              `评论导入失败 (coid: ${item.raw.coid}): ${error.message}`,
+            );
+          }
+        }
+      }
       await runner.commitTransaction();
       return stats;
     } catch (error) {

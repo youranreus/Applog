@@ -30,7 +30,8 @@ interface CommentRecord {
   content: string
   status: CommentStatus
   likeCount: number
-  postId: number
+  postId?: number
+  pageId?: number
   parentId?: number
   authorId?: number
   guestName?: string
@@ -47,8 +48,8 @@ interface CommentRecord {
 
 Required indexes:
 
-- `(postId, status, parentId)` for public trees;
-- `(postId, ip, createdAt)` for throttling;
+- `(postId, status, parentId)` and `(pageId, status, parentId)` for public trees;
+- `(postId, ip, createdAt)` and `(pageId, ip, createdAt)` for throttling;
 - unique `(source, sourceId)` for migration idempotency.
 
 `withdrawTokenHash` must use `select: false`. Public DTOs must never contain `guestEmail`, `ip`, `agent`, `withdrawTokenHash`, `source`, or `sourceId`.
@@ -58,14 +59,14 @@ Required indexes:
 | Method | Path | Input | Output / rule |
 |---|---|---|---|
 | `POST` | `/comment` | `CreateCommentDto` | Authenticated comments are `approved`; guest comments are `pending` and receive a one-time plaintext `withdrawToken` |
-| `GET` | `/comment?postId=&page=&limit=` | `QueryCommentDto` | Paginates approved root comments and returns approved descendant trees |
+| `GET` | `/comment?postId=&page=&limit=` or `/comment?pageId=&page=&limit=` | `QueryCommentDto` | Requires exactly one target, paginates approved root comments, and returns approved descendant trees |
 | `GET` | `/comment/:id` | positive id | Approved comment only when its full ancestor chain is approved |
 | `POST` | `/comment/pending/resolve` | at most 20 `{ commentId, token }` capabilities | Returns matching pending public DTOs, deduplicated by comment id |
 | `POST` | `/comment/:id/withdraw` | `{ token }` | Deletes the matching pending subtree only |
 | `POST` | `/comment/:id/react` | positive id | Reacts only when the comment and its full ancestor chain are approved |
 | `GET` | `/comment/:id/location?limit=` | positive id, limit 1-50 | Returns the approved root's page and id using the public root ordering; hidden comments use not-found behavior |
 
-`CreateCommentDto` accepts content up to 10,000 characters, a positive `postId`, an optional positive `parentId`, and guest name/email/site fields up to the entity's 200-character limits. Guest email is required and valid; site is optional and a valid URL.
+`CreateCommentDto` accepts content up to 10,000 characters, exactly one positive `postId` or `pageId`, an optional positive `parentId`, and guest name/email/site fields up to the entity's 200-character limits. Guest email is required and valid; site is optional and a valid URL.
 
 ### Admin API
 
@@ -79,14 +80,15 @@ PATCH  /comment/:id
 DELETE /comment/:id
 ```
 
-Admin list filters by `pending | approved | rejected` and/or `postId`. Approval sets the requested moderation status and clears `withdrawTokenHash` to SQL `NULL`. Deletion is transactional and removes the entire descendant subtree.
+Admin list filters by `pending | approved | rejected`, `postId`, and/or `pageId`, and joins both target summaries. Approval sets the requested moderation status and clears `withdrawTokenHash` to SQL `NULL`. Deletion is transactional and removes the entire descendant subtree.
 
 ### Typecho Migration
 
-`MigrateDataDto.resources` is an optional non-empty subset of `posts | pages | comments`; omission preserves the full migration behavior. A comments-only migration reads and writes neither posts nor pages. Comments map with:
+`MigrateDataDto.resources` is an optional non-empty subset of `posts | pages | comments`; omission preserves the full migration behavior. A comments-only migration does not fetch posts/pages from the source adapter and does not write or clear AppLog posts/pages; reading AppLog target mappings is required. Comments map with:
 
 ```text
-typecho_comments.cid       -> posts.extra.originalId -> comments.postId
+typecho_comments.cid + contents.type=post -> posts.extra.originalId -> comments.postId
+typecho_comments.cid + contents.type=page -> pages.extra.originalId -> comments.pageId
 typecho_comments.coid      -> comments.sourceId
 source                     -> "typecho"
 approved / waiting / spam  -> approved / pending / rejected
@@ -113,12 +115,12 @@ That UI must not expose resource selection, `fieldMapping`, or `clearExisting`. 
 ### Creation and visibility
 
 - The global `allowComment` setting gates creation.
-- The target post must exist and be published.
-- A reply parent must belong to the same post and already be approved.
+- Exactly one target must be supplied, and the target post or page must exist and be published.
+- A reply parent must belong to the same complete target and already be approved.
 - Logged-in identity comes from the authenticated payload; clients cannot override it with guest fields.
 - Guest comments require trimmed name and email. Website remains optional.
 - Authenticated comments are created as `approved`, generate no withdrawal token, and are immediately public. Guest comments are created as `pending` and follow the capability workflow.
-- Non-admin submissions are limited to one comment per `(postId, server-observed IP)` per 60 seconds.
+- Non-admin submissions are limited to one comment per `(target type, target id, server-observed IP)` per 60 seconds.
 - IP comes from Fastify/Nest `@Ip()` and UA from the request header; never accept either in the request DTO. Production proxy configuration must trust only known proxy hops before forwarded IPs are relied on.
 
 ### Pending capability
@@ -127,7 +129,7 @@ That UI must not expose resource selection, `fieldMapping`, or `clearExisting`. 
 - Persist only a SHA-256 hash. Compare fixed-length digests with a timing-safe comparison.
 - Capability resolution and withdrawal work only while status is `pending`.
 - Approval or rejection invalidates the capability by clearing its hash.
-- Frontend persistence uses post-scoped `sessionStorage`, validates and deduplicates entries, and keeps at most 20 capabilities. Failure to access storage must not break the current-page experience.
+- Frontend persistence uses target-scoped `sessionStorage`, validates and deduplicates entries, and keeps at most 20 capabilities. Article keys remain `applog:pending-comments:<postId>`; page keys are `applog:pending-comments:page:<pageId>`. Failure to access storage must not break the current-page experience.
 - Pending-tree merge deduplicates again by comment id at the rendering boundary; it cannot rely solely on capability resolution having removed duplicates.
 - A withdrawal control is rendered only when the matching capability is present.
 
@@ -156,8 +158,8 @@ That UI must not expose resource selection, `fieldMapping`, or `clearExisting`. 
 - Migration must be idempotent through unique `(source, sourceId)` and count existing rows separately.
 - The comment-list migration payload is constructed by one typed boundary helper and always contains only `resources: ['comments']`; callers cannot pass or override `clearExisting`.
 - Import parents after source ids are known; missing parents become roots and increment `commentsMissingParent`.
-- Missing post mappings, unsupported types, unsupported statuses, existing rows, and failures are reported in separate counters.
-- `clearExisting` clears only explicitly selected resources. Reject clearing posts without comments because post deletion would implicitly cascade comment data.
+- Missing post mappings, missing page mappings, unsupported feedback types, unsupported target types, unsupported statuses, existing rows, and failures are reported in separate counters.
+- `clearExisting` clears only explicitly selected resources. Reject clearing posts or pages without comments when deletion would implicitly cascade comment data.
 
 ## 4. Validation and Error Matrix
 
@@ -165,8 +167,8 @@ That UI must not expose resource selection, `fieldMapping`, or `clearExisting`. 
 |---|---|
 | comments disabled | reject creation: `评论功能已关闭` |
 | blank content | reject creation |
-| post missing or unpublished | reject creation |
-| parent missing / other post / non-approved | reject creation with the matching business error |
+| target missing, both targets supplied, or target unpublished | reject creation |
+| parent missing / other target / non-approved | reject creation with the matching business error |
 | guest name or email missing | reject creation |
 | invalid guest email/site or excessive field length | DTO validation failure |
 | non-admin repeats within 60 seconds for post and IP | reject creation |
@@ -178,6 +180,8 @@ That UI must not expose resource selection, `fieldMapping`, or `clearExisting`. 
 | comment-list migration is repeated | import only missing source ids and report existing rows; do not clear comments |
 | Typecho comment has unsupported type/status | skip and increment the corresponding counter |
 | Typecho comment has no mapped post | skip and increment `commentsMissingPost` |
+| Typecho comment has no mapped page | skip and increment `commentsMissingPage` |
+| Typecho content has an unsupported target type | skip and increment `commentsSkippedByTargetType` |
 | Typecho comment has no mapped parent | import as root and increment `commentsMissingParent` |
 
 Unexpected persistence failures must be logged with `HLogger` and translated to `BusinessException`; secrets and plaintext capability tokens must not be logged.
@@ -221,13 +225,13 @@ Backend changes require tests for:
 - hidden-ancestor protection for direct read and reaction;
 - approval/rejection clearing the capability hash;
 - transactional subtree deletion impact;
-- Typecho status/type mapping, topology, missing references, idempotency, and comments-only zero post/page reads/writes;
+- Typecho status/type/target mapping, post/page topology, missing references, idempotency, and comments-only zero source post/page reads/writes;
 - prefix validation and selected-resource clear behavior.
 
 Frontend changes require lint, type-check, and tests or deterministic coverage for:
 
 - meme segment parsing without HTML execution;
-- post-scoped storage validation, deduplication, 20-entry cap, and storage failure;
+- target-scoped storage validation, post-key compatibility, page-key isolation, deduplication, 20-entry cap, and storage failure;
 - pending merge/withdraw visibility;
 - pending root/reply placement and duplicate-id handling;
 - valid, malformed, stale, and cross-post comment hashes, including page-1 fallback when the loaded DOM has no target anchor;

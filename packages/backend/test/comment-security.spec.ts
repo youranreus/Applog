@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { CommentEntity } from '../src/entities';
+import { CommentEntity, PageEntity, PostEntity } from '../src/entities';
 import {
   gravatarUrl,
   hashWithdrawToken,
@@ -9,10 +9,11 @@ import {
 import { mapTypechoCommentStatus } from '../src/module/system-config/typecho-comment.utils';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { QueryCommentDto } from '../src/module/comment/dto';
+import { CreateCommentDto, QueryCommentDto } from '../src/module/comment/dto';
 import { MigrateDataDto } from '../src/module/system-config/dto';
 import { CommentService } from '../src/module/comment/comment.service';
 import { MigrationService } from '../src/module/system-config/migration.service';
+import { TypechoAdapter } from '../src/module/system-config/adapters/typecho.adapter';
 import type { IRawComment } from '../src/module/system-config/dto/migration.dto';
 
 function createCommentService(
@@ -204,13 +205,15 @@ describe('comment security contract', () => {
     assert.equal(mapTypechoCommentStatus('unknown'), undefined);
   });
 
-  it('公开查询必须指定文章且不接受状态字段', async () => {
-    const missingPost = plainToInstance(QueryCommentDto, {
+  it('公开创建与查询必须且只能指定文章或页面', async () => {
+    const missingTarget = plainToInstance(QueryCommentDto, {
       page: 1,
       limit: 10,
     });
     assert.equal(
-      (await validate(missingPost)).some((item) => item.property === 'postId'),
+      (await validate(missingTarget)).some(
+        (item) => item.property === 'commentTarget',
+      ),
       true,
     );
     const valid = plainToInstance(QueryCommentDto, {
@@ -225,6 +228,105 @@ describe('comment security contract', () => {
       Object.prototype.hasOwnProperty.call(QueryCommentDto.prototype, 'status'),
       false,
     );
+    const pageQuery = plainToInstance(QueryCommentDto, { pageId: 1 });
+    assert.deepEqual(await validate(pageQuery), []);
+    const nullTarget = plainToInstance(QueryCommentDto, { postId: null });
+    assert.equal(
+      (await validate(nullTarget)).some(
+        (item) => item.property === 'commentTarget',
+      ),
+      true,
+    );
+    const conflicting = plainToInstance(CreateCommentDto, {
+      content: 'hello',
+      postId: 1,
+      pageId: 1,
+    });
+    assert.equal(
+      (await validate(conflicting)).some(
+        (item) => item.property === 'commentTarget',
+      ),
+      true,
+    );
+  });
+
+  it('页面评论创建校验已发布目标并隔离同数字 ID 的父评论和限流', async () => {
+    const parent = Object.assign(new CommentEntity(), {
+      id: 8,
+      postId: 3,
+      status: 'approved' as const,
+    });
+    const countWhere: Array<Record<string, unknown>> = [];
+    const service = createCommentService({
+      findOne: async () => parent,
+      count: async (options: { where: Record<string, unknown> }) => {
+        countWhere.push(options.where);
+        return 0;
+      },
+    });
+    Object.assign(service, {
+      pageRepo: { findOne: async () => ({ id: 3, status: 'published' }) },
+      configRepo: { findOne: async () => undefined },
+    });
+    await assert.rejects(
+      () =>
+        service.create(
+          {
+            pageId: 3,
+            parentId: parent.id,
+            content: 'reply',
+            guestName: '游客',
+            guestEmail: 'guest@example.com',
+          },
+          undefined,
+          { ip: '127.0.0.1' },
+        ),
+      (error: Error) => error.message === '父评论不属于该评论目标',
+    );
+    assert.equal(countWhere.length, 0);
+  });
+
+  it('页面根评论仅按 pageId 和 IP 限流并写入页面目标', async () => {
+    let saved: CommentEntity | undefined;
+    let countWhere: Record<string, unknown> | undefined;
+    const commentRepo = {
+      count: async (options: { where: Record<string, unknown> }) => {
+        countWhere = options.where;
+        return 0;
+      },
+      create: (value: Partial<CommentEntity>) =>
+        Object.assign(new CommentEntity(), value),
+      save: async (value: CommentEntity) => {
+        saved = Object.assign(value, {
+          id: 9,
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        });
+        return saved;
+      },
+      findOne: async (options: { relations?: string[] }) =>
+        options.relations ? saved : undefined,
+    };
+    const service = createCommentService(commentRepo);
+    Object.assign(service, {
+      pageRepo: { findOne: async () => ({ id: 3, status: 'published' }) },
+      configRepo: { findOne: async () => undefined },
+    });
+    const result = await service.create(
+      {
+        pageId: 3,
+        content: 'page comment',
+        guestName: '游客',
+        guestEmail: 'guest@example.com',
+      },
+      undefined,
+      { ip: '127.0.0.1' },
+    );
+    assert.equal(saved?.pageId, 3);
+    assert.equal(saved?.postId, undefined);
+    assert.equal(result.comment.pageId, 3);
+    assert.equal(countWhere?.pageId, 3);
+    assert.equal('postId' in (countWhere ?? {}), false);
   });
 
   it('迁移资源范围接受 comments-only', async () => {
@@ -240,6 +342,48 @@ describe('comment security contract', () => {
       resources: ['comments'],
     });
     assert.deepEqual(await validate(dto), []);
+  });
+
+  it('Typecho 评论查询联结 contents 并读取真实目标类型', async () => {
+    let sql = '';
+    const adapter = new TypechoAdapter({
+      log: () => undefined,
+      warn: () => undefined,
+      error: () => undefined,
+    } as never);
+    Object.assign(adapter, {
+      config: { tablePrefix: 'typecho_' },
+      connection: {
+        isInitialized: true,
+        query: async (value: string) => {
+          sql = value;
+          return [];
+        },
+      },
+    });
+    await adapter.fetchComments();
+    assert.match(sql, /INNER JOIN `typecho_contents` contents/);
+    assert.match(sql, /contents\.type AS targetType/);
+    assert.match(sql, /comments\.cid = contents\.cid/);
+  });
+
+  it('清空页面时存在页面评论必须同时选择 comments', async () => {
+    const service = new MigrationService({} as never);
+    Object.assign(service, {
+      commentRepo: { count: async () => 1 },
+    });
+    const clearExistingData = (
+      service as unknown as {
+        clearExistingData: (
+          resources: Array<'posts' | 'pages' | 'comments'>,
+        ) => Promise<void>;
+      }
+    ).clearExistingData.bind(service);
+    await assert.rejects(
+      () => clearExistingData(['pages']),
+      (error: Error) =>
+        error.message === '清空页面会级联删除评论，请同时选择 comments 资源',
+    );
   });
 
   it('公开单条查询不能绕过非公开父级', async () => {
@@ -396,10 +540,19 @@ describe('comment security contract', () => {
         { id: 10, extra: { migratedFrom: 'typecho', originalId: 100 } },
       ],
     };
+    const pageRepo = {
+      find: async () => [
+        { id: 20, extra: { migratedFrom: 'typecho', originalId: 200 } },
+      ],
+    };
     const runner = {
       manager: {
-        getRepository: (entity: typeof CommentEntity) =>
-          entity === CommentEntity ? commentRepo : postRepo,
+        getRepository: (
+          entity: typeof CommentEntity | typeof PostEntity | typeof PageEntity,
+        ) => {
+          if (entity === CommentEntity) return commentRepo;
+          return entity === PostEntity ? postRepo : pageRepo;
+        },
       },
       connect: async () => undefined,
       startTransaction: async () => undefined,
@@ -417,9 +570,13 @@ describe('comment security contract', () => {
         error: () => undefined,
       },
     });
-    const raw = (coid: number, parent: number): IRawComment => ({
+    const raw = (
+      coid: number,
+      parent: number,
+      targetType: 'post' | 'page' = 'post',
+    ): IRawComment => ({
       coid,
-      cid: 100,
+      cid: targetType === 'post' ? 100 : 200,
       created: 1_700_000_000 + coid,
       author: `guest-${coid}`,
       authorId: 0,
@@ -432,6 +589,7 @@ describe('comment security contract', () => {
       type: 'comment',
       status: 'approved',
       parent,
+      targetType,
     });
     const importComments = (
       service as unknown as {
@@ -442,17 +600,43 @@ describe('comment security contract', () => {
       }
     ).importComments.bind(service);
 
-    const first = await importComments([raw(2, 1), raw(1, 0)]);
-    assert.equal(first.commentsImported, 2);
-    assert.equal(stored.find((item) => item.sourceId === '2')?.parentId, 1);
+    const first = await importComments([
+      raw(2, 1),
+      raw(1, 0),
+      raw(4, 3, 'page'),
+      raw(3, 0, 'page'),
+      raw(5, 1, 'page'),
+    ]);
+    assert.equal(first.commentsImported, 5);
+    assert.equal(
+      stored.find((item) => item.sourceId === '2')?.parentId,
+      stored.find((item) => item.sourceId === '1')?.id,
+    );
+    assert.equal(stored.find((item) => item.sourceId === '3')?.pageId, 20);
+    assert.equal(
+      stored.find((item) => item.sourceId === '4')?.parentId,
+      stored.find((item) => item.sourceId === '3')?.id,
+    );
+    assert.equal(
+      stored.find((item) => item.sourceId === '5')?.parentId,
+      undefined,
+    );
+    assert.equal(first.commentsMissingParent, 1);
+
+    const skipped = await importComments([
+      { ...raw(6, 0, 'page'), cid: 999 },
+      { ...raw(7, 0), targetType: 'attachment' },
+    ]);
+    assert.equal(skipped.commentsMissingPage, 1);
+    assert.equal(skipped.commentsSkippedByTargetType, 1);
 
     const second = await importComments([raw(1, 0), raw(2, 1)]);
     assert.equal(second.commentsImported, 0);
     assert.equal(second.commentsExisting, 2);
-    assert.equal(stored.length, 2);
+    assert.equal(stored.length, 5);
   });
 
-  it('comments-only 迁移不读写文章或页面', async () => {
+  it('comments-only 迁移不抓取 Typecho 文章或页面', async () => {
     let postsFetched = 0;
     let pagesFetched = 0;
     let commentsImported = 0;
@@ -483,6 +667,7 @@ describe('comment security contract', () => {
           type: 'comment',
           status: 'approved',
           parent: 0,
+          targetType: 'post',
         },
       ],
       disconnect: async () => undefined,
@@ -501,8 +686,10 @@ describe('comment security contract', () => {
           commentsImported: 1,
           commentsExisting: 0,
           commentsSkippedByType: 0,
+          commentsSkippedByTargetType: 0,
           commentsSkippedByStatus: 0,
           commentsMissingPost: 0,
+          commentsMissingPage: 0,
           commentsMissingParent: 0,
           commentsFailed: 0,
         };

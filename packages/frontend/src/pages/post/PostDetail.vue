@@ -5,7 +5,7 @@ import { useImagePreview } from '@/hooks/useImagePreview'
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue'
 import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue'
 import { Badge } from '@/components/ui/badge'
-import PostCommentSection from './components/comments/PostCommentSection.vue'
+import CommentSection from './components/comments/CommentSection.vue'
 
 const { post, loading, error, formatDate } = usePostDetail()
 const coverLoaded = ref(false)
@@ -81,7 +81,7 @@ const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview
         </div>
 
         <div class="post-footer">もう終わりだよ。</div>
-        <PostCommentSection :post-id="post.id" />
+        <CommentSection :target="{ type: 'post', id: post.id }" />
       </article>
 
       <!-- 文章不存在 -->

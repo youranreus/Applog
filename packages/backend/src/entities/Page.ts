@@ -5,9 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { UserEntity } from './User';
+import { CommentEntity } from './Comment';
 
 export interface PageExportData {
   id: number;
@@ -129,6 +131,9 @@ export class PageEntity {
   })
   @JoinColumn({ name: 'authorId' })
   author: UserEntity;
+
+  @OneToMany(() => CommentEntity, (comment) => comment.page)
+  comments: CommentEntity[];
 
   @CreateDateColumn()
   createdAt: Date;

@@ -9,11 +9,13 @@ export class AdminQueryCommentDto {
   @IsEnum(['pending', 'approved', 'rejected'])
   status?: 'pending' | 'approved' | 'rejected';
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) postId?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) pageId?: number;
 }
 
 export interface IAdminCommentDto
   extends Omit<CommentExportData, 'withdrawTokenHash'> {
   post?: { id: number; title: string; slug: string };
+  page?: { id: number; title: string; slug: string };
   descendantCount: number;
 }
 

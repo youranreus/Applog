@@ -4,7 +4,8 @@
 export interface ICommentListItemDto {
   id: number;
   content: string;
-  postId: number;
+  postId?: number;
+  pageId?: number;
   authorId: number;
   author?: {
     id: number;

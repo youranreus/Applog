@@ -6,14 +6,19 @@ import type {
   ICommentLocation,
   ICreateComment,
   ICreateCommentResponse,
+  ICommentTarget,
   IDeleteImpact,
   IPendingCapability,
   IPublicComment,
 } from '@/types/comment'
 
-export function getPublicComments(postId: number, page = 1, limit = 10) {
+function targetParams(target: ICommentTarget): { postId: number } | { pageId: number } {
+  return target.type === 'post' ? { postId: target.id } : { pageId: target.id }
+}
+
+export function getPublicComments(target: ICommentTarget, page = 1, limit = 10) {
   return alovaInstance.Get<CommentPagination<IPublicComment>>('/comment', {
-    params: { postId, page, limit },
+    params: { ...targetParams(target), page, limit },
   })
 }
 
@@ -35,7 +40,13 @@ export function getCommentLocation(commentId: number, limit = 10) {
   })
 }
 
-export function getAdminComments(query: { page?: number; limit?: number; status?: CommentStatus }) {
+export function getAdminComments(query: {
+  page?: number
+  limit?: number
+  status?: CommentStatus
+  postId?: number
+  pageId?: number
+}) {
   return alovaInstance.Get<CommentPagination<IAdminComment>>('/comment/admin', { params: query })
 }
 

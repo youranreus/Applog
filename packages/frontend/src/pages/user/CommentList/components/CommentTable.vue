@@ -78,7 +78,7 @@ onBeforeUnmount(cancelClose)
       <thead>
         <tr>
           <th>评论</th>
-          <th>文章 / 父级</th>
+          <th>目标 / 父级</th>
           <th>评论者</th>
           <th>邮箱</th>
           <th>审核信息</th>
@@ -93,10 +93,10 @@ onBeforeUnmount(cancelClose)
             <small>{{ formatDate(item.createdAt) }}</small>
           </td>
           <td>
-            <RouterLink v-if="item.post" :to="getAdminCommentLocation(item)!">{{
-              item.post.title
+            <RouterLink v-if="item.post || item.page" :to="getAdminCommentLocation(item)!">{{
+              item.post?.title || item.page?.title
             }}</RouterLink
-            ><span v-else>#{{ item.postId }}</span
+            ><span v-else>#{{ item.postId || item.pageId }}</span
             ><small v-if="item.parentId">父评论 #{{ item.parentId }}</small
             ><small v-if="item.descendantCount">{{ item.descendantCount }} 条后代</small>
           </td>

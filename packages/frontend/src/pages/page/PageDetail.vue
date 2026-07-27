@@ -5,6 +5,7 @@ import { usePageDetail } from '@/hooks/usePageDetail'
 import { useImagePreview } from '@/hooks/useImagePreview'
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue'
 import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue'
+import CommentSection from '@/pages/post/components/comments/CommentSection.vue'
 
 const route = useRoute()
 
@@ -102,6 +103,7 @@ const formatDate = (date: Date | string): string => {
           </div>
         </div>
       </div>
+      <CommentSection :target="{ type: 'page', id: page.id }" />
     </template>
 
     <!-- 页面不存在 -->

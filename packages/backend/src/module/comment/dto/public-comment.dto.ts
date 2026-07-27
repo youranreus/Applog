@@ -8,7 +8,8 @@ export interface IPublicCommentAuthorDto {
 export interface IPublicCommentDto {
   id: number;
   content: string;
-  postId: number;
+  postId?: number;
+  pageId?: number;
   parentId?: number;
   status: 'approved' | 'pending';
   author: IPublicCommentAuthorDto;

@@ -117,8 +117,10 @@ export interface IMigrationStats {
   commentsImported: number;
   commentsExisting: number;
   commentsSkippedByType: number;
+  commentsSkippedByTargetType: number;
   commentsSkippedByStatus: number;
   commentsMissingPost: number;
+  commentsMissingPage: number;
   commentsMissingParent: number;
   commentsFailed: number;
   duration: string;
@@ -190,4 +192,5 @@ export interface IRawComment {
   type: string;
   status: string;
   parent: number;
+  targetType: string;
 }

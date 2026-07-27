@@ -50,7 +50,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] Notifications go through `layoutStore.notify` (Sonner bridge)
 - [ ] Theme changes remap semantic CSS variables — do not one-off restyle every page
 - [ ] Dashboard traffic UI: admin-only, list-row tone, SVG trend (no chart library)
-- [ ] Comments: no `v-html`; pending withdrawal requires the matching post-scoped session capability
+- [ ] Comments: no `v-html`; pending withdrawal requires the matching target-scoped session capability
 
 ---
 

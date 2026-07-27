@@ -21,8 +21,10 @@ export interface ICommentMigrationStats {
   commentsImported: number
   commentsExisting: number
   commentsSkippedByType: number
+  commentsSkippedByTargetType: number
   commentsSkippedByStatus: number
   commentsMissingPost: number
+  commentsMissingPage: number
   commentsMissingParent: number
   commentsFailed: number
   duration: string

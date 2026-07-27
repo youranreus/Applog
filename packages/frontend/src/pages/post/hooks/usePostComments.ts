@@ -1,4 +1,14 @@
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  toValue,
+  watch,
+  type MaybeRefOrGetter,
+} from 'vue'
 import { useRequest } from 'alova/client'
 import { useRoute } from 'vue-router'
 import {
@@ -8,20 +18,27 @@ import {
   resolvePendingComments,
   withdrawComment,
 } from '@/api/comment'
-import type { ICreateComment, IPendingCapability, IPublicComment } from '@/types/comment'
+import type {
+  ICommentSubmission,
+  ICommentTarget,
+  ICreateComment,
+  IPendingCapability,
+  IPublicComment,
+} from '@/types/comment'
 import { useLayoutStore } from '@/stores/useLayoutStore'
 import { readPendingCapabilities, writePendingCapabilities } from '../utils/pending-comment-storage'
 import { mergeOwnedPendingComments, parseCommentHash } from '../utils/comment-tree'
 import { getCommentSubmissionOutcome } from '../utils/comment-submission'
 
 /**
- * 文章评论区的数据、分页、回复与游客待审核 capability 协调。
- * @param postId 文章数据库 ID
+ * 通用评论区的数据、分页、回复与游客待审核 capability 协调。
+ * @param target 已发布文章或页面目标
  * @returns 只读状态与显式操作
  */
-export function usePostComments(postId: number) {
+export function useComments(targetInput: MaybeRefOrGetter<ICommentTarget>) {
   const layoutStore = useLayoutStore()
   const route = useRoute()
+  const target = computed(() => toValue(targetInput))
   const page = shallowRef(1)
   const comments = ref<IPublicComment[]>([])
   const pendingComments = ref<IPublicComment[]>([])
@@ -30,7 +47,7 @@ export function usePostComments(postId: number) {
   const activeError = shallowRef<Error>()
 
   const { send: requestList, loading } = useRequest(
-    (nextPage: number) => getPublicComments(postId, nextPage),
+    (nextPage: number) => getPublicComments(target.value, nextPage),
     { immediate: false },
   )
   const { send: requestCreate, loading: submitting } = useRequest(
@@ -50,7 +67,7 @@ export function usePostComments(postId: number) {
     { immediate: false },
   )
 
-  const capabilities = ref<IPendingCapability[]>(readPendingCapabilities(postId))
+  const capabilities = ref<IPendingCapability[]>(readPendingCapabilities(target.value))
   const canPrevious = computed(() => page.value > 1)
   const canNext = computed(() => page.value < (pagination.value?.totalPages ?? 1))
   const visibleComments = computed(() =>
@@ -58,17 +75,20 @@ export function usePostComments(postId: number) {
   )
   const withdrawableIds = computed(() => capabilities.value.map((item) => item.commentId))
   let highlightTimer: ReturnType<typeof setTimeout> | undefined
+  let targetVersion = 0
+
+  const targetIdentity = (value: ICommentTarget): string => `${value.type}:${value.id}`
 
   async function focusHashTarget(commentId: number): Promise<boolean> {
     await nextTick()
-    const target = document.getElementById(`comment-${commentId}`)
-    if (!target) return false
+    const element = document.getElementById(`comment-${commentId}`)
+    if (!element) return false
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
-    target.focus({ preventScroll: true })
-    target.classList.add('is-comment-target')
+    element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
+    element.focus({ preventScroll: true })
+    element.classList.add('is-comment-target')
     if (highlightTimer) clearTimeout(highlightTimer)
-    highlightTimer = setTimeout(() => target.classList.remove('is-comment-target'), 1800)
+    highlightTimer = setTimeout(() => element.classList.remove('is-comment-target'), 1800)
     return true
   }
 
@@ -95,9 +115,11 @@ export function usePostComments(postId: number) {
     refreshOwnedPending = true,
   ): Promise<void> {
     if (resolveHash && (await loadHashTarget(route.hash))) return
+    const version = targetVersion
     activeError.value = undefined
     try {
       const result = await requestList(page.value)
+      if (version !== targetVersion) return
       comments.value = result.items
       pagination.value = result.meta
       if (refreshOwnedPending) await resolveOwnedPending()
@@ -138,22 +160,53 @@ export function usePostComments(postId: number) {
       return
     }
     try {
+      const currentTarget = target.value
+      const currentIdentity = targetIdentity(currentTarget)
       const resolved = (await requestResolve(capabilities.value)).filter(
-        (item) => item.postId === postId,
+        (item) =>
+          (currentTarget.type === 'post' &&
+            item.postId === currentTarget.id &&
+            !item.pageId) ||
+          (currentTarget.type === 'page' &&
+            item.pageId === currentTarget.id &&
+            !item.postId),
       )
+      if (currentIdentity !== targetIdentity(target.value)) return
       const validIds = new Set(resolved.map((item) => item.id))
       capabilities.value = capabilities.value.filter((item) => validIds.has(item.commentId))
-      writePendingCapabilities(postId, capabilities.value)
+      writePendingCapabilities(currentTarget, capabilities.value)
       pendingComments.value = resolved
     } catch {
       pendingComments.value = []
     }
   }
 
-  async function submit(payload: Omit<ICreateComment, 'postId' | 'parentId'>): Promise<void> {
+  async function submit(payload: ICommentSubmission): Promise<void> {
     try {
       const submittedAsRoot = !replyTarget.value
-      const result = await requestCreate({ ...payload, postId, parentId: replyTarget.value?.id })
+      const currentTarget = target.value
+      const targetPayload =
+        currentTarget.type === 'post'
+          ? { postId: currentTarget.id }
+          : { pageId: currentTarget.id }
+      const result = await requestCreate({
+        ...payload,
+        ...targetPayload,
+        parentId: replyTarget.value?.id,
+      })
+      if (targetIdentity(currentTarget) !== targetIdentity(target.value)) {
+        if (result.withdrawToken) {
+          const prior = readPendingCapabilities(currentTarget)
+          writePendingCapabilities(
+            currentTarget,
+            [
+              ...prior.filter((item) => item.commentId !== result.comment.id),
+              { commentId: result.comment.id, token: result.withdrawToken },
+            ].slice(-20),
+          )
+        }
+        return
+      }
       const outcome = getCommentSubmissionOutcome(result, submittedAsRoot)
       replyTarget.value = undefined
 
@@ -170,7 +223,7 @@ export function usePostComments(postId: number) {
           ...capabilities.value.filter((item) => item.commentId !== result.comment.id),
           outcome.capability,
         ].slice(-20)
-        writePendingCapabilities(postId, capabilities.value)
+        writePendingCapabilities(currentTarget, capabilities.value)
       }
       pendingComments.value = [...pendingComments.value, result.comment]
       if (submittedAsRoot && page.value !== 1) {
@@ -190,11 +243,20 @@ export function usePostComments(postId: number) {
   async function withdraw(commentId: number): Promise<void> {
     const capability = capabilities.value.find((item) => item.commentId === commentId)
     if (!capability) return
+    const currentTarget = target.value
+    const currentIdentity = targetIdentity(currentTarget)
     try {
       await requestWithdraw(commentId, capability.token)
+      if (currentIdentity !== targetIdentity(target.value)) {
+        writePendingCapabilities(
+          currentTarget,
+          readPendingCapabilities(currentTarget).filter((item) => item.commentId !== commentId),
+        )
+        return
+      }
       capabilities.value = capabilities.value.filter((item) => item.commentId !== commentId)
       pendingComments.value = pendingComments.value.filter((item) => item.id !== commentId)
-      writePendingCapabilities(postId, capabilities.value)
+      writePendingCapabilities(currentTarget, capabilities.value)
       layoutStore.notify({
         type: 'success',
         title: '评论已撤回',
@@ -222,6 +284,20 @@ export function usePostComments(postId: number) {
       if (hash !== previousHash) void loadHashTarget(hash)
     },
   )
+  watch(
+    () => targetIdentity(target.value),
+    () => {
+      targetVersion++
+      page.value = 1
+      comments.value = []
+      pendingComments.value = []
+      pagination.value = undefined
+      replyTarget.value = undefined
+      activeError.value = undefined
+      capabilities.value = readPendingCapabilities(target.value)
+      void load()
+    },
+  )
   onBeforeUnmount(() => {
     if (highlightTimer) clearTimeout(highlightTimer)
   })
@@ -247,4 +323,9 @@ export function usePostComments(postId: number) {
       replyTarget.value = comment
     },
   }
+}
+
+/** Backward-compatible article-only entry point. */
+export function usePostComments(postId: number) {
+  return useComments({ type: 'post', id: postId })
 }

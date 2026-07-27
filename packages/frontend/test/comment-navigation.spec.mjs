@@ -16,6 +16,13 @@ const { getCommentSubmissionOutcome } = await jiti.import(
 const { buildCommentMigrationPayload } = await jiti.import(
   '../src/api/system-config/commentMigrationPayload.ts',
 )
+const {
+  pendingCommentStorageKey,
+  readPendingCapabilities,
+  writePendingCapabilities,
+} = await jiti.import(
+  '../src/pages/post/utils/pending-comment-storage.ts',
+)
 
 const comment = (id, parentId, status = 'approved', createdAt = id) => ({
   id,
@@ -110,6 +117,86 @@ describe('comment navigation and pending tree', () => {
       getAdminCommentLocation({ id: 7, status: 'rejected', post }),
       '/archives/post.html',
     )
+    const page = { id: 1, title: 'About', slug: 'about' }
+    assert.equal(
+      getAdminCommentLocation({ id: 8, status: 'approved', page }),
+      '/about.html#comment-8',
+    )
+    assert.equal(getAdminCommentLocation({ id: 9, status: 'pending', page }), '/about.html')
+  })
+
+  it('keeps the article capability key and isolates same-id pages', () => {
+    assert.equal(pendingCommentStorageKey({ type: 'post', id: 12 }), 'applog:pending-comments:12')
+    assert.equal(pendingCommentStorageKey(12), 'applog:pending-comments:12')
+    assert.equal(
+      pendingCommentStorageKey({ type: 'page', id: 12 }),
+      'applog:pending-comments:page:12',
+    )
+  })
+
+  it('validates, deduplicates, caps, and isolates persisted capabilities', () => {
+    const values = new Map()
+    const originalStorage = globalThis.sessionStorage
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      value: {
+        getItem: (key) => values.get(key) ?? null,
+        setItem: (key, value) => values.set(key, value),
+        removeItem: (key) => values.delete(key),
+      },
+    })
+    try {
+      const postTarget = { type: 'post', id: 12 }
+      const pageTarget = { type: 'page', id: 12 }
+      writePendingCapabilities(postTarget, [
+        { commentId: 1, token: 'o'.repeat(32) },
+        { commentId: 1, token: 'n'.repeat(32) },
+        { commentId: -1, token: 'i'.repeat(32) },
+        ...Array.from({ length: 21 }, (_, index) => ({
+          commentId: index + 2,
+          token: String(index + 2).padEnd(32, 'x'),
+        })),
+      ])
+      writePendingCapabilities(pageTarget, [{ commentId: 99, token: 'p'.repeat(32) }])
+
+      const postItems = readPendingCapabilities(postTarget)
+      assert.equal(postItems.length, 20)
+      assert.equal(postItems.some((item) => item.commentId === 1), false)
+      assert.deepEqual(readPendingCapabilities(pageTarget), [
+        { commentId: 99, token: 'p'.repeat(32) },
+      ])
+
+      values.set(pendingCommentStorageKey(postTarget), '{broken')
+      assert.deepEqual(readPendingCapabilities(postTarget), [])
+      assert.equal(values.has(pendingCommentStorageKey(postTarget)), false)
+
+      Object.defineProperty(globalThis, 'sessionStorage', {
+        configurable: true,
+        value: {
+          getItem: () => {
+            throw new Error('storage unavailable')
+          },
+          setItem: () => {
+            throw new Error('storage unavailable')
+          },
+          removeItem: () => {
+            throw new Error('storage unavailable')
+          },
+        },
+      })
+      assert.deepEqual(readPendingCapabilities(pageTarget), [])
+      assert.doesNotThrow(() =>
+        writePendingCapabilities(pageTarget, [{ commentId: 100, token: 's'.repeat(32) }]),
+      )
+    } finally {
+      if (originalStorage === undefined) delete globalThis.sessionStorage
+      else {
+        Object.defineProperty(globalThis, 'sessionStorage', {
+          configurable: true,
+          value: originalStorage,
+        })
+      }
+    }
   })
 
   it('keeps admin identity metadata in dedicated columns and actions in an icon menu', async () => {
@@ -157,6 +244,24 @@ describe('comment navigation and pending tree', () => {
     assert.match(item, /\.reply-action:focus-visible \.reply-id/)
     assert.match(item, /\.reply-id \{[\s\S]*opacity: 0;/)
     assert.match(hook, /await load\(false, false, false\)/)
+  })
+
+  it('composes the same explicit-target comment section on posts and pages', async () => {
+    const [section, postDetail, pageDetail, hook] = await Promise.all([
+      readFile(
+        new URL('../src/pages/post/components/comments/CommentSection.vue', import.meta.url),
+        'utf8',
+      ),
+      readFile(new URL('../src/pages/post/PostDetail.vue', import.meta.url), 'utf8'),
+      readFile(new URL('../src/pages/page/PageDetail.vue', import.meta.url), 'utf8'),
+      readFile(new URL('../src/pages/post/hooks/usePostComments.ts', import.meta.url), 'utf8'),
+    ])
+    assert.match(section, /useComments\(\(\) => props\.target\)/)
+    assert.match(postDetail, /:target="\{ type: 'post', id: post\.id \}"/)
+    assert.match(pageDetail, /:target="\{ type: 'page', id: page\.id \}"/)
+    assert.match(hook, /currentTarget\.type === 'post'/)
+    assert.match(hook, /item\.pageId === currentTarget\.id/)
+    assert.match(hook, /targetVersion\+\+/)
   })
 
   it('builds a fixed comments-only migration scope without a clear option', () => {

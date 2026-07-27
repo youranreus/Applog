@@ -437,11 +437,18 @@ export class TypechoAdapter implements IMigrationAdapter {
     if (!this.connection || !this.connection.isInitialized)
       throw new Error('数据库连接未初始化');
     try {
-      const table = `${this.config?.tablePrefix || 'typecho_'}comments`;
+      const tablePrefix = this.config?.tablePrefix || 'typecho_';
+      const table = `${tablePrefix}comments`;
+      const contentsTable = `${tablePrefix}contents`;
       this.log(`开始获取 Typecho 评论数据，表: ${table}`);
       const rows = (await this.connection.query(`
-        SELECT coid, cid, created, author, authorId, ownerId, mail, url, ip, agent, text, type, status, parent
-        FROM \`${table}\` ORDER BY coid ASC
+        SELECT comments.coid, comments.cid, comments.created, comments.author,
+          comments.authorId, comments.ownerId, comments.mail, comments.url,
+          comments.ip, comments.agent, comments.text, comments.type,
+          comments.status, comments.parent, contents.type AS targetType
+        FROM \`${table}\` comments
+        INNER JOIN \`${contentsTable}\` contents ON comments.cid = contents.cid
+        ORDER BY comments.coid ASC
       `)) as IRawComment[];
       this.log(`成功获取 ${rows.length} 条评论数据`);
       return rows;
