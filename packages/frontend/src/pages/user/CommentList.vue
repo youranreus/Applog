@@ -23,7 +23,13 @@ const migration = useCommentMigration(state.load)
       @create="state.load"
     >
       <template #before-action>
-        <Button variant="outline" :disabled="state.loading.value" @click="migration.openDialog">
+        <Button
+          variant="outline"
+          size="lg"
+          class="px-4"
+          :disabled="state.loading.value"
+          @click="migration.openDialog"
+        >
           迁移
         </Button>
       </template>

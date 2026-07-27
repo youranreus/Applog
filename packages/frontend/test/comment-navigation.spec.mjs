@@ -112,6 +112,28 @@ describe('comment navigation and pending tree', () => {
     )
   })
 
+  it('keeps admin identity metadata in dedicated columns and actions in an icon menu', async () => {
+    const table = await readFile(
+      new URL('../src/pages/user/CommentList/components/CommentTable.vue', import.meta.url),
+      'utf8',
+    )
+
+    const headers = ['评论者', '邮箱', '审核信息', 'IP', '操作'].map((label) =>
+      table.indexOf(`<th>${label}</th>`),
+    )
+    assert.deepEqual(headers, [...headers].sort((left, right) => left - right))
+    assert.match(table, /v-if="item\.guestSite"[\s\S]*:href="item\.guestSite"/)
+    assert.match(table, /item\.guestEmail \|\| '—'/)
+    assert.match(table, /item\.ip \|\| '—'/)
+    assert.equal(table.includes('item.agent'), false)
+    assert.match(table, /pending: ''/)
+    assert.match(table, /approved: 'bg-green-100 text-green-700/)
+    assert.match(table, /rejected: 'bg-red-100 text-red-700/)
+    assert.match(table, /MoreHorizontalIcon/)
+    assert.match(table, /@mouseenter="openActions\(item\.id\)"/)
+    for (const action of ['通过', '拒绝', '删除']) assert.match(table, new RegExp(`<span>${action}</span>`))
+  })
+
   it('keeps reply context exact and exposes ids on hover and keyboard focus', async () => {
     const [section, form, item, hook] = await Promise.all([
       readFile(
@@ -195,6 +217,7 @@ describe('comment navigation and pending tree', () => {
       /@media \(max-width: 640px\)[\s\S]*\.guest-fields[\s\S]*grid-template-columns: 1fr/,
     )
     assert.match(list, /<template #before-action>/)
+    assert.match(list, /variant="outline"[\s\S]*size="lg"[\s\S]*class="px-4"/)
     assert.match(list, />\s*迁移\s*</)
     assert.match(header, /<slot name="before-action" \/>/)
   })
