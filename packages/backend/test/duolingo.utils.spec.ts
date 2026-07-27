@@ -13,6 +13,7 @@ import {
   parseDuolingoDateKey,
   parseDuolingoLanguages,
   parseDuolingoLeague,
+  parseDuolingoStreak,
 } from '../src/module/duolingo/duolingo.utils';
 
 describe('Duolingo config helpers', () => {
@@ -114,6 +115,28 @@ describe('Duolingo response normalization', () => {
       { tier: 3, name: '蓝宝石' },
     );
     assert.equal(parseDuolingoLeague({ tier: 10 }), null);
+  });
+
+  it('连胜和 tier 拒绝小数，并只读取当前学习语言的 fallback tier', () => {
+    assert.equal(parseDuolingoStreak({ streak: 2.8 }), null);
+    assert.equal(parseDuolingoLeague({ tier: 9.9 }), null);
+    assert.deepEqual(
+      parseDuolingoLeague({
+        language_data: {
+          en: { current_learning: false, tier: 2 },
+          ja: { current_learning: true, tier: 7 },
+        },
+      }),
+      { tier: 7, name: '珍珠' },
+    );
+    assert.equal(
+      parseDuolingoLeague({
+        language_data: {
+          en: { current_learning: false, tier: 2 },
+        },
+      }),
+      null,
+    );
   });
 
   it('语言按 learningLanguage 合并、排除非语言课程，以全部语言 XP 为分母', () => {

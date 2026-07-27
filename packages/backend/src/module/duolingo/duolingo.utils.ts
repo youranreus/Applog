@@ -39,8 +39,8 @@ function toNonNegativeInteger(value: unknown): number | null {
       : typeof value === 'string' && value.trim()
         ? Number(value)
         : Number.NaN;
-  if (!Number.isFinite(numeric) || numeric < 0) return null;
-  return Math.floor(numeric);
+  if (!Number.isInteger(numeric) || numeric < 0) return null;
+  return numeric;
 }
 
 function getAliased(record: UnknownRecord, ...keys: string[]): unknown {
@@ -178,7 +178,9 @@ function findTier(payload: UnknownRecord): unknown {
   if (!languageData) return undefined;
   for (const value of Object.values(languageData)) {
     const record = asRecord(value);
-    if (record?.tier !== undefined) return record.tier;
+    const isCurrent =
+      record?.current_learning === true || record?.currentLearning === true;
+    if (isCurrent && record.tier !== undefined) return record.tier;
   }
   return undefined;
 }
