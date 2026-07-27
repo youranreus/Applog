@@ -407,3 +407,24 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 13: 评论框与评论迁移入口
+
+**Date**: 2026-07-27
+**Task**: 评论框与评论迁移入口
+**Branch**: `master`
+
+### Summary
+
+重构公开评论表单与内嵌发送编辑器；在后台评论管理页新增固定 comments-only 的 Typecho 迁移弹窗、统计反馈与成功刷新；补充测试和评论迁移契约。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `63994b9` | (see git log) |
+
+### Status
+
+[OK] **Completed**
