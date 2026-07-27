@@ -428,3 +428,24 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 14: 支持文章与页面评论迁移
+
+**Date**: 2026-07-27
+**Task**: 支持文章与页面评论迁移
+**Branch**: `master`
+
+### Summary
+
+扩展评论为文章/页面双目标，完成 Typecho 页面评论迁移、共享前端评论区、管理端目标展示、跨层测试与规范更新。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0d495ef` | (see git log) |
+
+### Status
+
+[OK] **Completed**

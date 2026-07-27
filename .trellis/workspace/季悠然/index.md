@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 13
+- **Total Sessions**: 14
 - **Last Active**: 2026-07-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~430 | Active |
+| `journal-1.md` | ~451 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 14 | 2026-07-27 | 支持文章与页面评论迁移 | `0d495ef` | `master` |
 | 13 | 2026-07-27 | 评论框与评论迁移入口 | `63994b9` | `master` |
 | 12 | 2026-07-27 | 博客评论与 Typecho 评论迁移 | `f86c331` | `master` |
 | 11 | 2026-07-26 | 访客鼠标位置展示 | `6bec37f`, `7174e52` | `master` |
