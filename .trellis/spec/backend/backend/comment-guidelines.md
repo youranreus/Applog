@@ -96,6 +96,18 @@ created                    -> createdAt and updatedAt
 author/mail/url/ip/agent   -> guest identity and request metadata fields
 ```
 
+The admin comment-list migration entry calls the existing admin-only `POST /config/migrate` endpoint with a fixed payload boundary:
+
+```ts
+{
+  source: 'typecho',
+  dbConfig,
+  resources: ['comments']
+}
+```
+
+That UI must not expose resource selection, `fieldMapping`, or `clearExisting`. It is an idempotent supplement flow: show the returned comment counters, keep connection context after failure, and refresh the admin comment list after success.
+
 ## 3. Contracts
 
 ### Creation and visibility
@@ -142,6 +154,7 @@ author/mail/url/ip/agent   -> guest identity and request metadata fields
 
 - Typecho table prefixes must match `^[A-Za-z0-9_]+$` before interpolation into identifiers.
 - Migration must be idempotent through unique `(source, sourceId)` and count existing rows separately.
+- The comment-list migration payload is constructed by one typed boundary helper and always contains only `resources: ['comments']`; callers cannot pass or override `clearExisting`.
 - Import parents after source ids are known; missing parents become roots and increment `commentsMissingParent`.
 - Missing post mappings, unsupported types, unsupported statuses, existing rows, and failures are reported in separate counters.
 - `clearExisting` clears only explicitly selected resources. Reject clearing posts without comments because post deletion would implicitly cascade comment data.
@@ -162,6 +175,7 @@ author/mail/url/ip/agent   -> guest identity and request metadata fields
 | duplicate pending capabilities | resolve each comment at most once |
 | admin deletion target missing | reject; do not start a partial delete |
 | invalid Typecho prefix | DTO validation failure before SQL construction |
+| comment-list migration is repeated | import only missing source ids and report existing rows; do not clear comments |
 | Typecho comment has unsupported type/status | skip and increment the corresponding counter |
 | Typecho comment has no mapped post | skip and increment `commentsMissingPost` |
 | Typecho comment has no mapped parent | import as root and increment `commentsMissingParent` |
@@ -182,6 +196,7 @@ Unexpected persistence failures must be logged with `HLogger` and translated to 
 
 - A nested reply remains hidden until its entire ancestor chain is approved.
 - Re-running a Typecho comments migration reports existing rows without duplicating them.
+- Closing and reopening the admin migration dialog starts a fresh form; a failed request keeps the current connection fields available for correction.
 - A migrated child seen before its parent is connected during topology resolution.
 - Corrupt or unavailable `sessionStorage` degrades to current-page state without crashing.
 
@@ -194,6 +209,7 @@ Unexpected persistence failures must be logged with `HLogger` and translated to 
 - Paginating all rows and then trying to reconstruct incomplete trees.
 - Importing comments by title/slug instead of `posts.extra.originalId`.
 - Clearing posts during a comments-only reset.
+- Letting the comment management UI send user-selectable resources or `clearExisting`.
 
 ## 6. Tests Required
 
@@ -216,6 +232,8 @@ Frontend changes require lint, type-check, and tests or deterministic coverage f
 - pending root/reply placement and duplicate-id handling;
 - valid, malformed, stale, and cross-post comment hashes, including page-1 fallback when the loaded DOM has no target anchor;
 - refreshed delete-impact confirmation.
+- the admin migration request builder emits exactly `source: 'typecho'` and `resources: ['comments']`, with no `clearExisting` or `fieldMapping` keys;
+- comment form identity fields precede the custom editor, whose embedded submit action preserves shadcn focus/disabled/invalid chrome and mobile layout.
 
 Minimum quality gate: backend tests, backend lint/build, frontend task-file lint, frontend type-check/build, root build, and `git diff --check`. A real MySQL copy of the Typecho schema must validate generated DDL and a repeated comments-only migration before production use.
 
@@ -255,4 +273,12 @@ await postRepo.clear()
 
 // Correct: branch every read, write, and clear by the explicit resources set.
 if (resources.includes('comments')) await migrateComments()
+```
+
+```ts
+// Wrong: a generic migration form can clear or import unrelated resources.
+return migrate({ ...form, resources: selectedResources, clearExisting })
+
+// Correct: the comment-list boundary owns the immutable resource scope.
+return migrate({ source: 'typecho', dbConfig, resources: ['comments'] })
 ```

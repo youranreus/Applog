@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
 
 /**
  * 后台列表页头 Props
  */
 interface IAdminListHeaderProps {
   /** 主标题 */
-  title: string;
+  title: string
   /** 主操作按钮文案 */
-  createLabel: string;
+  createLabel: string
   /** 是否禁用主操作 */
-  createDisabled?: boolean;
+  createDisabled?: boolean
 }
 
 /**
@@ -18,20 +18,20 @@ interface IAdminListHeaderProps {
  */
 interface IAdminListHeaderEmits {
   /** 点击主操作（新建） */
-  (e: 'create'): void;
+  (e: 'create'): void
 }
 
 withDefaults(defineProps<IAdminListHeaderProps>(), {
   createDisabled: false,
-});
+})
 
-const emit = defineEmits<IAdminListHeaderEmits>();
+const emit = defineEmits<IAdminListHeaderEmits>()
 
 /**
  * 触发新建
  */
 function handleCreate(): void {
-  emit('create');
+  emit('create')
 }
 </script>
 
@@ -56,14 +56,17 @@ function handleCreate(): void {
       </svg>
     </h1>
 
-    <Button
-      type="button"
-      class="admin-list-header__create shrink-0"
-      :disabled="createDisabled"
-      @click="handleCreate"
-    >
-      {{ createLabel }}
-    </Button>
+    <div class="admin-list-header__actions">
+      <slot name="before-action" />
+      <Button
+        type="button"
+        class="admin-list-header__create shrink-0"
+        :disabled="createDisabled"
+        @click="handleCreate"
+      >
+        {{ createLabel }}
+      </Button>
+    </div>
   </header>
 </template>
 
@@ -112,6 +115,13 @@ function handleCreate(): void {
 .admin-list-header__create {
   min-height: 2.25rem;
   padding-inline: 1rem;
+}
+
+.admin-list-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.625rem;
   margin-top: 0.15rem;
 }
 </style>

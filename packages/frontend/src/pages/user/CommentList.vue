@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
 import AdminListHeader from './components/AdminListHeader.vue'
 import AdminListError from './components/AdminListError.vue'
 import AdminListEmpty from './components/AdminListEmpty.vue'
@@ -6,9 +7,12 @@ import AdminPagination from './components/AdminPagination.vue'
 import CommentFilters from './CommentList/components/CommentFilters.vue'
 import CommentTable from './CommentList/components/CommentTable.vue'
 import CommentDeleteDialog from './CommentList/components/CommentDeleteDialog.vue'
+import CommentMigrationDialog from './CommentList/components/CommentMigrationDialog.vue'
 import { useCommentList } from './CommentList/hooks/useCommentList'
+import { useCommentMigration } from './CommentList/hooks/useCommentMigration'
 
 const state = useCommentList()
+const migration = useCommentMigration(state.load)
 </script>
 <template>
   <div class="comment-list-page admin-page-container">
@@ -17,7 +21,13 @@ const state = useCommentList()
       create-label="刷新"
       :create-disabled="state.loading.value"
       @create="state.load"
-    />
+    >
+      <template #before-action>
+        <Button variant="outline" :disabled="state.loading.value" @click="migration.openDialog">
+          迁移
+        </Button>
+      </template>
+    </AdminListHeader>
     <CommentFilters
       :status="state.status.value"
       :loading="state.loading.value"
@@ -52,6 +62,14 @@ const state = useCommentList()
       :loading="state.impactLoading.value || state.deleting.value"
       @cancel="state.closeDelete"
       @confirm="state.confirmDelete"
+    />
+    <CommentMigrationDialog
+      :open="migration.open.value"
+      :loading="migration.loading.value"
+      :result="migration.result.value"
+      :error="migration.error.value"
+      @update:open="migration.setOpen"
+      @submit="migration.migrate"
     />
   </div>
 </template>

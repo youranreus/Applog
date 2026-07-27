@@ -13,6 +13,9 @@ const { getAdminCommentLocation } = await jiti.import(
 const { getCommentSubmissionOutcome } = await jiti.import(
   '../src/pages/post/utils/comment-submission.ts',
 )
+const { buildCommentMigrationPayload } = await jiti.import(
+  '../src/api/system-config/commentMigrationPayload.ts',
+)
 
 const comment = (id, parentId, status = 'approved', createdAt = id) => ({
   id,
@@ -132,5 +135,65 @@ describe('comment navigation and pending tree', () => {
     assert.match(item, /\.reply-action:focus-visible \.reply-id/)
     assert.match(item, /\.reply-id \{[\s\S]*opacity: 0;/)
     assert.match(hook, /await load\(false, false, false\)/)
+  })
+
+  it('builds a fixed comments-only migration scope without a clear option', () => {
+    const dbConfig = {
+      host: 'db.example.com',
+      port: 3306,
+      database: 'typecho',
+      username: 'reader',
+      password: 'secret',
+      tablePrefix: 'typecho_',
+    }
+    const payload = buildCommentMigrationPayload(dbConfig)
+
+    assert.deepEqual(payload, {
+      source: 'typecho',
+      dbConfig,
+      resources: ['comments'],
+    })
+    assert.equal('clearExisting' in payload, false)
+    assert.equal('fieldMapping' in payload, false)
+  })
+
+  it('keeps identity fields above the embedded comment submit action', async () => {
+    const [form, editor, list, header] = await Promise.all([
+      readFile(
+        new URL('../src/pages/post/components/comments/CommentForm.vue', import.meta.url),
+        'utf8',
+      ),
+      readFile(
+        new URL('../src/pages/post/components/comments/CommentEditor.vue', import.meta.url),
+        'utf8',
+      ),
+      readFile(new URL('../src/pages/user/CommentList.vue', import.meta.url), 'utf8'),
+      readFile(
+        new URL('../src/pages/user/components/AdminListHeader.vue', import.meta.url),
+        'utf8',
+      ),
+    ])
+
+    assert.ok(form.indexOf('class="guest-fields"') < form.indexOf('<CommentEditor'))
+    assert.ok(form.indexOf('placeholder="昵称"') < form.indexOf('placeholder="邮箱（不会公开）"'))
+    assert.ok(
+      form.indexOf('placeholder="邮箱（不会公开）"') <
+        form.indexOf('placeholder="个人站点（可选）"'),
+    )
+    assert.match(editor, /class="absolute right-2\.5 bottom-2\.5"/)
+    assert.match(editor, /focus-within:ring-2/)
+    assert.match(editor, /@invalid="nativeInvalid = true"/)
+    assert.match(editor, /activeInvalid &&[\s\S]*border-destructive[\s\S]*ring-3/)
+    assert.match(editor, /focus-within:border-destructive focus-within:ring-destructive\/20/)
+    assert.match(editor, /disabled && 'bg-input\/50 dark:bg-input\/80'/)
+    assert.match(editor, /disabled:cursor-not-allowed disabled:opacity-50/)
+    assert.match(editor, /pr-28 pb-14/)
+    assert.match(
+      form,
+      /@media \(max-width: 640px\)[\s\S]*\.guest-fields[\s\S]*grid-template-columns: 1fr/,
+    )
+    assert.match(list, /<template #before-action>/)
+    assert.match(list, />\s*迁移\s*</)
+    assert.match(header, /<slot name="before-action" \/>/)
   })
 })

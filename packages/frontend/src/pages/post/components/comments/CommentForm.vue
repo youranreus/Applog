@@ -3,7 +3,7 @@ import { reactive } from 'vue'
 import type { IPublicComment } from '@/types/comment'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import CommentEditor from './CommentEditor.vue'
 
 const props = defineProps<{
   replyTarget?: IPublicComment
@@ -36,13 +36,6 @@ function submit(): void {
       <span>正在回复 {{ replyTarget.author.name }} #{{ replyTarget.id }}</span>
       <Button type="button" variant="link" size="sm" @click="emit('cancel')">取消</Button>
     </div>
-    <Textarea
-      v-model="form.content"
-      :disabled="disabled"
-      maxlength="10000"
-      required
-      placeholder="写下你的评论…"
-    />
     <div v-if="!authenticated" class="guest-fields">
       <Input
         v-model="form.guestName"
@@ -62,10 +55,10 @@ function submit(): void {
         v-model="form.guestSite"
         :disabled="disabled"
         type="url"
-        placeholder="个人网站（可选）"
+        placeholder="个人站点（可选）"
       />
     </div>
-    <Button type="submit" :disabled="disabled">提交评论</Button>
+    <CommentEditor v-model="form.content" :disabled="disabled" required />
   </form>
 </template>
 <style scoped>
