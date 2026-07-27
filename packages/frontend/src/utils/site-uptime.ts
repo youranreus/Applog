@@ -88,16 +88,16 @@ export function calcSiteUptimeParts(foundedAt: number, now: number): ISiteUptime
 }
 
 /**
- * 格式化为页脚运行时间文案
+ * 格式化为站点运行时间文案
  * @param parts - 时长分段
- * @returns `本站已运行 X 天 Y 时 Z 分 W 秒`
+ * @returns `已运行 X 天 Y 时 Z 分 W 秒`
  */
 export function formatSiteUptimeText(parts: ISiteUptimeParts): string {
-  return `本站已运行 ${parts.days} 天 ${parts.hours} 时 ${parts.minutes} 分 ${parts.seconds} 秒`;
+  return `已运行 ${parts.days} 天 ${parts.hours} 时 ${parts.minutes} 分 ${parts.seconds} 秒`;
 }
 
 /**
- * 由建站日期与当前时间生成页脚运行时间文案
+ * 由建站日期与当前时间生成运行时间文案
  * @param siteFoundedDate - 本地建站时间或空
  * @param now - 当前时间戳（毫秒）
  * @returns 可展示文案；无法解析时返回 null

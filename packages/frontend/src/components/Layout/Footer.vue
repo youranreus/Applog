@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useLayoutStore } from '@/stores/useLayoutStore'
 import { useSystemStore } from '@/stores/useSystemStore'
 import { ROUTE_NAMES } from '@/constants/permission'
-import { getSiteUptimeText } from '@/utils/site-uptime'
 
 const ICP_FILING_URL = 'https://beian.miit.gov.cn/'
 
@@ -16,57 +15,20 @@ const buildInfo = import.meta.env.VITE_GIT_BRANCH && import.meta.env.VITE_GIT_CO
   : null
 
 /**
- * 当前时间戳，每秒刷新以驱动运行时间文案
- */
-const now = ref(Date.now())
-let uptimeTimer: ReturnType<typeof setInterval> | null = null
-
-/**
  * 备案号（trim 后非空才展示）
  */
 const icpFilingNumber = computed(() => {
   const value = systemStore.config?.icpFilingNumber?.trim()
   return value || null
 })
-
-/**
- * 实时运行时间文案
- */
-const uptimeText = computed(() => {
-  return getSiteUptimeText(systemStore.config?.siteFoundedDate, now.value)
-})
-
-/**
- * 是否渲染第二行次要信息（备案 / 运行时间）
- */
-const showMetaRow = computed(() => {
-  return Boolean(icpFilingNumber.value || uptimeText.value)
-})
-
-onMounted(() => {
-  uptimeTimer = setInterval(() => {
-    now.value = Date.now()
-  }, 1000)
-})
-
-onUnmounted(() => {
-  if (uptimeTimer) {
-    clearInterval(uptimeTimer)
-    uptimeTimer = null
-  }
-})
 </script>
 
 <template>
   <footer class="bg-[#f5f5f7]">
     <div class="common-page-container common-page-container--flush footer-container flex flex-col justify-center gap-y-4">
-      <!-- 上行：备案 / 运行时间（仅配置后展示） -->
-      <div
-        v-if="showMetaRow"
-        class="flex flex-col sm:flex-row sm:items-center gap-y-1 sm:gap-y-0"
-      >
+      <!-- 上行：备案号（仅配置后展示） -->
+      <div v-if="icpFilingNumber">
         <a
-          v-if="icpFilingNumber"
           :href="ICP_FILING_URL"
           target="_blank"
           rel="noopener noreferrer"
@@ -74,16 +36,6 @@ onUnmounted(() => {
         >
           {{ icpFilingNumber }}
         </a>
-        <span
-          v-if="icpFilingNumber && uptimeText"
-          class="hidden sm:inline mx-1.5 text-xs text-gray-400"
-          aria-hidden="true"
-        >
-          ·
-        </span>
-        <p v-if="uptimeText" class="text-xs text-[#707070]">
-          {{ uptimeText }}
-        </p>
       </div>
 
       <!-- 下行：版权 + 导航（+ 可选 buildInfo），保持原有单行布局 -->
