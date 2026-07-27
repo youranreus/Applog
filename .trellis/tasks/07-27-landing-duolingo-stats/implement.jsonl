@@ -1,0 +1,14 @@
+{"file": ".trellis/tasks/07-27-landing-duolingo-stats/research/duodash-data-sources.md", "reason": "Duolingo endpoints, authentication, field mappings, time semantics, CORS and stability constraints"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Plan and implement the config, backend DTO, frontend API and UI data flow consistently"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing secret config, caching, date and public soft-degradation patterns"}
+{"file": ".trellis/spec/common/shared/index.md", "reason": "Discover shared package pre-development contracts"}
+{"file": ".trellis/spec/common/shared/package-boundaries.md", "reason": "Place shared config and public DTO types at the correct package boundary"}
+{"file": ".trellis/spec/common/shared/type-safety.md", "reason": "Keep third-party unknown payload parsing and cross-layer types safe"}
+{"file": ".trellis/spec/backend/backend/index.md", "reason": "Apply backend pre-development checklist"}
+{"file": ".trellis/spec/backend/backend/error-handling.md", "reason": "Normalize upstream failures without leaking credentials"}
+{"file": ".trellis/spec/backend/backend/analytics-guidelines.md", "reason": "Reuse admin-managed secret masking and cache generation patterns"}
+{"file": ".trellis/spec/backend/backend/weather-guidelines.md", "reason": "Reuse public third-party proxy, single-flight cache and soft-failure patterns"}
+{"file": ".trellis/spec/frontend/frontend/index.md", "reason": "Apply frontend pre-development checklist"}
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "Match Landing and Dashboard component structure and Apple visual system"}
+{"file": ".trellis/spec/frontend/frontend/hook-guidelines.md", "reason": "Keep Alova requests and Landing degradation in page hooks"}
+{"file": ".trellis/spec/frontend/frontend/quality-guidelines.md", "reason": "Apply Vue, accessibility and verification conventions"}

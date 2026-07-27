@@ -19,9 +19,19 @@ export const SYSTEM_BASE_CONFIG_KEY = 'BASE_CONFIG';
 export const SYSTEM_UMAMI_CONFIG_KEY = 'UMAMI_CONFIG';
 
 /**
+ * Duolingo 学习统计配置 key 后缀
+ */
+export const SYSTEM_DUOLINGO_CONFIG_KEY = 'DUOLINGO_CONFIG';
+
+/**
  * Umami 密码读回脱敏占位（空密码提交表示不修改）
  */
 export const UMAMI_PASSWORD_MASK = '********';
+
+/**
+ * Duolingo JWT 读回脱敏占位
+ */
+export const DUOLINGO_JWT_MASK = '********';
 
 /**
  * 系统配置 key 映射
@@ -32,4 +42,6 @@ export const SYSTEM_CONFIG_KEYS = {
   BASE_CONFIG: SYSTEM_BASE_CONFIG_KEY,
   /** Umami 流量分析对接配置（含凭证，仅 admin） */
   UMAMI_CONFIG: SYSTEM_UMAMI_CONFIG_KEY,
+  /** Duolingo 学习统计配置（含凭证，仅 admin） */
+  DUOLINGO_CONFIG: SYSTEM_DUOLINGO_CONFIG_KEY,
 } as const;

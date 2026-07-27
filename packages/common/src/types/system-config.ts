@@ -88,3 +88,18 @@ export interface IUmamiTrackerConfig {
   /** Website UUID（enabled 为 true 时有值） */
   websiteId: string;
 }
+
+/**
+ * Duolingo 学习统计配置（存于 SYSTEM_DUOLINGO_CONFIG）
+ * JWT 仅服务端持有；管理端读回为脱敏占位。
+ */
+export interface IDuolingoConfig {
+  /** Duolingo 用户名 */
+  username: string;
+  /** Duolingo JWT；空值或脱敏占位提交表示保留旧值 */
+  jwt: string;
+  /** 决定自然日边界的 IANA 时区 */
+  timeZone: string;
+  /** Landing 展示总开关 */
+  enabled: boolean;
+}

@@ -23,6 +23,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] Analytics: Umami tracker via public `GET /analytics/tracker-config` (non-admin only); Dashboard via admin proxy APIs — do not reuse `viewCount` for traffic UI
 - [ ] Visitor cursor changes follow the cross-layer [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md)
 - [ ] Comment UI, pending storage, or meme rendering changes follow the cross-layer [Comment Contract](../../backend/backend/comment-guidelines.md)
+- [ ] Duolingo Landing/config UI changes follow the cross-layer [Duolingo Contract](../../backend/backend/duolingo-guidelines.md)
 
 
 ---
@@ -39,6 +40,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 | [Type Safety](./type-safety.md) | Types, constants, `@applog/common` | Filled |
 | [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Public-route cursor identity, polling, API, and rendering | Filled |
 | [Comment Contract](../../backend/backend/comment-guidelines.md) | Public trees, safe rendering, pending capability storage, and moderation | Filled |
+| [Duolingo Contract](../../backend/backend/duolingo-guidelines.md) | Public learning stats, admin secret form, heatmap semantics, and degradation | Filled |
 
 ---
 

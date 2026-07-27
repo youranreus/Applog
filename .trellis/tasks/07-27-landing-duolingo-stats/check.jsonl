@@ -1,0 +1,11 @@
+{"file": ".trellis/tasks/07-27-landing-duolingo-stats/research/duodash-data-sources.md", "reason": "Verify implementation against researched endpoints, field semantics and security limits"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Review complete config-to-provider-to-public-DTO-to-Landing data flow"}
+{"file": ".trellis/spec/common/shared/package-boundaries.md", "reason": "Check secret and public contracts remain at correct boundaries"}
+{"file": ".trellis/spec/common/shared/type-safety.md", "reason": "Check external unknown payloads and shared DTOs stay type safe"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "Run backend quality and test gates"}
+{"file": ".trellis/spec/backend/backend/error-handling.md", "reason": "Check upstream and auth failures degrade without secret leakage"}
+{"file": ".trellis/spec/backend/backend/analytics-guidelines.md", "reason": "Compare secret masking, generation invalidation and public/admin separation"}
+{"file": ".trellis/spec/backend/backend/weather-guidelines.md", "reason": "Compare public proxy caching, single-flight and soft failure behavior"}
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "Review Landing visual fit, responsive behavior and admin settings composition"}
+{"file": ".trellis/spec/frontend/frontend/hook-guidelines.md", "reason": "Review independent Alova request and degradation behavior"}
+{"file": ".trellis/spec/frontend/frontend/quality-guidelines.md", "reason": "Run Vue lint, type, build and accessibility checks"}

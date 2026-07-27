@@ -61,6 +61,13 @@ Criteria (all should be true):
 - 公开引导：`IUmamiTrackerConfig` via `GET /analytics/tracker-config`（无凭证）
 - Helpers: `toUmamiTrackerConfig`, `maskUmamiConfigPassword`, `isUmamiQueryConfigured`, …
 
+### Duolingo config and public statistics
+
+- Secret config: `IDuolingoConfig` stored under `SYSTEM_DUOLINGO_CONFIG`; JWT is server-only.
+- Public shape: `IDuolingoLandingStats`; it must not grow username, userId, JWT, or raw upstream fields.
+- Helpers: `maskDuolingoConfigJwt`, `shouldKeepExistingDuolingoJwt`, `isDuolingoConfigured`, and IANA time-zone validation.
+- Full behavior: [Duolingo Landing Statistics Contract](../../backend/backend/duolingo-guidelines.md).
+
 References:
 - `packages/common/src/types/system-config.ts`
 - `packages/common/src/constants/system-config.ts`

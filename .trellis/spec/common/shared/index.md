@@ -32,6 +32,7 @@ Build output: `dist/` (`main`: `dist/index.js`, `types`: `dist/index.d.ts`). Tur
 | [Type Safety](./type-safety.md) | Naming and export patterns | Filled |
 | [System Config Contracts](./system-config-contracts.md) | Cross-layer field formats and compatibility rules | Filled |
 | [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Shared presence types, constants, expiry, and polling rules | Filled |
+| [Duolingo Contract](../../backend/backend/duolingo-guidelines.md) | Shared secret config and public Landing statistics DTO | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Build, imports, anti-patterns | Filled |
 
 ---

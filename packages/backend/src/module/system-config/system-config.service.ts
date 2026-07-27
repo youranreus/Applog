@@ -5,12 +5,20 @@ import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import { isNil } from 'lodash';
 import type { UserJwtPayload } from '@reus-able/types';
-import type { ISystemBaseConfig, IUmamiConfig } from '@applog/common';
+import type {
+  IDuolingoConfig,
+  ISystemBaseConfig,
+  IUmamiConfig,
+} from '@applog/common';
 import {
+  DEFAULT_DUOLINGO_TIME_ZONE,
   SYSTEM_CONFIG_KEYS,
   SYSTEM_CONFIG_PREFIX_DEFAULT,
   getSystemConfigKey,
+  isValidIanaTimeZone,
+  maskDuolingoConfigJwt,
   maskUmamiConfigPassword,
+  shouldKeepExistingDuolingoJwt,
   shouldKeepExistingUmamiPassword,
   normalizeUmamiBaseUrl,
 } from '@applog/common';
@@ -71,6 +79,16 @@ export class SystemConfigService {
   }
 
   /**
+   * 完整 Duolingo 配置 key（含前缀）
+   */
+  getDuolingoConfigKey(): string {
+    return getSystemConfigKey(
+      SYSTEM_CONFIG_KEYS.DUOLINGO_CONFIG,
+      this.systemKeyPrefix,
+    );
+  }
+
+  /**
    * 完整系统基础配置 key（含前缀）
    * @returns 如 SYSTEM_BASE_CONFIG
    */
@@ -95,18 +113,31 @@ export class SystemConfigService {
     );
   }
 
+  private isDuolingoConfigKey(configKey: string): boolean {
+    const fullKey = this.getDuolingoConfigKey();
+    return (
+      configKey === fullKey ||
+      configKey === SYSTEM_CONFIG_KEYS.DUOLINGO_CONFIG ||
+      configKey ===
+        `${this.systemKeyPrefix}${SYSTEM_CONFIG_KEYS.DUOLINGO_CONFIG}`
+    );
+  }
+
   private ensureSystemKeyAccess(
     configKey: string,
     action: AccessAction,
     user?: UserJwtPayload,
   ): void {
-    // Umami 凭证：读写均仅管理员（优先于「SYSTEM_ 全员可读」）
-    if (this.isUmamiConfigKey(configKey)) {
+    // 第三方凭证：读写均仅管理员（优先于「SYSTEM_ 全员可读」）
+    if (
+      this.isUmamiConfigKey(configKey) ||
+      this.isDuolingoConfigKey(configKey)
+    ) {
       if (!this.isAdmin(user)) {
         this.warn(
-          `非管理员尝试 ${action} Umami 配置: ${configKey}, user=${user?.id ?? 'anonymous'}`,
+          `非管理员尝试 ${action} secret 配置: ${configKey}, user=${user?.id ?? 'anonymous'}`,
         );
-        throw new BusinessException('Umami 配置仅允许管理员访问');
+        throw new BusinessException('该配置仅允许管理员访问');
       }
       return;
     }
@@ -136,19 +167,36 @@ export class SystemConfigService {
    */
   private mapEntity(entity: SystemConfigEntity): IConfigResponseDto {
     const data = entity.getData();
-    if (!this.isUmamiConfigKey(entity.configKey)) {
+    if (
+      !this.isUmamiConfigKey(entity.configKey) &&
+      !this.isDuolingoConfigKey(entity.configKey)
+    ) {
       return data;
     }
 
-    try {
-      const parsed = JSON.parse(data.configValue) as IUmamiConfig;
-      return {
-        ...data,
-        configValue: JSON.stringify(maskUmamiConfigPassword(parsed)),
-      };
-    } catch {
-      return data;
-    }
+    const masked = this.isDuolingoConfigKey(entity.configKey)
+      ? maskDuolingoConfigJwt(
+          this.parseDuolingoConfigValue(data.configValue) ?? {
+            username: '',
+            jwt: '',
+            timeZone: DEFAULT_DUOLINGO_TIME_ZONE,
+            enabled: false,
+          },
+        )
+      : maskUmamiConfigPassword(
+          this.parseUmamiConfigValue(data.configValue) ?? {
+            baseUrl: '',
+            websiteId: '',
+            scriptUrl: '',
+            username: '',
+            password: '',
+            enabled: false,
+          },
+        );
+    return {
+      ...data,
+      configValue: JSON.stringify(masked),
+    };
   }
 
   /**
@@ -171,10 +219,11 @@ export class SystemConfigService {
     this.ensureSystemKeyAccess(payload.configKey, 'write', user);
 
     // Umami 含凭证：禁止经通用 setConfig 写入，避免脱敏占位覆盖明文密码
-    if (this.isUmamiConfigKey(payload.configKey)) {
-      throw new BusinessException(
-        '请使用 /analytics/umami-config 接口管理 Umami 配置',
-      );
+    if (
+      this.isUmamiConfigKey(payload.configKey) ||
+      this.isDuolingoConfigKey(payload.configKey)
+    ) {
+      throw new BusinessException('请使用对应的专用接口管理含凭证配置');
     }
 
     try {
@@ -496,6 +545,105 @@ export class SystemConfigService {
         throw err;
       }
       this.error(`保存 Umami 配置失败: ${(err as Error).message}`);
+      throw new BusinessException('保存配置失败，请稍后重试');
+    }
+  }
+
+  private parseDuolingoConfigValue(raw: string): IDuolingoConfig | null {
+    try {
+      const parsed = JSON.parse(raw) as Partial<IDuolingoConfig>;
+      if (!parsed || typeof parsed !== 'object') return null;
+      return {
+        username: typeof parsed.username === 'string' ? parsed.username : '',
+        jwt: typeof parsed.jwt === 'string' ? parsed.jwt : '',
+        timeZone:
+          typeof parsed.timeZone === 'string'
+            ? parsed.timeZone
+            : DEFAULT_DUOLINGO_TIME_ZONE,
+        enabled: parsed.enabled === true,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 服务端读取完整 Duolingo 配置（含明文 JWT，勿下发前端）。
+   */
+  async getDuolingoConfigRaw(): Promise<IDuolingoConfig | null> {
+    const configKey = this.getDuolingoConfigKey();
+    try {
+      const entity = await this.configRepo.findOne({ where: { configKey } });
+      return entity ? this.parseDuolingoConfigValue(entity.configValue) : null;
+    } catch (err) {
+      this.error(`读取 Duolingo 配置失败: ${(err as Error).message}`);
+      throw new BusinessException('查询配置失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 管理员读取脱敏 Duolingo 配置。
+   */
+  async getDuolingoConfigMasked(
+    user: UserJwtPayload,
+  ): Promise<IDuolingoConfig> {
+    this.ensureSystemKeyAccess(this.getDuolingoConfigKey(), 'read', user);
+    const raw = await this.getDuolingoConfigRaw();
+    return maskDuolingoConfigJwt(
+      raw ?? {
+        username: '',
+        jwt: '',
+        timeZone: DEFAULT_DUOLINGO_TIME_ZONE,
+        enabled: false,
+      },
+    );
+  }
+
+  /**
+   * 保存 Duolingo 配置。空 JWT 或脱敏占位保留现有 JWT。
+   */
+  async setDuolingoConfig(
+    payload: IDuolingoConfig,
+    user: UserJwtPayload,
+  ): Promise<IDuolingoConfig> {
+    const configKey = this.getDuolingoConfigKey();
+    this.ensureSystemKeyAccess(configKey, 'write', user);
+    const timeZone =
+      (payload.timeZone || '').trim() || DEFAULT_DUOLINGO_TIME_ZONE;
+    if (!isValidIanaTimeZone(timeZone)) {
+      throw new BusinessException('请输入有效的 IANA 时区');
+    }
+
+    try {
+      const existing = await this.getDuolingoConfigRaw();
+      const jwt = shouldKeepExistingDuolingoJwt(payload.jwt)
+        ? (existing?.jwt ?? '')
+        : (payload.jwt || '').trim();
+      const toStore: IDuolingoConfig = {
+        username: (payload.username || '').trim(),
+        jwt,
+        timeZone,
+        enabled: payload.enabled === true,
+      };
+      let entity = await this.configRepo.findOne({ where: { configKey } });
+      if (isNil(entity)) {
+        entity = this.configRepo.create({
+          configKey,
+          configValue: JSON.stringify(toStore),
+          description: 'Duolingo Landing 学习统计配置',
+          extra: { type: 'IDuolingoConfig' },
+        });
+      } else {
+        entity.configValue = JSON.stringify(toStore);
+        entity.description = 'Duolingo Landing 学习统计配置';
+        entity.extra = { ...(entity.extra ?? {}), type: 'IDuolingoConfig' };
+      }
+      await this.configRepo.save(entity);
+      this.log('Duolingo 配置保存成功');
+      return maskDuolingoConfigJwt(toStore);
+    } catch (err) {
+      if (err instanceof BusinessException) throw err;
+      this.error(`保存 Duolingo 配置失败: ${(err as Error).message}`);
       throw new BusinessException('保存配置失败，请稍后重试');
     }
   }

@@ -22,6 +22,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Traffic Views/Visitors uses `AnalyticsModule` Umami proxy (`GET /analytics/summary|trend|top|breakdown`) — not Post/Page `viewCount`; config via `SYSTEM_UMAMI_CONFIG`
 - [ ] Visitor cursor changes follow [Visitor Cursor Cross-Layer Contract](./visitor-cursor-guidelines.md)
 - [ ] Comment, moderation, pending capability, or Typecho comment migration changes follow [Comment Cross-Layer Contract](./comment-guidelines.md)
+- [ ] Duolingo Landing/config changes follow [Duolingo Landing Statistics Contract](./duolingo-guidelines.md)
 
 ---
 
@@ -38,6 +39,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 | [Logging Guidelines](./logging-guidelines.md) | `HLogger` usage in services | Filled |
 | [Visitor Cursor Guidelines](./visitor-cursor-guidelines.md) | Ephemeral presence API, lifecycle, validation, and tests | Filled |
 | [Comment Guidelines](./comment-guidelines.md) | Public trees, moderation, pending capabilities, safe meme rendering, and Typecho migration | Filled |
+| [Duolingo Guidelines](./duolingo-guidelines.md) | Secret config, third-party normalization, cache, public DTO, and Landing presentation | Filled |
 
 ---
 

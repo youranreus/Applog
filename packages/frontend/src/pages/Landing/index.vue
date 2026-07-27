@@ -4,9 +4,11 @@ import LandingMeta from './components/LandingMeta.vue';
 import LandingProfile from './components/LandingProfile.vue';
 import LandingRecentPosts from './components/LandingRecentPosts.vue';
 import LandingSlogan from './components/LandingSlogan.vue';
+import LandingDuolingoStats from './components/LandingDuolingoStats.vue';
 import { LANDING_DEFAULTS } from './constants';
 import { useLanding } from './hooks/useLanding';
 import { useLandingMeta } from './hooks/useLandingMeta';
+import { useLandingDuolingoStats } from './hooks/useLandingDuolingoStats';
 import type { ILandingSocialLink } from './types';
 import { normalizeLandingLink, resolveLandingText } from './utils';
 import { useSystemStore } from '@/stores/useSystemStore';
@@ -20,6 +22,7 @@ defineOptions({
 const systemStore = useSystemStore();
 const { recentPosts, postsLoading, hasPostError } = useLanding();
 const { weather, onlineVisitors, uptimeText } = useLandingMeta();
+const { stats: duolingoStats } = useLandingDuolingoStats();
 const SITE_URL = import.meta.env.VITE_SITE_URL || '';
 
 const siteTitle = computed(() => {
@@ -81,6 +84,10 @@ useWebSiteJsonLd({
         :title="profileTitle"
         :subtitle="profileSubtitle"
         :social-links="socialLinks"
+      />
+      <LandingDuolingoStats
+        v-if="duolingoStats"
+        :stats="duolingoStats"
       />
       <LandingRecentPosts
         :posts="recentPosts"
