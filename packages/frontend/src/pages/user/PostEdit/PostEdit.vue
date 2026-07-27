@@ -168,6 +168,18 @@ const formatDate = (date: Date | string): string => {
             <FieldGroup class="mb-4 gap-4">
               <Field>
                 <FieldLabel class="text-lg font-medium text-gray-900">
+                  文章标题
+                </FieldLabel>
+                <Input
+                  v-model="formData.title"
+                  type="text"
+                  placeholder="请输入文章标题"
+                  :aria-invalid="!!saveError"
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel class="text-lg font-medium text-gray-900">
                   Slug
                 </FieldLabel>
                 <Input
@@ -179,18 +191,6 @@ const formatDate = (date: Date | string): string => {
                 <FieldDescription>
                   文章的 URL 友好标识符，只能包含小写字母、数字和连字符
                 </FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel class="text-lg font-medium text-gray-900">
-                  文章标题
-                </FieldLabel>
-                <Input
-                  v-model="formData.title"
-                  type="text"
-                  placeholder="请输入文章标题"
-                  :aria-invalid="!!saveError"
-                />
               </Field>
 
               <Field>
