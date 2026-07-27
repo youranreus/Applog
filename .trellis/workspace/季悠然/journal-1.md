@@ -386,3 +386,24 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: 博客评论与 Typecho 评论迁移
+
+**Date**: 2026-07-27
+**Task**: 博客评论与 Typecho 评论迁移
+**Branch**: `master`
+
+### Summary
+
+实现公开评论树、游客待审核撤回、登录用户直接发布、Gravatar、评论锚点与后台审核；提供 Typecho comments-only 幂等迁移、隐私边界和跨层回归测试。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f86c331` | (see git log) |
+
+### Status
+
+[OK] **Completed**
