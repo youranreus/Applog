@@ -180,16 +180,24 @@ Reference: `packages/frontend/src/components/ui/markdown-editor/`.
 
 ## Admin list surfaces
 
-Management list pages (`/user/post`, `/user/page`) share shell pieces under `pages/user/components/`:
+Management list pages (`/user/post`, `/user/page`, `/user/comment`) share shell pieces under `pages/user/components/`:
 
 - `AdminListHeader` — title + wave underline (aligned with Dashboard) + one filled primary create CTA on the right
 - `AdminListSearch` — leading search icon, submit on Enter only, custom clear `X` (hide native webkit cancel)
 - `AdminListEmpty` / `AdminListError` — empty teaches next step; error offers retry
 - `AdminPagination` — uses shadcn Pagination; active page is `ghost` + muted fill (**no outline border**)
 
-Table conventions: clickable rows are keyboard-reachable (`tabindex` + Enter/Space); prefer compact columns (title · slug · status · updated); page lists may add「作用于」for nav/footer.
+### Convention: Admin content tables share one visual language
 
-Reference: `packages/frontend/src/pages/user/PostList/`, `packages/frontend/src/pages/user/PageList/`, `packages/frontend/src/pages/user/components/AdminList*.vue`.
+**What**: List tables use the `admin-content-table` chrome (pebble border, frost header, `radius-cards`, ash meta text, status text + colored dots). Do not invent a second table skin for a new admin list.
+
+**Why**: Comment moderation previously used a thicker, Badge-heavy table; aligning it with post/page tables keeps admin scanning consistent.
+
+**Content tables (post / page)**: clickable rows are keyboard-reachable (`tabindex` + Enter/Space); prefer compact columns (title · slug · status · updated); page lists may add「作用于」for nav/footer.
+
+**Moderation table (comment)**: rows are **not** whole-row links — actions stay in a row Popover (approve / reject / delete). Preferred columns: time (date-only, first) · content · target (title only, no parent/descendant meta) · author · email · status dots · IP · actions. Guest site links use Link Blue (`--color-link-blue`), not Apple Blue.
+
+Reference: `packages/frontend/src/pages/user/PostList/`, `packages/frontend/src/pages/user/PageList/`, `packages/frontend/src/pages/user/CommentList/`, `packages/frontend/src/pages/user/components/AdminList*.vue`.
 
 ---
 
