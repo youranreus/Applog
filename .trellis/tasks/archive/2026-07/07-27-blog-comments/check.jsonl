@@ -1,0 +1,8 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Verify database, API, frontend and migration contracts end to end"}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Backend auth, DTO, TypeScript and validation quality gate"}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Frontend lint, type safety, Alova and untrusted-content quality gate"}
+{"file":".trellis/spec/frontend/frontend/type-safety.md","reason":"Verify public/admin comment API typing and no any/enum drift"}
+{"file":".trellis/tasks/07-27-blog-comments/research/repository-evidence.md","reason":"Recheck fixed privacy, UI and migration gaps against repository evidence"}
+{"file": ".trellis/spec/backend/backend/comment-guidelines.md", "reason": "Verify updated Gravatar, visibility, anchor, pagination, and pending merge contracts"}
+{"file": "packages/frontend/src/pages/post/components/PostListPagination.vue", "reason": "Verify exact pagination reuse and no page numbers"}
+{"file": "packages/frontend/src/pages/post/components/comments/CommentForm.vue", "reason": "Verify reply hover/focus id and form reply context"}

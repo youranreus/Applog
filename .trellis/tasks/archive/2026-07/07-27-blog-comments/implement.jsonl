@@ -1,0 +1,11 @@
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"TypeORM entity, relation, pagination and Typecho adapter conventions"}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"Comment and migration business error contract"}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"PII-safe service and migration logging"}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Vue SFC boundaries, AdminList reuse and safe rendering conventions"}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"Alova API and page composable layering"}
+{"file":".trellis/tasks/07-27-blog-comments/research/repository-evidence.md","reason":"Current comment/migration gaps and Typecho source evidence"}
+{"file": ".trellis/spec/backend/backend/comment-guidelines.md", "reason": "Updated comment security, Gravatar, anchor, pending merge, and UI contracts"}
+{"file": "packages/frontend/src/pages/post/components/PostListPagination.vue", "reason": "Canonical article-list previous/next pagination visual to reuse"}
+{"file": "packages/frontend/src/pages/post/components/comments/CommentItem.vue", "reason": "Existing comment presentation to redesign without separators"}
+{"file": "packages/frontend/src/pages/user/CommentList/components/CommentTable.vue", "reason": "Admin columns and anchored page-link refinement"}
+{"file": "packages/frontend/src/pages/post/components/comments/CommentForm.vue", "reason": "Reply author and comment-id context; remove redundant copy nearby"}
