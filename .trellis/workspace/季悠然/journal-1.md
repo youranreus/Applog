@@ -471,3 +471,26 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 16: Landing 多邻国学习统计
+
+**Date**: 2026-07-28
+**Task**: Landing 多邻国学习统计
+**Branch**: `master`
+
+### Summary
+
+参考 DuoDash 接入服务端 Duolingo 数据代理与管理员脱敏配置，在 Landing 展示连胜、联赛、近 7 日 XP/学习时间、语言分布和年度热力图；补齐缓存、schema、secret 与移动端回归验证。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5b1866b` | (see git log) |
+| `e8eae7d` | (see git log) |
+| `1ce7ec9` | (see git log) |
+
+### Status
+
+[OK] **Completed**
