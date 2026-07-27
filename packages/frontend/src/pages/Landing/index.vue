@@ -22,7 +22,8 @@ defineOptions({
 const systemStore = useSystemStore();
 const { recentPosts, postsLoading, hasPostError } = useLanding();
 const { weather, onlineVisitors, uptimeText } = useLandingMeta();
-const { stats: duolingoStats } = useLandingDuolingoStats();
+const { stats: duolingoStats, loading: duolingoLoading } =
+  useLandingDuolingoStats();
 const SITE_URL = import.meta.env.VITE_SITE_URL || '';
 
 const siteTitle = computed(() => {
@@ -86,8 +87,9 @@ useWebSiteJsonLd({
         :social-links="socialLinks"
       />
       <LandingDuolingoStats
-        v-if="duolingoStats"
+        v-if="duolingoLoading || duolingoStats"
         :stats="duolingoStats"
+        :loading="duolingoLoading"
       />
       <LandingRecentPosts
         :posts="recentPosts"

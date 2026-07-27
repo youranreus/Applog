@@ -8,36 +8,52 @@ import {
   getHeatmapLeadingBlanks,
 } from '../duolingo-utils';
 
-const props = defineProps<{
-  stats: IDuolingoLandingStats;
-}>();
+const props = withDefaults(
+  defineProps<{
+    stats?: IDuolingoLandingStats | null;
+    loading?: boolean;
+  }>(),
+  {
+    stats: null,
+    loading: false,
+  },
+);
 
 const heatmapScroll = ref<HTMLElement | null>(null);
-const cells = computed(() => buildHeatmapCells(props.stats.yearlyXp.days));
+const cells = computed(() =>
+  props.stats ? buildHeatmapCells(props.stats.yearlyXp.days) : [],
+);
 const leadingBlanks = computed(() =>
-  getHeatmapLeadingBlanks(props.stats.yearlyXp.days[0]?.date ?? ''),
+  getHeatmapLeadingBlanks(props.stats?.yearlyXp.days[0]?.date ?? ''),
 );
 const todayKey = computed(
   () =>
-    props.stats.last7Days.days[
+    props.stats?.last7Days.days[
       props.stats.last7Days.days.length - 1
     ]?.date ?? '',
 );
 const yearlySummary = computed(() => {
+  if (!props.stats) return '';
   const elapsed = props.stats.yearlyXp.days.filter((day) => !day.future);
   const activeDays = elapsed.filter((day) => (day.xp ?? 0) > 0).length;
   const totalXp = elapsed.reduce((sum, day) => sum + (day.xp ?? 0), 0);
   return `${props.stats.yearlyXp.year} 年已有 ${activeDays} 个学习日，累计 ${formatXp(totalXp)} XP`;
 });
-const fetchedAtText = computed(() =>
-  new Intl.DateTimeFormat('zh-CN', {
+const fetchedAtText = computed(() => {
+  if (!props.stats) return '';
+  return new Intl.DateTimeFormat('zh-CN', {
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(props.stats.fetchedAt)),
-);
+  }).format(new Date(props.stats.fetchedAt));
+});
+const skeletonHeatmapCells = Array.from({ length: 84 }, (_, index) => index);
 
+/**
+ * 热力图滚动到当前周附近，避免移动端默认停在年初。
+ * @returns Promise，等待 DOM 更新完成
+ */
 async function scrollToCurrentWeek(): Promise<void> {
   await nextTick();
   const today = heatmapScroll.value?.querySelector<HTMLElement>(
@@ -46,11 +62,76 @@ async function scrollToCurrentWeek(): Promise<void> {
   today?.scrollIntoView({ block: 'nearest', inline: 'end' });
 }
 
-watch(() => props.stats.fetchedAt, scrollToCurrentWeek, { immediate: true });
+watch(
+  () => props.stats?.fetchedAt,
+  (fetchedAt) => {
+    if (fetchedAt) void scrollToCurrentWeek();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
-  <section class="duolingo-stats" aria-labelledby="duolingo-stats-title">
+  <section
+    v-if="loading"
+    class="duolingo-stats"
+    aria-busy="true"
+    aria-labelledby="duolingo-stats-title"
+  >
+    <header class="duolingo-stats__header">
+      <div>
+        <p class="duolingo-stats__eyebrow">学习轨迹</p>
+        <h2 id="duolingo-stats-title">最近在多邻国学习</h2>
+      </div>
+    </header>
+
+    <p class="sr-only" aria-live="polite">正在加载学习数据</p>
+
+    <dl class="duolingo-stats__metrics" aria-hidden="true">
+      <div v-for="metric in 4" :key="`metric-${metric}`">
+        <dt><span class="duolingo-skeleton duolingo-skeleton--label" /></dt>
+        <dd><span class="duolingo-skeleton duolingo-skeleton--value" /></dd>
+      </div>
+    </dl>
+
+    <div class="duolingo-stats__languages" aria-hidden="true">
+      <article v-for="card in 2" :key="`lang-${card}`">
+        <div>
+          <span class="duolingo-skeleton duolingo-skeleton--lang-title" />
+          <span class="duolingo-skeleton duolingo-skeleton--lang-meta" />
+        </div>
+        <span class="duolingo-skeleton duolingo-skeleton--lang-share" />
+      </article>
+    </div>
+
+    <div class="duolingo-stats__year" aria-hidden="true">
+      <div class="duolingo-stats__year-header">
+        <span class="duolingo-skeleton duolingo-skeleton--year-title" />
+        <span class="duolingo-skeleton duolingo-skeleton--year-summary" />
+      </div>
+      <div class="heatmap-layout">
+        <div class="heatmap-weekdays">
+          <span>日</span><span>一</span><span>二</span><span>三</span>
+          <span>四</span><span>五</span><span>六</span>
+        </div>
+        <div class="heatmap-scroll">
+          <div class="heatmap">
+            <span
+              v-for="cell in skeletonHeatmapCells"
+              :key="`heat-${cell}`"
+              class="heatmap__cell heatmap__cell--skeleton"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section
+    v-else-if="stats"
+    class="duolingo-stats"
+    aria-labelledby="duolingo-stats-title"
+  >
     <header class="duolingo-stats__header">
       <div>
         <p class="duolingo-stats__eyebrow">学习轨迹</p>
@@ -321,6 +402,10 @@ watch(() => props.stats.fetchedAt, scrollToCurrentWeek, { immediate: true });
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-pebble) 70%, transparent);
 }
 
+.heatmap__cell--skeleton {
+  background: var(--color-pebble);
+}
+
 .heatmap-legend {
   display: flex;
   align-items: center;
@@ -337,6 +422,61 @@ watch(() => props.stats.fetchedAt, scrollToCurrentWeek, { immediate: true });
 
 .duolingo-stats__disclaimer {
   margin-top: 1rem;
+}
+
+.duolingo-skeleton {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-pebble) 25%,
+    color-mix(in srgb, var(--color-frost) 70%, var(--color-pebble)) 50%,
+    var(--color-pebble) 75%
+  );
+  background-size: 200% 100%;
+  animation: duolingo-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.duolingo-skeleton--label {
+  width: 3.5rem;
+  height: 0.75rem;
+}
+
+.duolingo-skeleton--value {
+  width: 4.5rem;
+  height: 1.125rem;
+  margin-top: 0.4rem;
+}
+
+.duolingo-skeleton--lang-title {
+  width: 4rem;
+  height: 0.9375rem;
+}
+
+.duolingo-skeleton--lang-meta {
+  width: 3.25rem;
+  height: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.duolingo-skeleton--lang-share {
+  width: 2.25rem;
+  height: 1.125rem;
+}
+
+.duolingo-skeleton--year-title {
+  width: 7rem;
+  height: 0.9375rem;
+}
+
+.duolingo-skeleton--year-summary {
+  width: min(14rem, 55%);
+  height: 0.75rem;
+}
+
+@keyframes duolingo-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 @media (max-width: 640px) {
@@ -364,11 +504,20 @@ watch(() => props.stats.fetchedAt, scrollToCurrentWeek, { immediate: true });
   .duolingo-stats__languages {
     grid-template-columns: 1fr;
   }
+
+  .duolingo-skeleton--year-summary {
+    width: 10rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .heatmap-scroll {
     scroll-behavior: auto;
+  }
+
+  .duolingo-skeleton {
+    animation: none;
+    background: var(--color-pebble);
   }
 }
 </style>

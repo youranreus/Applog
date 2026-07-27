@@ -41,6 +41,7 @@
 ## Frontend presentation
 
 - Place the section after Landing Profile and before Recent Posts.
+- While `useLandingDuolingoStats().loading` is true, show a layout-matching skeleton (real section title, shimmer placeholders for metrics / languages / heatmap); hide the section entirely when loading finishes with `null`.
 - Four quiet typographic metrics, at most two language cards, and a dependency-free yearly heatmap.
 - The mobile heatmap scrolls inside its own region and defaults near the current week; it must not create page-level horizontal overflow.
 - Zero, future, positive intensity, stale state, and per-day values require text/accessible names, not color alone.
