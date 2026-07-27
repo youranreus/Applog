@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "Verify table styling matches admin-content-table design language"}
+{"file": ".trellis/spec/frontend/frontend/quality-guidelines.md", "reason": "Verify quality bar after CommentTable changes"}
+{"file": ".trellis/tasks/07-27-admin-comment-table-style/prd.md", "reason": "Acceptance criteria for columns, date-only time, target-only, status dots"}
