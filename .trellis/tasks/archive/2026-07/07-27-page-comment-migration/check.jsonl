@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/backend/comment-guidelines.md","reason":"核对评论隐私、目标隔离、迁移幂等与测试矩阵"}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"核对后端 lint、类型和服务边界"}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"核对前端 lint、type-check、build 与无 v-html"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"核对所有 postId/pageId 消费者和边界是否同步"}

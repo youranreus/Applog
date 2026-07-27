@@ -1,0 +1,5 @@
+{"file":".trellis/spec/backend/backend/comment-guidelines.md","reason":"评论实体、公开/管理 API、安全与 Typecho 迁移的跨层契约"}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"TypeORM 双外键、索引和 synchronize 兼容规范"}
+{"file":".trellis/spec/frontend/frontend/index.md","reason":"Vue 评论 UI、API 层与质量约定"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"目标字段跨数据库、API、前端和迁移的数据流检查"}
+{"file":".trellis/tasks/07-27-page-comment-migration/research/typecho-comment-targets.md","reason":"Typecho 官方 schema 与页面评论语义证据"}
