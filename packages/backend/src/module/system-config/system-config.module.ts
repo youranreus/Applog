@@ -5,6 +5,7 @@ import {
   PostEntity,
   PageEntity,
   UserEntity,
+  CommentEntity,
 } from '@/entities';
 import { SystemConfigService } from './system-config.service';
 import { MigrationService } from './migration.service';
@@ -17,6 +18,7 @@ import { SystemConfigController } from './system-config.controller';
       PostEntity,
       PageEntity,
       UserEntity,
+      CommentEntity,
     ]),
   ],
   controllers: [SystemConfigController],

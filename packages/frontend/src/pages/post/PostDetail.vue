@@ -5,6 +5,7 @@ import { useImagePreview } from '@/hooks/useImagePreview'
 import ArticleRenderer from '@/components/ui/article-renderer/ArticleRenderer.vue'
 import ImagePreview from '@/components/ui/image-preview/ImagePreview.vue'
 import { Badge } from '@/components/ui/badge'
+import PostCommentSection from './components/comments/PostCommentSection.vue'
 
 const { post, loading, error, formatDate } = usePostDetail()
 const coverLoaded = ref(false)
@@ -24,65 +25,66 @@ const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview
 
       <!-- 文章内容 -->
       <article ref="articleRef" v-else-if="post" class="post-article">
-      <!-- 封面图 -->
-      <div v-if="post.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
-        <img
-          :src="post.cover"
-          :alt="post.title"
-          class="cover-block-image pointer-events-none"
-          :class="{ loaded: coverLoaded }"
-          @load="coverLoaded = true"
-        />
-      </div>
+        <!-- 封面图 -->
+        <div v-if="post.cover" class="cover-block mb-6 sm:mb-8" :class="{ shimmer: !coverLoaded }">
+          <img
+            :src="post.cover"
+            :alt="post.title"
+            class="cover-block-image pointer-events-none"
+            :class="{ loaded: coverLoaded }"
+            @load="coverLoaded = true"
+          />
+        </div>
 
-      <!-- 文章标题 -->
-      <h1 class="post-title mb-4 sm:mb-2">
-        {{ post.title }}
-      </h1>
+        <!-- 文章标题 -->
+        <h1 class="post-title mb-4 sm:mb-2">
+          {{ post.title }}
+        </h1>
 
-      <!-- 元信息区 -->
-      <div class="post-meta mb-6 sm:mb-8">
-        <div
-          class="meta-info flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-gray-500 mb-3"
-        >
-          <span v-if="post.createdAt" class="publish-date">
-            {{ formatDate(post.createdAt) }}
-          </span>
-          <span v-if="post.createdAt && post.viewCount !== undefined" class="separator">•</span>
-          <span v-if="post.viewCount !== undefined" class="view-count">
-            {{ post.viewCount }} 次浏览
-          </span>
-          <span
-            v-if="post.tags && post.tags.length > 0 && post.viewCount !== undefined"
-            class="separator"
-            >•</span
+        <!-- 元信息区 -->
+        <div class="post-meta mb-6 sm:mb-8">
+          <div
+            class="meta-info flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-gray-500 mb-3"
           >
-          <div v-if="post.tags && post.tags.length > 0" class="tags flex flex-wrap gap-2">
-            <Badge
-              v-for="tag in post.tags"
-              :key="tag"
-              variant="secondary"
-              class="font-normal text-ash"
+            <span v-if="post.createdAt" class="publish-date">
+              {{ formatDate(post.createdAt) }}
+            </span>
+            <span v-if="post.createdAt && post.viewCount !== undefined" class="separator">•</span>
+            <span v-if="post.viewCount !== undefined" class="view-count">
+              {{ post.viewCount }} 次浏览
+            </span>
+            <span
+              v-if="post.tags && post.tags.length > 0 && post.viewCount !== undefined"
+              class="separator"
+              >•</span
             >
-              {{ tag }}
-            </Badge>
+            <div v-if="post.tags && post.tags.length > 0" class="tags flex flex-wrap gap-2">
+              <Badge
+                v-for="tag in post.tags"
+                :key="tag"
+                variant="secondary"
+                class="font-normal text-ash"
+              >
+                {{ tag }}
+              </Badge>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div v-if="post.summary" class="post-abstract">
-        <p class="post-abstract-content">{{ post.summary }}</p>
-      </div>
+        <div v-if="post.summary" class="post-abstract">
+          <p class="post-abstract-content">{{ post.summary }}</p>
+        </div>
 
-      <!-- 文章内容 -->
-      <div class="post-content article-content">
-        <ArticleRenderer :content="post.content" class="markdown-content" />
-      </div>
+        <!-- 文章内容 -->
+        <div class="post-content article-content">
+          <ArticleRenderer :content="post.content" class="markdown-content" />
+        </div>
 
-      <div class="post-footer">もう終わりだよ。</div>
-    </article>
+        <div class="post-footer">もう終わりだよ。</div>
+        <PostCommentSection :post-id="post.id" />
+      </article>
 
-    <!-- 文章不存在 -->
+      <!-- 文章不存在 -->
       <div v-else class="state-block">
         <p class="state-label">文章不存在。</p>
       </div>
@@ -185,7 +187,6 @@ const { previewVisible, previewSrc, previewAlt, closePreview } = useImagePreview
   white-space: pre-wrap;
   word-break: break-all;
 }
-
 
 .post-abstract {
   @apply my-6 p-6 bg-gray-100 rounded-3xl relative overflow-hidden;

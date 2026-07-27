@@ -21,6 +21,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Cross-package system-config contracts come from `@applog/common`
 - [ ] Traffic Views/Visitors uses `AnalyticsModule` Umami proxy (`GET /analytics/summary|trend|top|breakdown`) — not Post/Page `viewCount`; config via `SYSTEM_UMAMI_CONFIG`
 - [ ] Visitor cursor changes follow [Visitor Cursor Cross-Layer Contract](./visitor-cursor-guidelines.md)
+- [ ] Comment, moderation, pending capability, or Typecho comment migration changes follow [Comment Cross-Layer Contract](./comment-guidelines.md)
 
 ---
 
@@ -36,6 +37,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 | [Quality Guidelines](./quality-guidelines.md) | Naming, JSDoc, forbidden patterns | Filled |
 | [Logging Guidelines](./logging-guidelines.md) | `HLogger` usage in services | Filled |
 | [Visitor Cursor Guidelines](./visitor-cursor-guidelines.md) | Ephemeral presence API, lifecycle, validation, and tests | Filled |
+| [Comment Guidelines](./comment-guidelines.md) | Public trees, moderation, pending capabilities, safe meme rendering, and Typecho migration | Filled |
 
 ---
 
@@ -48,6 +50,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Input DTOs are classes with `class-validator`; response shapes are `I*` interfaces/types
 - [ ] API controllers use `version: [VERSION_NEUTRAL, '1']` unless intentionally raw (e.g. SEO XML)
 - [ ] Analytics: Umami proxy + Shanghai windows; never leak credentials; legacy analytics_* tables soft-disabled
+- [ ] Comments: public DTOs hide private metadata; pending access requires a capability; subtree deletion is transactional
 
 ---
 

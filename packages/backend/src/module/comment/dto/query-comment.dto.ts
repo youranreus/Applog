@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, Min, IsEnum } from 'class-validator';
+import { IsInt, IsOptional, Min, Max, IsDefined } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -18,6 +18,7 @@ export class QueryCommentDto {
 
   @IsInt()
   @Min(1, { message: '每页数量最小为 1' })
+  @Max(50, { message: '每页数量最大为 50' })
   @Type(() => Number)
   @IsOptional()
   limit?: number = 10;
@@ -25,12 +26,6 @@ export class QueryCommentDto {
   @IsInt()
   @Min(1, { message: '文章ID必须大于0' })
   @Type(() => Number)
-  @IsOptional()
-  postId?: number;
-
-  @IsEnum(['pending', 'approved', 'rejected'], {
-    message: '评论状态只能是 pending、approved 或 rejected',
-  })
-  @IsOptional()
-  status?: CommentStatus;
+  @IsDefined({ message: '文章ID不能为空' })
+  postId: number;
 }

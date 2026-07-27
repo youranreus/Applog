@@ -22,6 +22,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] Theme tokens in `assets/base.css` (see Component Guidelines)
 - [ ] Analytics: Umami tracker via public `GET /analytics/tracker-config` (non-admin only); Dashboard via admin proxy APIs — do not reuse `viewCount` for traffic UI
 - [ ] Visitor cursor changes follow the cross-layer [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md)
+- [ ] Comment UI, pending storage, or meme rendering changes follow the cross-layer [Comment Contract](../../backend/backend/comment-guidelines.md)
 
 
 ---
@@ -37,6 +38,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 | [Quality Guidelines](./quality-guidelines.md) | Forbidden patterns, lint/typecheck | Filled |
 | [Type Safety](./type-safety.md) | Types, constants, `@applog/common` | Filled |
 | [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Public-route cursor identity, polling, API, and rendering | Filled |
+| [Comment Contract](../../backend/backend/comment-guidelines.md) | Public trees, safe rendering, pending capability storage, and moderation | Filled |
 
 ---
 
@@ -48,6 +50,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] Notifications go through `layoutStore.notify` (Sonner bridge)
 - [ ] Theme changes remap semantic CSS variables — do not one-off restyle every page
 - [ ] Dashboard traffic UI: admin-only, list-row tone, SVG trend (no chart library)
+- [ ] Comments: no `v-html`; pending withdrawal requires the matching post-scoped session capability
 
 ---
 

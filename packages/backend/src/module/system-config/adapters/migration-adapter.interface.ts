@@ -1,4 +1,9 @@
-import type { IDatabaseConfig, IRawPost, IRawPage } from '../dto/migration.dto';
+import type {
+  IDatabaseConfig,
+  IRawPost,
+  IRawPage,
+  IRawComment,
+} from '../dto/migration.dto';
 
 /**
  * 迁移适配器接口
@@ -29,6 +34,8 @@ export interface IMigrationAdapter {
    * @returns Promise<IRawPage[]> 原始页面数据列表
    */
   fetchPages(): Promise<IRawPage[]>;
+
+  fetchComments(): Promise<IRawComment[]>;
 
   /**
    * 断开数据库连接

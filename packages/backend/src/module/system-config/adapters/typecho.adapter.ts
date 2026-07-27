@@ -1,7 +1,12 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import type { HLogger } from '@reus-able/nestjs';
 import type { IMigrationAdapter } from './migration-adapter.interface';
-import type { IDatabaseConfig, IRawPost, IRawPage } from '../dto/migration.dto';
+import type {
+  IDatabaseConfig,
+  IRawPost,
+  IRawPage,
+  IRawComment,
+} from '../dto/migration.dto';
 
 /**
  * Typecho 数据库原始数据接口
@@ -425,6 +430,24 @@ export class TypechoAdapter implements IMigrationAdapter {
     } catch (error) {
       this.error(`获取页面数据失败: ${error.message}`);
       throw new Error(`获取页面数据失败: ${error.message}`);
+    }
+  }
+
+  async fetchComments(): Promise<IRawComment[]> {
+    if (!this.connection || !this.connection.isInitialized)
+      throw new Error('数据库连接未初始化');
+    try {
+      const table = `${this.config?.tablePrefix || 'typecho_'}comments`;
+      this.log(`开始获取 Typecho 评论数据，表: ${table}`);
+      const rows = (await this.connection.query(`
+        SELECT coid, cid, created, author, authorId, ownerId, mail, url, ip, agent, text, type, status, parent
+        FROM \`${table}\` ORDER BY coid ASC
+      `)) as IRawComment[];
+      this.log(`成功获取 ${rows.length} 条评论数据`);
+      return rows;
+    } catch (error) {
+      this.error(`获取评论数据失败: ${error.message}`);
+      throw new Error(`获取评论数据失败: ${error.message}`);
     }
   }
 

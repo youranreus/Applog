@@ -1,36 +1,38 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from 'vue'
 
 /**
  * 分页组件 Props
  */
 interface IPaginationProps {
   /** 当前页码（从 1 开始） */
-  currentPage: number;
+  currentPage: number
   /** 总页数 */
-  totalPages: number;
+  totalPages: number
   /** 页码变化回调函数 */
-  onChange: (page: number) => void;
+  onChange: (page: number) => void
+  /** 请求进行中时阻止重复翻页 */
+  disabled?: boolean
 }
 
-const props = defineProps<IPaginationProps>();
+const props = defineProps<IPaginationProps>()
 
 /**
  * 是否可以点击上一页
  */
-const canGoPrev = computed<boolean>(() => props.currentPage > 1);
+const canGoPrev = computed<boolean>(() => props.currentPage > 1)
 
 /**
  * 是否可以点击下一页
  */
-const canGoNext = computed<boolean>(() => props.currentPage < props.totalPages);
+const canGoNext = computed<boolean>(() => props.currentPage < props.totalPages)
 
 /**
  * 处理上一页点击
  */
 function handlePrev(): void {
-  if (canGoPrev.value) {
-    props.onChange(props.currentPage - 1);
+  if (canGoPrev.value && !props.disabled) {
+    props.onChange(props.currentPage - 1)
   }
 }
 
@@ -38,8 +40,8 @@ function handlePrev(): void {
  * 处理下一页点击
  */
 function handleNext(): void {
-  if (canGoNext.value) {
-    props.onChange(props.currentPage + 1);
+  if (canGoNext.value && !props.disabled) {
+    props.onChange(props.currentPage + 1)
   }
 }
 </script>
@@ -50,7 +52,10 @@ function handleNext(): void {
     <div class="flex-1 flex justify-start">
       <button
         v-if="canGoPrev"
+        type="button"
         class="prev-next-btn"
+        aria-label="上一页"
+        :disabled="disabled"
         @click="handlePrev"
       >
         <ion-icon name="chevron-back-outline"></ion-icon>
@@ -62,7 +67,10 @@ function handleNext(): void {
     <div class="flex-1 flex justify-end">
       <button
         v-if="canGoNext"
+        type="button"
         class="prev-next-btn"
+        aria-label="下一页"
+        :disabled="disabled"
         @click="handleNext"
       >
         <span class="inline">下一页 </span>
@@ -93,6 +101,17 @@ function handleNext(): void {
 
 .prev-next-btn:hover {
   opacity: 0.7;
+}
+
+.prev-next-btn:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.prev-next-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 4px;
+  border-radius: 2px;
 }
 
 @media (min-width: 640px) {

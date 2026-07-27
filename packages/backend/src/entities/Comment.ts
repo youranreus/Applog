@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { UserEntity } from './User';
 import { PostEntity } from './Post';
@@ -14,7 +15,7 @@ export interface CommentExportData {
   id: number;
   content: string;
   postId: number;
-  authorId: number;
+  authorId?: number;
   author?: {
     id: number;
     name: string;
@@ -28,6 +29,9 @@ export interface CommentExportData {
   guestEmail?: string;
   guestSite?: string;
   ip?: string;
+  agent?: string;
+  source?: string;
+  sourceId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,13 +39,16 @@ export interface CommentExportData {
 @Entity({
   name: 'comments',
 })
+@Index('IDX_comments_post_status_parent', ['postId', 'status', 'parentId'])
+@Index('IDX_comments_post_ip_created', ['postId', 'ip', 'createdAt'])
+@Index('UQ_comments_source_sourceId', ['source', 'sourceId'], { unique: true })
 export class CommentEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({
     nullable: false,
-    type: 'text',
+    type: 'mediumtext',
   })
   content: string;
 
@@ -69,21 +76,21 @@ export class CommentEntity {
   @Column({
     nullable: true,
     type: 'varchar',
-    length: 64,
+    length: 200,
   })
   guestName?: string;
 
   @Column({
     nullable: true,
     type: 'varchar',
-    length: 128,
+    length: 200,
   })
   guestEmail?: string;
 
   @Column({
     nullable: true,
     type: 'varchar',
-    length: 255,
+    length: 200,
   })
   guestSite?: string;
 
@@ -93,6 +100,18 @@ export class CommentEntity {
     length: 64,
   })
   ip?: string;
+
+  @Column({ nullable: true, type: 'varchar', length: 255 })
+  agent?: string;
+
+  @Column({ nullable: true, type: 'char', length: 64, select: false })
+  withdrawTokenHash?: string | null;
+
+  @Column({ nullable: true, type: 'varchar', length: 32 })
+  source?: string;
+
+  @Column({ nullable: true, type: 'varchar', length: 64 })
+  sourceId?: string;
 
   // 关联文章（多对一）
   @Column({
@@ -108,22 +127,24 @@ export class CommentEntity {
 
   // 关联作者（多对一）
   @Column({
-    nullable: false,
+    nullable: true,
+    type: 'int',
   })
-  authorId: number;
+  authorId?: number;
 
   @ManyToOne(() => UserEntity, {
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
+    nullable: true,
   })
   @JoinColumn({ name: 'authorId' })
-  author: UserEntity;
+  author?: UserEntity;
 
   // 父评论ID（用于回复评论，可选）
   @Column({
     nullable: true,
     type: 'int',
   })
-  parentId: number;
+  parentId?: number;
 
   @ManyToOne(() => CommentEntity, {
     onDelete: 'CASCADE',
@@ -147,11 +168,8 @@ export class CommentEntity {
       parentId: this.parentId,
       status: this.status,
       likeCount: this.likeCount,
-      extra: this.extra,
       guestName: this.guestName,
-      guestEmail: this.guestEmail,
       guestSite: this.guestSite,
-      ip: this.ip,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

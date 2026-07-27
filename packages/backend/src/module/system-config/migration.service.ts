@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
-import { PostEntity, PageEntity, UserEntity } from '@/entities';
+import { PostEntity, PageEntity, UserEntity, CommentEntity } from '@/entities';
 import type { IMigrationAdapter } from './adapters/migration-adapter.interface';
 import { TypechoAdapter } from './adapters/typecho.adapter';
 import type {
@@ -13,7 +13,10 @@ import type {
   IRawPost,
   IRawPage,
   IFieldMapping,
+  IRawComment,
+  MigrationResource,
 } from './dto/migration.dto';
+import { mapTypechoCommentStatus } from './typecho-comment.utils';
 
 /**
  * 数据迁移服务
@@ -29,6 +32,9 @@ export class MigrationService {
 
   @InjectRepository(UserEntity)
   private userRepo: Repository<UserEntity>;
+
+  @InjectRepository(CommentEntity)
+  private commentRepo: Repository<CommentEntity>;
 
   @Inject(HLOGGER_TOKEN)
   private logger: HLogger;
@@ -75,19 +81,33 @@ export class MigrationService {
       }
       this.log('数据库连接验证成功');
 
+      const resources: MigrationResource[] = dto.resources ?? [
+        'posts',
+        'pages',
+      ];
+
       // 4. 清空现有数据（如果需要）
       if (dto.clearExisting) {
-        await this.clearExistingData();
-        this.log('已清空现有文章和页面数据');
+        await this.clearExistingData(resources);
+        this.log(`已清空选中资源: ${resources.join(', ')}`);
       }
 
       // 5. 获取原始数据
       this.log('开始获取源数据...');
-      const [rawPosts, rawPages] = await Promise.all([
-        adapter.fetchPosts(),
-        adapter.fetchPages(),
+      const [rawPosts, rawPages, rawComments] = await Promise.all([
+        resources.includes('posts')
+          ? adapter.fetchPosts()
+          : Promise.resolve([]),
+        resources.includes('pages')
+          ? adapter.fetchPages()
+          : Promise.resolve([]),
+        resources.includes('comments')
+          ? adapter.fetchComments()
+          : Promise.resolve([]),
       ]);
-      this.log(`获取到 ${rawPosts.length} 篇文章，${rawPages.length} 个页面`);
+      this.log(
+        `获取到 ${rawPosts.length} 篇文章，${rawPages.length} 个页面，${rawComments.length} 条评论`,
+      );
 
       // 6. 转换并导入数据
       const stats: IMigrationStats = {
@@ -95,6 +115,13 @@ export class MigrationService {
         pagesImported: 0,
         postsFailed: 0,
         pagesFailed: 0,
+        commentsImported: 0,
+        commentsExisting: 0,
+        commentsSkippedByType: 0,
+        commentsSkippedByStatus: 0,
+        commentsMissingPost: 0,
+        commentsMissingParent: 0,
+        commentsFailed: 0,
         duration: '',
       };
 
@@ -123,6 +150,10 @@ export class MigrationService {
         this.log(
           `页面导入完成：成功 ${pageResult.success}，失败 ${pageResult.failed}`,
         );
+      }
+
+      if (resources.includes('comments') && rawComments.length > 0) {
+        Object.assign(stats, await this.importComments(rawComments));
       }
 
       // 7. 计算耗时
@@ -175,31 +206,50 @@ export class MigrationService {
    * 2. 使用 QueryBuilder 删除所有文章和页面数据（delete 方法不允许空条件 {}）
    * 3. 重置自增索引，使导入的数据 ID 从 1 开始
    */
-  private async clearExistingData(): Promise<void> {
+  private async clearExistingData(
+    resources: MigrationResource[],
+  ): Promise<void> {
+    if (
+      resources.includes('posts') &&
+      !resources.includes('comments') &&
+      (await this.commentRepo.count()) > 0
+    ) {
+      throw new BusinessException(
+        '清空文章会级联删除评论，请同时选择 comments 资源',
+      );
+    }
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 使用 QueryBuilder 删除所有数据（delete 方法不允许空条件 {}）
-      await queryRunner.manager
-        .createQueryBuilder()
-        .delete()
-        .from(PostEntity)
-        .execute();
-
-      await queryRunner.manager
-        .createQueryBuilder()
-        .delete()
-        .from(PageEntity)
-        .execute();
-
-      // 重置自增索引，使导入的 ID 从 1 开始
-      await queryRunner.query('ALTER TABLE posts AUTO_INCREMENT = 1');
-      await queryRunner.query('ALTER TABLE pages AUTO_INCREMENT = 1');
+      if (resources.includes('comments')) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .delete()
+          .from(CommentEntity)
+          .execute();
+        await queryRunner.query('ALTER TABLE comments AUTO_INCREMENT = 1');
+      }
+      if (resources.includes('posts')) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .delete()
+          .from(PostEntity)
+          .execute();
+        await queryRunner.query('ALTER TABLE posts AUTO_INCREMENT = 1');
+      }
+      if (resources.includes('pages')) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .delete()
+          .from(PageEntity)
+          .execute();
+        await queryRunner.query('ALTER TABLE pages AUTO_INCREMENT = 1');
+      }
 
       await queryRunner.commitTransaction();
-      this.log('已清空现有数据并重置索引');
+      this.log('已清空选中数据并重置索引');
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.error(`清空数据失败: ${error.message}`);
@@ -467,6 +517,164 @@ export class MigrationService {
     }
 
     return { success, failed };
+  }
+
+  private async importComments(rawComments: IRawComment[]): Promise<{
+    commentsImported: number;
+    commentsExisting: number;
+    commentsSkippedByType: number;
+    commentsSkippedByStatus: number;
+    commentsMissingPost: number;
+    commentsMissingParent: number;
+    commentsFailed: number;
+  }> {
+    const stats = {
+      commentsImported: 0,
+      commentsExisting: 0,
+      commentsSkippedByType: 0,
+      commentsSkippedByStatus: 0,
+      commentsMissingPost: 0,
+      commentsMissingParent: 0,
+      commentsFailed: 0,
+    };
+    const runner = this.dataSource.createQueryRunner();
+    await runner.connect();
+    await runner.startTransaction();
+    try {
+      const commentRepo = runner.manager.getRepository(CommentEntity);
+      const postRepo = runner.manager.getRepository(PostEntity);
+      const posts = await postRepo.find();
+      const postBySourceId = new Map<number, number>();
+      for (const post of posts) {
+        const originalId = Number(post.extra?.originalId);
+        if (
+          post.extra?.migratedFrom === 'typecho' &&
+          Number.isFinite(originalId)
+        ) {
+          postBySourceId.set(originalId, post.id);
+        }
+      }
+
+      const existing = await commentRepo.find({ where: { source: 'typecho' } });
+      const commentIdBySourceId = new Map<number, number>();
+      const commentPostBySourceId = new Map<number, number>();
+      for (const comment of existing) {
+        const sourceId = Number(comment.sourceId);
+        if (Number.isFinite(sourceId)) {
+          commentIdBySourceId.set(sourceId, comment.id);
+          commentPostBySourceId.set(sourceId, comment.postId);
+        }
+      }
+
+      const valid: Array<{
+        raw: IRawComment;
+        postId: number;
+        status: CommentEntity['status'];
+      }> = [];
+      for (const raw of rawComments) {
+        if (raw.type !== 'comment') {
+          stats.commentsSkippedByType++;
+          continue;
+        }
+        const status = mapTypechoCommentStatus(raw.status);
+        if (!status) {
+          stats.commentsSkippedByStatus++;
+          continue;
+        }
+        const postId = postBySourceId.get(Number(raw.cid));
+        if (!postId) {
+          stats.commentsMissingPost++;
+          continue;
+        }
+        if (commentIdBySourceId.has(Number(raw.coid))) {
+          stats.commentsExisting++;
+          continue;
+        }
+        valid.push({ raw, postId, status });
+      }
+
+      let pending = valid;
+      let progressed = true;
+      while (pending.length && progressed) {
+        progressed = false;
+        const next: typeof pending = [];
+        for (const item of pending) {
+          const parentSourceId = Number(item.raw.parent || 0);
+          const parentId = parentSourceId
+            ? commentIdBySourceId.get(parentSourceId)
+            : undefined;
+          if (parentSourceId && !parentId) {
+            next.push(item);
+            continue;
+          }
+          if (
+            parentSourceId &&
+            commentPostBySourceId.get(parentSourceId) !== item.postId
+          ) {
+            stats.commentsMissingParent++;
+            continue;
+          }
+          try {
+            const timestamp = new Date(Number(item.raw.created) * 1000);
+            const saved = await commentRepo.save(
+              commentRepo.create({
+                content: item.raw.text || '',
+                status: item.status,
+                likeCount: 0,
+                postId: item.postId,
+                parentId,
+                authorId: undefined,
+                guestName: item.raw.author || '游客',
+                guestEmail: item.raw.mail || undefined,
+                guestSite: item.raw.url || undefined,
+                ip: item.raw.ip || undefined,
+                agent: item.raw.agent?.slice(0, 255) || undefined,
+                source: 'typecho',
+                sourceId: String(item.raw.coid),
+                extra: {
+                  typechoAuthorId: item.raw.authorId,
+                  typechoOwnerId: item.raw.ownerId,
+                },
+                createdAt: timestamp,
+                updatedAt: timestamp,
+              }),
+            );
+            commentIdBySourceId.set(Number(item.raw.coid), saved.id);
+            commentPostBySourceId.set(Number(item.raw.coid), item.postId);
+            stats.commentsImported++;
+            progressed = true;
+          } catch (error) {
+            const duplicate = await commentRepo.findOne({
+              where: { source: 'typecho', sourceId: String(item.raw.coid) },
+            });
+            if (duplicate) {
+              commentIdBySourceId.set(Number(item.raw.coid), duplicate.id);
+              commentPostBySourceId.set(
+                Number(item.raw.coid),
+                duplicate.postId,
+              );
+              stats.commentsExisting++;
+              progressed = true;
+            } else {
+              stats.commentsFailed++;
+              this.warn(
+                `评论导入失败 (coid: ${item.raw.coid}): ${error.message}`,
+              );
+            }
+          }
+        }
+        pending = next;
+      }
+      stats.commentsMissingParent += pending.length;
+      await runner.commitTransaction();
+      return stats;
+    } catch (error) {
+      await runner.rollbackTransaction();
+      this.error(`评论迁移事务失败: ${error.message}`);
+      throw new BusinessException('评论迁移失败');
+    } finally {
+      await runner.release();
+    }
   }
 
   /**

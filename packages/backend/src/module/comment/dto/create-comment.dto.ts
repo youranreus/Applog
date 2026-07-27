@@ -7,7 +7,7 @@ import {
   Length,
   IsEmail,
   IsUrl,
-  IsIP,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -17,6 +17,7 @@ import { Type } from 'class-transformer';
 export class CreateCommentDto {
   @IsString()
   @IsNotEmpty({ message: '评论内容不能为空' })
+  @MaxLength(10000, { message: '评论内容不能超过 10000 个字符' })
   content: string;
 
   @IsInt()
@@ -31,19 +32,17 @@ export class CreateCommentDto {
   parentId?: number;
 
   @IsString()
-  @Length(2, 64, { message: '游客昵称需要在 2-64 个字符之间' })
+  @Length(1, 200, { message: '游客昵称需要在 1-200 个字符之间' })
   @IsOptional()
   guestName?: string;
 
   @IsEmail({}, { message: '游客邮箱格式不正确' })
+  @MaxLength(200, { message: '游客邮箱不能超过 200 个字符' })
   @IsOptional()
   guestEmail?: string;
 
   @IsUrl({}, { message: '站点地址格式不正确' })
+  @MaxLength(200, { message: '站点地址不能超过 200 个字符' })
   @IsOptional()
   guestSite?: string;
-
-  @IsIP(undefined, { message: 'IP 地址格式不正确' })
-  @IsOptional()
-  ip?: string;
 }

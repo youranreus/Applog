@@ -1,632 +1,561 @@
+import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
-import { CommentEntity, PostEntity } from '@/entities';
-import { isNil } from 'lodash';
+import type { UserJwtPayload } from '@reus-able/types';
+import {
+  SYSTEM_CONFIG_KEYS,
+  SYSTEM_CONFIG_PREFIX_DEFAULT,
+  getSystemConfigKey,
+} from '@applog/common';
+import { DataSource, In, MoreThanOrEqual, Repository } from 'typeorm';
+import { paginate, type Pagination } from 'nestjs-typeorm-paginate';
+import { CommentEntity, PostEntity, SystemConfigEntity } from '@/entities';
 import type {
-  CreateCommentDto,
-  UpdateCommentDto,
-  QueryCommentDto,
-  ICommentResponseDto,
-  ReactCommentDto,
+  AdminQueryCommentDto,
   ApproveCommentDto,
+  CreateCommentDto,
+  IAdminCommentDto,
+  ICreateCommentResponseDto,
+  ICommentLocationDto,
+  IDeleteImpactDto,
+  IPublicCommentDto,
+  PendingCapabilityDto,
+  QueryCommentDto,
 } from './dto';
 import {
-  paginate,
-  Pagination,
-  IPaginationOptions,
-} from 'nestjs-typeorm-paginate';
+  gravatarUrl,
+  hashWithdrawToken,
+  matchesWithdrawToken,
+} from './comment-security.utils';
 
 @Injectable()
 export class CommentService {
   @InjectRepository(CommentEntity)
   private commentRepo: Repository<CommentEntity>;
+  @InjectRepository(PostEntity) private postRepo: Repository<PostEntity>;
+  @InjectRepository(SystemConfigEntity)
+  private configRepo: Repository<SystemConfigEntity>;
+  @Inject(HLOGGER_TOKEN) private logger: HLogger;
 
-  @InjectRepository(PostEntity)
-  private postRepo: Repository<PostEntity>;
+  private readonly adminRoleValue: number;
+  private readonly baseConfigKey: string;
 
-  @Inject(HLOGGER_TOKEN)
-  private logger: HLogger;
-
-  constructor(private config: ConfigService) {}
-
-  private log(message: string) {
-    this.logger.log(message, CommentService.name);
-  }
-
-  private warn(message: string) {
-    this.logger.warn(message, CommentService.name);
-  }
-
-  private error(message: string) {
-    this.logger.error(message, CommentService.name);
-  }
-
-  /**
-   * 创建评论
-   * @param createData 创建评论的数据
-   * @param userId 当前用户的数据库 ID（可选，如果未登录则可能需要默认用户）
-   * @returns 创建后的评论信息
-   *
-   * 逻辑说明：
-   * 1. 检查文章是否存在
-   * 2. 如果提供了 parentId，检查父评论是否存在且属于同一文章
-   * 3. 创建评论实体，默认状态为 'pending'
-   * 4. 保存评论到数据库
-   * 5. 返回评论数据
-   */
-  async create(
-    createData: CreateCommentDto,
-    userId?: number,
-    ipAddress?: string,
-  ): Promise<ICommentResponseDto> {
-    this.log(
-      `开始创建评论，文章ID: ${createData.postId}，父评论ID: ${createData.parentId || '无'}`,
+  constructor(
+    private config: ConfigService,
+    private dataSource: DataSource,
+  ) {
+    this.adminRoleValue = this.config.get<number>('SYSTEM_ADMIN_ROLE_VALUE', 0);
+    this.baseConfigKey = getSystemConfigKey(
+      SYSTEM_CONFIG_KEYS.BASE_CONFIG,
+      this.config.get<string>(
+        'SYSTEM_CONFIG_PREFIX',
+        SYSTEM_CONFIG_PREFIX_DEFAULT,
+      ),
     );
+  }
 
+  async create(
+    dto: CreateCommentDto,
+    user: UserJwtPayload | undefined,
+    requestContext: { ip: string; agent?: string },
+  ): Promise<ICreateCommentResponseDto> {
+    this.log(
+      `开始创建评论，文章ID: ${dto.postId}，父评论ID: ${dto.parentId ?? '无'}`,
+    );
     try {
-      // 检查文章是否存在
+      if (!(await this.isCommentAllowed())) {
+        throw new BusinessException('评论功能已关闭');
+      }
+
+      const content = dto.content.trim();
+      if (!content) throw new BusinessException('评论内容不能为空');
+
       const post = await this.postRepo.findOne({
-        where: { id: createData.postId },
+        where: { id: dto.postId, status: 'published' },
       });
+      if (!post) throw new BusinessException('文章不存在或未发布');
 
-      if (isNil(post)) {
-        this.warn(`文章 #${createData.postId} 不存在`);
-        throw new BusinessException('文章不存在');
-      }
-
-      // 如果提供了 parentId，检查父评论是否存在且属于同一文章
-      if (createData.parentId) {
-        const parentComment = await this.commentRepo.findOne({
-          where: { id: createData.parentId },
+      if (dto.parentId) {
+        const parent = await this.commentRepo.findOne({
+          where: { id: dto.parentId },
         });
-
-        if (isNil(parentComment)) {
-          this.warn(`父评论 #${createData.parentId} 不存在`);
-          throw new BusinessException('父评论不存在');
-        }
-
-        if (parentComment.postId !== createData.postId) {
-          this.warn(
-            `父评论 #${createData.parentId} 不属于文章 #${createData.postId}`,
-          );
+        if (!parent) throw new BusinessException('父评论不存在');
+        if (parent.postId !== dto.postId)
           throw new BusinessException('父评论不属于该文章');
-        }
+        if (parent.status !== 'approved')
+          throw new BusinessException('不能回复未公开的评论');
       }
 
-      const isGuest = isNil(userId);
-      if (isGuest) {
-        if (!createData.guestName || !createData.guestEmail) {
-          this.warn('游客评论缺少必填的用户名或邮箱');
-          throw new BusinessException('游客需提供昵称和邮箱');
-        }
+      const isGuest = !user?.id;
+      if (isGuest && (!dto.guestName?.trim() || !dto.guestEmail?.trim())) {
+        throw new BusinessException('游客需提供昵称和邮箱');
       }
 
-      // 如果没有提供 userId，使用默认的匿名用户ID（需要配置）
-      const authorId =
-        userId || this.config.get<number>('ANONYMOUS_USER_ID', 1);
+      if (!this.isAdmin(user)) {
+        const recent = await this.commentRepo.count({
+          where: {
+            postId: dto.postId,
+            ip: requestContext.ip,
+            createdAt: MoreThanOrEqual(new Date(Date.now() - 60_000)),
+          },
+        });
+        if (recent > 0)
+          throw new BusinessException('评论太频繁，请 60 秒后再试');
+      }
 
-      // 创建评论实体
+      const token = isGuest ? randomBytes(32).toString('base64url') : undefined;
       const comment = this.commentRepo.create({
-        content: createData.content,
-        postId: createData.postId,
-        parentId: createData.parentId,
-        authorId,
-        status: 'pending',
+        content,
+        postId: dto.postId,
+        parentId: dto.parentId,
+        authorId: user?.id,
+        status: isGuest ? 'pending' : 'approved',
         likeCount: 0,
-        guestName: isGuest ? createData.guestName : undefined,
-        guestEmail: isGuest ? createData.guestEmail : undefined,
-        guestSite: isGuest ? createData.guestSite : undefined,
-        ip: createData.ip || ipAddress,
+        guestName: isGuest ? dto.guestName?.trim() : undefined,
+        guestEmail: isGuest ? dto.guestEmail?.trim() : undefined,
+        guestSite: isGuest ? dto.guestSite?.trim() : undefined,
+        ip: requestContext.ip,
+        agent: requestContext.agent?.slice(0, 255),
+        withdrawTokenHash: token ? hashWithdrawToken(token) : undefined,
       });
-
-      // 保存到数据库
-      const savedComment = await this.commentRepo.save(comment);
-      this.log(
-        `评论创建成功，评论ID: ${savedComment.id}，文章ID: ${createData.postId}，状态: pending`,
-      );
-
-      // 查询包含作者信息的评论
-      const commentWithAuthor = await this.commentRepo.findOne({
-        where: { id: savedComment.id },
+      const saved = await this.commentRepo.save(comment);
+      const hydrated = await this.commentRepo.findOne({
+        where: { id: saved.id },
         relations: ['author'],
       });
-
-      return this.formatCommentResponse(commentWithAuthor!);
+      this.log(`评论创建成功，评论ID: ${saved.id}，文章ID: ${dto.postId}`);
+      const publicComment = this.toPublic(hydrated ?? saved);
+      return token
+        ? { comment: publicComment, withdrawToken: token }
+        : { comment: publicComment };
     } catch (error) {
-      if (error instanceof BusinessException) {
-        throw error;
-      }
-      this.error(`创建评论失败: ${error.message}`);
+      if (error instanceof BusinessException) throw error;
+      this.error(`创建评论失败: ${this.errorMessage(error)}`);
       throw new BusinessException('创建评论失败，请稍后重试');
     }
   }
 
-  /**
-   * 查询评论列表（支持分页、筛选、嵌套回复结构）
-   * @param queryDto 查询参数
-   * @returns 分页的评论列表（嵌套回复结构）
-   *
-   * 逻辑说明：
-   * 1. 构建查询条件（postId、status）
-   * 2. 执行分页查询，只查询顶级评论（parentId 为 null）
-   * 3. 对于每条顶级评论，递归查询其所有子评论
-   * 4. 构建嵌套回复的树形结构
-   * 5. 返回格式化后的评论列表
-   */
-  async findAll(
-    queryDto: QueryCommentDto,
-  ): Promise<Pagination<ICommentResponseDto>> {
-    const { page = 1, limit = 10, postId, status } = queryDto;
-
-    this.log(
-      `查询评论列表，页码: ${page}，每页: ${limit}，文章ID: ${postId || '全部'}，状态: ${status || '全部'}`,
-    );
-
+  async findAll(dto: QueryCommentDto): Promise<Pagination<IPublicCommentDto>> {
     try {
-      // 创建查询构建器，只查询顶级评论（parentId 为 null）
-      const queryBuilder = this.commentRepo
+      const rootsQuery = this.commentRepo
         .createQueryBuilder('comment')
         .leftJoinAndSelect('comment.author', 'author')
-        .where('comment.parentId IS NULL');
-
-      // 按文章ID筛选
-      if (postId) {
-        queryBuilder.andWhere('comment.postId = :postId', { postId });
-      }
-
-      // 按状态筛选（如果提供）
-      if (status) {
-        queryBuilder.andWhere('comment.status = :status', { status });
-      }
-
-      // 按创建时间倒序排列
-      queryBuilder.orderBy('comment.createdAt', 'DESC');
-
-      // 分页配置
-      const options: IPaginationOptions = {
-        page,
-        limit,
-      };
-
-      // 执行分页查询
-      const paginationResult = await paginate<CommentEntity>(
-        queryBuilder,
-        options,
-      );
-
-      // 查询所有顶级评论的ID
-      const topLevelIds = paginationResult.items.map((item) => item.id);
-
-      // 如果有关联的顶级评论，查询所有子评论
-      let allComments: CommentEntity[] = [...paginationResult.items];
-      if (topLevelIds.length > 0) {
-        // 递归查询所有子评论
-        const allChildren = await this.findAllChildren(topLevelIds);
-        allComments = [...paginationResult.items, ...allChildren];
-
-        // 查询子评论的作者信息
-        const childrenWithAuthors = await this.commentRepo.find({
-          where: { id: In(allChildren.map((c) => c.id)) },
-          relations: ['author'],
-        });
-
-        // 合并作者信息
-        const authorMap = new Map(
-          childrenWithAuthors.map((c) => [c.id, c.author]),
-        );
-        allComments.forEach((comment) => {
-          if (authorMap.has(comment.id)) {
-            comment.author = authorMap.get(comment.id);
-          }
-        });
-      }
-
-      // 为顶级评论加载作者信息（如果没有）
-      const topLevelWithAuthors = await this.commentRepo.find({
-        where: { id: In(paginationResult.items.map((i) => i.id)) },
-        relations: ['author'],
+        .where('comment.postId = :postId', { postId: dto.postId })
+        .andWhere('comment.status = :status', { status: 'approved' })
+        .andWhere('comment.parentId IS NULL')
+        .orderBy('comment.createdAt', 'DESC')
+        .addOrderBy('comment.id', 'DESC');
+      const roots = await paginate(rootsQuery, {
+        page: dto.page ?? 1,
+        limit: dto.limit ?? 10,
       });
-
-      const topLevelAuthorMap = new Map(
-        topLevelWithAuthors.map((c) => [c.id, c.author]),
+      const descendants = await this.findDescendants(
+        roots.items.map((item) => item.id),
+        'approved',
       );
-      paginationResult.items.forEach((item) => {
-        if (topLevelAuthorMap.has(item.id)) {
-          item.author = topLevelAuthorMap.get(item.id);
-        }
-      });
-
-      // 构建嵌套回复的树形结构
-      const commentTree = this.buildCommentTree(allComments);
-
-      this.log(
-        `评论列表查询成功，共 ${paginationResult.meta.totalItems} 条顶级评论，返回第 ${page} 页 ${commentTree.length} 条`,
-      );
-
-      return {
-        items: commentTree,
-        meta: paginationResult.meta,
-        links: paginationResult.links,
-      };
+      const items = this.buildPublicTree([...roots.items, ...descendants]);
+      return { items, meta: roots.meta, links: roots.links };
     } catch (error) {
-      this.error(`查询评论列表失败: ${error.message}`);
+      this.error(`查询公开评论失败: ${this.errorMessage(error)}`);
       throw new BusinessException('查询评论列表失败，请稍后重试');
     }
   }
 
-  /**
-   * 查询单条评论详情
-   * @param id 评论ID
-   * @returns 评论详情（包含作者信息和回复列表）
-   *
-   * 逻辑说明：
-   * 1. 查询评论是否存在
-   * 2. 加载作者信息
-   * 3. 查询所有直接子评论（一级回复）
-   * 4. 构建嵌套回复结构
-   * 5. 返回格式化后的评论详情
-   */
-  async findOne(id: number): Promise<ICommentResponseDto> {
-    this.log(`查询评论详情，评论ID: ${id}`);
+  async findOne(id: number): Promise<IPublicCommentDto> {
+    const comment = await this.commentRepo.findOne({
+      where: { id, status: 'approved' },
+      relations: ['author'],
+    });
+    if (!comment) throw new BusinessException('评论不存在');
+    if (!(await this.hasPublicAncestorChain(comment))) {
+      throw new BusinessException('评论不存在');
+    }
+    const descendants = await this.findDescendants([id], 'approved');
+    return (
+      this.buildPublicTree([comment, ...descendants])[0] ??
+      this.toPublic(comment)
+    );
+  }
 
-    try {
-      // 查询评论及其作者
-      const comment = await this.commentRepo.findOne({
-        where: { id },
-        relations: ['author'],
-      });
+  async findLocation(id: number, limit: number): Promise<ICommentLocationDto> {
+    const comment = await this.commentRepo.findOne({
+      where: { id, status: 'approved' },
+      select: ['id', 'postId', 'parentId'],
+    });
+    if (!comment) throw new BusinessException('评论不存在');
 
-      if (isNil(comment)) {
-        this.warn(`评论 #${id} 不存在`);
+    let root = comment;
+    const visited = new Set<number>([comment.id]);
+    while (root.parentId) {
+      if (visited.has(root.parentId)) {
         throw new BusinessException('评论不存在');
       }
+      visited.add(root.parentId);
+      const parent = await this.commentRepo.findOne({
+        where: {
+          id: root.parentId,
+          postId: comment.postId,
+          status: 'approved',
+        },
+        select: ['id', 'postId', 'parentId', 'createdAt'],
+      });
+      if (!parent) throw new BusinessException('评论不存在');
+      root = parent;
+    }
 
-      // 查询所有子评论（递归）
-      const allChildren = await this.findAllChildren([id]);
-      const allComments = [comment, ...allChildren];
-
-      // 为子评论加载作者信息
-      if (allChildren.length > 0) {
-        const childrenWithAuthors = await this.commentRepo.find({
-          where: { id: In(allChildren.map((c) => c.id)) },
-          relations: ['author'],
+    const hydratedRoot = root.createdAt
+      ? root
+      : await this.commentRepo.findOne({
+          where: { id: root.id, status: 'approved' },
+          select: ['id', 'postId', 'parentId', 'createdAt'],
         });
+    if (!hydratedRoot) throw new BusinessException('评论不存在');
 
-        const authorMap = new Map(
-          childrenWithAuthors.map((c) => [c.id, c.author]),
-        );
-        allComments.forEach((c) => {
-          if (authorMap.has(c.id)) {
-            c.author = authorMap.get(c.id);
-          }
-        });
-      }
-
-      // 构建嵌套回复结构
-      const commentTree = this.buildCommentTree(allComments);
-      const result = commentTree.find((c) => c.id === id);
-
-      if (!result) {
-        throw new BusinessException('构建评论树失败');
-      }
-
-      this.log(`评论详情查询成功，评论ID: ${id}`);
-      return result;
-    } catch (error) {
-      if (error instanceof BusinessException) {
-        throw error;
-      }
-      this.error(`查询评论详情失败: ${error.message}`);
-      throw new BusinessException('查询评论详情失败，请稍后重试');
-    }
-  }
-
-  /**
-   * 更新评论内容
-   * @param id 评论ID
-   * @param updateData 更新数据
-   * @returns 更新后的评论信息
-   *
-   * 逻辑说明：
-   * 1. 查询评论是否存在
-   * 2. 更新评论内容
-   * 3. 保存更新后的评论
-   * 4. 返回更新后的评论数据
-   */
-  async update(
-    id: number,
-    updateData: UpdateCommentDto,
-  ): Promise<ICommentResponseDto> {
-    this.log(`开始更新评论，评论ID: ${id}`);
-
-    try {
-      // 查询评论是否存在
-      const comment = await this.commentRepo.findOne({ where: { id } });
-
-      if (isNil(comment)) {
-        this.warn(`评论 #${id} 不存在`);
-        throw new BusinessException('评论不存在');
-      }
-
-      // 更新评论内容
-      comment.content = updateData.content;
-      this.log(`更新评论 #${id} 内容`);
-
-      // 保存更新
-      const savedComment = await this.commentRepo.save(comment);
-      this.log(`评论 #${id} 更新成功`);
-
-      // 查询包含作者信息的评论
-      const commentWithAuthor = await this.commentRepo.findOne({
-        where: { id: savedComment.id },
-        relations: ['author'],
-      });
-
-      return this.formatCommentResponse(commentWithAuthor!);
-    } catch (error) {
-      if (error instanceof BusinessException) {
-        throw error;
-      }
-      this.error(`更新评论失败: ${error.message}`);
-      throw new BusinessException('更新评论失败，请稍后重试');
-    }
-  }
-
-  /**
-   * 删除评论
-   * @param id 评论ID
-   *
-   * 逻辑说明：
-   * 1. 查询评论是否存在
-   * 2. 递归查询所有子评论
-   * 3. 级联删除所有子评论
-   * 4. 删除当前评论
-   */
-  async remove(id: number): Promise<void> {
-    this.log(`开始删除评论，评论ID: ${id}`);
-
-    try {
-      // 查询评论是否存在
-      const comment = await this.commentRepo.findOne({ where: { id } });
-
-      if (isNil(comment)) {
-        this.warn(`评论 #${id} 不存在`);
-        throw new BusinessException('评论不存在');
-      }
-
-      // 递归查询所有子评论
-      const allChildren = await this.findAllChildren([id]);
-      const allCommentIds = [id, ...allChildren.map((c) => c.id)];
-
-      // 删除所有评论（包括子评论）
-      await this.commentRepo.delete({ id: In(allCommentIds) });
-      this.log(`评论 #${id} 及其 ${allChildren.length} 条子评论删除成功`);
-    } catch (error) {
-      if (error instanceof BusinessException) {
-        throw error;
-      }
-      this.error(`删除评论失败: ${error.message}`);
-      throw new BusinessException('删除评论失败，请稍后重试');
-    }
-  }
-
-  /**
-   * 点赞评论
-   * @param commentId 评论ID
-   * @param reactData 反应数据（占位符，已简化不需要字段）
-   * @param userId 用户ID（可选，已不需要记录用户关系）
-   * @returns 更新后的评论信息
-   *
-   * 逻辑说明：
-   * 1. 检查评论是否存在
-   * 2. 直接增加点赞计数
-   * 3. 保存更新后的评论
-   * 4. 返回更新后的评论数据
-   */
-  async react(
-    commentId: number,
-    _reactData: ReactCommentDto,
-    _userId?: number,
-  ): Promise<ICommentResponseDto> {
-    this.log(`开始点赞评论，评论ID: ${commentId}`);
-    void _reactData;
-    void _userId;
-
-    try {
-      // 检查评论是否存在
-      const comment = await this.commentRepo.findOne({
-        where: { id: commentId },
-      });
-
-      if (isNil(comment)) {
-        this.warn(`评论 #${commentId} 不存在`);
-        throw new BusinessException('评论不存在');
-      }
-
-      // 直接增加点赞计数
-      comment.likeCount = comment.likeCount + 1;
-      const updatedComment = await this.commentRepo.save(comment);
-
-      this.log(
-        `评论 #${commentId} 点赞成功，当前点赞数: ${updatedComment.likeCount}`,
-      );
-
-      // 查询包含作者信息的评论
-      const commentWithAuthor = await this.commentRepo.findOne({
-        where: { id: updatedComment.id },
-        relations: ['author'],
-      });
-
-      return this.formatCommentResponse(commentWithAuthor!);
-    } catch (error) {
-      if (error instanceof BusinessException) {
-        throw error;
-      }
-      this.error(`点赞评论失败: ${error.message}`);
-      throw new BusinessException('点赞评论失败，请稍后重试');
-    }
-  }
-
-  /**
-   * 审核评论
-   * @param id 评论ID
-   * @param approveData 审核数据
-   * @returns 审核后的评论信息
-   *
-   * 逻辑说明：
-   * 1. 查询评论是否存在
-   * 2. 更新评论状态为 approved 或 rejected
-   * 3. 保存更新后的评论
-   * 4. 返回更新后的评论数据
-   */
-  async approve(
-    id: number,
-    approveData: ApproveCommentDto,
-  ): Promise<ICommentResponseDto> {
-    this.log(`开始审核评论，评论ID: ${id}，审核状态: ${approveData.status}`);
-
-    try {
-      // 查询评论是否存在
-      const comment = await this.commentRepo.findOne({ where: { id } });
-
-      if (isNil(comment)) {
-        this.warn(`评论 #${id} 不存在`);
-        throw new BusinessException('评论不存在');
-      }
-
-      // 更新评论状态
-      comment.status = approveData.status;
-      this.log(`更新评论 #${id} 状态: ${approveData.status}`);
-
-      // 保存更新
-      const savedComment = await this.commentRepo.save(comment);
-      this.log(`评论 #${id} 审核成功`);
-
-      // 查询包含作者信息的评论
-      const commentWithAuthor = await this.commentRepo.findOne({
-        where: { id: savedComment.id },
-        relations: ['author'],
-      });
-
-      return this.formatCommentResponse(commentWithAuthor!);
-    } catch (error) {
-      if (error instanceof BusinessException) {
-        throw error;
-      }
-      this.error(`审核评论失败: ${error.message}`);
-      throw new BusinessException('审核评论失败，请稍后重试');
-    }
-  }
-
-  /**
-   * 递归查询所有子评论
-   * @param parentIds 父评论ID数组
-   * @returns 所有子评论数组
-   *
-   * 逻辑说明：
-   * 1. 查询所有直接子评论
-   * 2. 如果有子评论，递归查询子评论的子评论
-   * 3. 返回所有层级的子评论
-   */
-  private async findAllChildren(parentIds: number[]): Promise<CommentEntity[]> {
-    if (parentIds.length === 0) {
-      return [];
-    }
-
-    // 查询直接子评论
-    const children = await this.commentRepo.find({
-      where: { parentId: In(parentIds) },
-    });
-
-    // 如果有子评论，递归查询
-    if (children.length > 0) {
-      const childrenIds = children.map((c) => c.id);
-      const grandchildren = await this.findAllChildren(childrenIds);
-      return [...children, ...grandchildren];
-    }
-
-    return children;
-  }
-
-  /**
-   * 构建嵌套回复的树形结构
-   * @param comments 所有评论数组（包括顶级和子评论）
-   * @returns 嵌套的评论树
-   *
-   * 逻辑说明：
-   * 1. 筛选出所有顶级评论（parentId 为 null 或 undefined）
-   * 2. 为每个顶级评论递归查找其子评论
-   * 3. 构建嵌套的树形结构
-   */
-  private buildCommentTree(comments: CommentEntity[]): ICommentResponseDto[] {
-    // 创建评论映射
-    const commentMap = new Map<number, CommentEntity>();
-    comments.forEach((comment) => {
-      commentMap.set(comment.id, comment);
-    });
-
-    // 创建子评论映射
-    const childrenMap = new Map<number, CommentEntity[]>();
-    comments.forEach((comment) => {
-      if (comment.parentId) {
-        if (!childrenMap.has(comment.parentId)) {
-          childrenMap.set(comment.parentId, []);
-        }
-        childrenMap.get(comment.parentId)!.push(comment);
-      }
-    });
-
-    // 递归构建评论树
-    const buildTree = (comment: CommentEntity): ICommentResponseDto => {
-      const response = this.formatCommentResponse(comment);
-      const children = childrenMap.get(comment.id) || [];
-
-      if (children.length > 0) {
-        response.replies = children
-          .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-          .map((child) => buildTree(child));
-      }
-
-      return response;
-    };
-
-    // 筛选顶级评论并按创建时间排序
-    const topLevelComments = comments
-      .filter((comment) => !comment.parentId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    return topLevelComments.map((comment) => buildTree(comment));
-  }
-
-  /**
-   * 格式化评论响应
-   * @param comment 评论实体
-   * @returns 格式化后的评论响应
-   */
-  private formatCommentResponse(comment: CommentEntity): ICommentResponseDto {
-    const data = comment.getData(true);
+    const newerRootCount = await this.commentRepo
+      .createQueryBuilder('comment')
+      .where('comment.postId = :postId', { postId: comment.postId })
+      .andWhere('comment.status = :status', { status: 'approved' })
+      .andWhere('comment.parentId IS NULL')
+      .andWhere(
+        '(comment.createdAt > :createdAt OR (comment.createdAt = :createdAt AND comment.id > :rootId))',
+        { createdAt: hydratedRoot.createdAt, rootId: hydratedRoot.id },
+      )
+      .getCount();
 
     return {
-      ...data,
-      replies: undefined, // 由 buildCommentTree 方法填充
+      page: Math.floor(newerRootCount / limit) + 1,
+      rootCommentId: hydratedRoot.id,
     };
   }
 
-  /**
-   * 统计文章的评论数量
-   * @param postId 文章ID
-   * @returns 评论数量
-   *
-   * 逻辑说明：
-   * 1. 查询该文章下的所有评论数量
-   * 2. 返回统计结果
-   */
-  async countByPostId(postId: number): Promise<number> {
-    return await this.commentRepo.count({
-      where: { postId },
+  async resolvePending(
+    capabilities: PendingCapabilityDto[],
+  ): Promise<IPublicCommentDto[]> {
+    if (!capabilities.length) return [];
+    const ids = [...new Set(capabilities.map((item) => item.commentId))];
+    const comments = await this.commentRepo
+      .createQueryBuilder('comment')
+      .addSelect('comment.withdrawTokenHash')
+      .leftJoinAndSelect('comment.author', 'author')
+      .where('comment.id IN (:...ids)', { ids })
+      .andWhere('comment.status = :status', { status: 'pending' })
+      .getMany();
+    const byId = new Map(comments.map((item) => [item.id, item]));
+    const resolvedIds = new Set<number>();
+    return capabilities.flatMap((capability) => {
+      const comment = byId.get(capability.commentId);
+      if (
+        !comment ||
+        resolvedIds.has(comment.id) ||
+        !matchesWithdrawToken(comment.withdrawTokenHash, capability.token)
+      ) {
+        return [];
+      }
+      resolvedIds.add(comment.id);
+      return [this.toPublic(comment)];
     });
+  }
+
+  async withdraw(id: number, token: string): Promise<{ deleted: boolean }> {
+    const comment = await this.commentRepo
+      .createQueryBuilder('comment')
+      .addSelect('comment.withdrawTokenHash')
+      .where('comment.id = :id', { id })
+      .andWhere('comment.status = :status', { status: 'pending' })
+      .getOne();
+    if (!comment || !matchesWithdrawToken(comment.withdrawTokenHash, token)) {
+      throw new BusinessException('无法撤回该评论');
+    }
+    await this.remove(id);
+    this.log(`待审核评论已撤回，评论ID: ${id}`);
+    return { deleted: true };
+  }
+
+  async findAdmin(
+    dto: AdminQueryCommentDto,
+  ): Promise<Pagination<IAdminCommentDto>> {
+    const query = this.commentRepo
+      .createQueryBuilder('comment')
+      .leftJoinAndSelect('comment.author', 'author')
+      .leftJoinAndSelect('comment.post', 'post')
+      .orderBy('comment.createdAt', 'DESC');
+    if (dto.status)
+      query.andWhere('comment.status = :status', { status: dto.status });
+    if (dto.postId)
+      query.andWhere('comment.postId = :postId', { postId: dto.postId });
+    const page = await paginate(query, { page: dto.page, limit: dto.limit });
+    const all = await this.commentRepo.find({ select: ['id', 'parentId'] });
+    const counts = this.descendantCounts(all);
+    return {
+      items: page.items.map((comment) =>
+        this.toAdmin(comment, counts.get(comment.id) ?? 0),
+      ),
+      meta: page.meta,
+      links: page.links,
+    };
+  }
+
+  async approve(id: number, dto: ApproveCommentDto): Promise<IAdminCommentDto> {
+    const comment = await this.commentRepo.findOne({
+      where: { id },
+      relations: ['author', 'post'],
+    });
+    if (!comment) throw new BusinessException('评论不存在');
+    comment.status = dto.status;
+    comment.withdrawTokenHash = null;
+    const saved = await this.commentRepo.save(comment);
+    this.log(`评论审核完成，评论ID: ${id}，状态: ${dto.status}`);
+    return this.toAdmin(
+      saved,
+      (await this.getDeleteImpact(id)).descendantCount,
+    );
+  }
+
+  async update(id: number, content: string): Promise<IAdminCommentDto> {
+    const comment = await this.commentRepo.findOne({
+      where: { id },
+      relations: ['author', 'post'],
+    });
+    if (!comment) throw new BusinessException('评论不存在');
+    comment.content = content.trim();
+    const saved = await this.commentRepo.save(comment);
+    return this.toAdmin(
+      saved,
+      (await this.getDeleteImpact(id)).descendantCount,
+    );
+  }
+
+  async react(id: number): Promise<IPublicCommentDto> {
+    const comment = await this.commentRepo.findOne({
+      where: { id, status: 'approved' },
+      relations: ['author'],
+    });
+    if (!comment) throw new BusinessException('评论不存在');
+    if (!(await this.hasPublicAncestorChain(comment))) {
+      throw new BusinessException('评论不存在');
+    }
+    comment.likeCount += 1;
+    return this.toPublic(await this.commentRepo.save(comment));
+  }
+
+  async getDeleteImpact(id: number): Promise<IDeleteImpactDto> {
+    const comment = await this.commentRepo.findOne({ where: { id } });
+    if (!comment) throw new BusinessException('评论不存在');
+    const descendants = await this.findDescendants([id]);
+    return {
+      id,
+      descendantCount: descendants.length,
+      totalCount: descendants.length + 1,
+    };
+  }
+
+  async remove(id: number): Promise<{ deletedCount: number }> {
+    const runner = this.dataSource.createQueryRunner();
+    await runner.connect();
+    await runner.startTransaction();
+    try {
+      const repo = runner.manager.getRepository(CommentEntity);
+      const root = await repo.findOne({ where: { id } });
+      if (!root) throw new BusinessException('评论不存在');
+      const ids = [
+        id,
+        ...(await this.findDescendantsWithRepo(repo, [id])).map(
+          (item) => item.id,
+        ),
+      ];
+      await repo.delete({ id: In(ids) });
+      await runner.commitTransaction();
+      this.log(`评论子树删除成功，评论ID: ${id}，数量: ${ids.length}`);
+      return { deletedCount: ids.length };
+    } catch (error) {
+      await runner.rollbackTransaction();
+      if (error instanceof BusinessException) throw error;
+      this.error(`删除评论失败: ${this.errorMessage(error)}`);
+      throw new BusinessException('删除评论失败，请稍后重试');
+    } finally {
+      await runner.release();
+    }
+  }
+
+  async countByPostId(postId: number): Promise<number> {
+    return this.commentRepo.count({ where: { postId } });
+  }
+
+  private async isCommentAllowed(): Promise<boolean> {
+    const entity = await this.configRepo.findOne({
+      where: { configKey: this.baseConfigKey },
+    });
+    if (!entity?.configValue) return true;
+    try {
+      const parsed = JSON.parse(entity.configValue) as {
+        allowComment?: boolean;
+      };
+      return parsed.allowComment !== false;
+    } catch {
+      return true;
+    }
+  }
+
+  private isAdmin(user?: UserJwtPayload): boolean {
+    return user?.role === this.adminRoleValue;
+  }
+
+  private async hasPublicAncestorChain(
+    comment: Pick<CommentEntity, 'parentId'>,
+  ): Promise<boolean> {
+    let parentId = comment.parentId;
+    const visited = new Set<number>();
+    while (parentId) {
+      if (visited.has(parentId)) return false;
+      visited.add(parentId);
+      const parent = await this.commentRepo.findOne({
+        where: { id: parentId, status: 'approved' },
+        select: ['id', 'parentId'],
+      });
+      if (!parent) return false;
+      parentId = parent.parentId;
+    }
+    return true;
+  }
+
+  private async findDescendants(
+    parentIds: number[],
+    status?: CommentEntity['status'],
+  ): Promise<CommentEntity[]> {
+    return this.findDescendantsWithRepo(this.commentRepo, parentIds, status);
+  }
+
+  private async findDescendantsWithRepo(
+    repo: Repository<CommentEntity>,
+    parentIds: number[],
+    status?: CommentEntity['status'],
+  ): Promise<CommentEntity[]> {
+    const result: CommentEntity[] = [];
+    let frontier = parentIds;
+    while (frontier.length) {
+      const query = repo
+        .createQueryBuilder('comment')
+        .leftJoinAndSelect('comment.author', 'author')
+        .where('comment.parentId IN (:...frontier)', { frontier });
+      if (status) query.andWhere('comment.status = :status', { status });
+      const children = await query
+        .orderBy('comment.createdAt', 'ASC')
+        .getMany();
+      if (!children.length) break;
+      result.push(...children);
+      frontier = children.map((item) => item.id);
+    }
+    return result;
+  }
+
+  private buildPublicTree(comments: CommentEntity[]): IPublicCommentDto[] {
+    const nodes = new Map(
+      comments.map((item) => [item.id, this.toPublic(item)]),
+    );
+    for (const comment of comments) {
+      if (comment.parentId && nodes.has(comment.parentId)) {
+        const parent = nodes.get(comment.parentId)!;
+        (parent.replies ??= []).push(nodes.get(comment.id)!);
+      }
+    }
+    return comments
+      .filter((item) => !item.parentId)
+      .map((item) => nodes.get(item.id)!);
+  }
+
+  private toPublic(comment: CommentEntity): IPublicCommentDto {
+    return {
+      id: comment.id,
+      content: comment.content,
+      postId: comment.postId,
+      parentId: comment.parentId,
+      status: comment.status === 'pending' ? 'pending' : 'approved',
+      author: comment.author
+        ? {
+            id: comment.author.ssoId,
+            name: comment.author.name,
+            avatar:
+              comment.author.avatar?.trim() ||
+              gravatarUrl(comment.author.email),
+          }
+        : {
+            name: comment.guestName || '游客',
+            avatar: gravatarUrl(comment.guestEmail),
+            site: comment.guestSite,
+          },
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+    };
+  }
+
+  private toAdmin(
+    comment: CommentEntity,
+    descendantCount: number,
+  ): IAdminCommentDto {
+    return {
+      id: comment.id,
+      content: comment.content,
+      postId: comment.postId,
+      parentId: comment.parentId,
+      authorId: comment.authorId,
+      author: comment.author
+        ? {
+            id: comment.author.ssoId,
+            name: comment.author.name,
+            avatar: comment.author.avatar,
+          }
+        : undefined,
+      status: comment.status,
+      likeCount: comment.likeCount,
+      extra: comment.extra,
+      guestName: comment.guestName,
+      guestEmail: comment.guestEmail,
+      guestSite: comment.guestSite,
+      ip: comment.ip,
+      agent: comment.agent,
+      source: comment.source,
+      sourceId: comment.sourceId,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      post: comment.post
+        ? {
+            id: comment.post.id,
+            title: comment.post.title,
+            slug: comment.post.slug,
+          }
+        : undefined,
+      descendantCount,
+    };
+  }
+
+  private descendantCounts(
+    comments: Pick<CommentEntity, 'id' | 'parentId'>[],
+  ): Map<number, number> {
+    const children = new Map<number, number[]>();
+    for (const item of comments)
+      if (item.parentId)
+        (
+          children.get(item.parentId) ??
+          children.set(item.parentId, []).get(item.parentId)!
+        ).push(item.id);
+    const count = (id: number): number =>
+      (children.get(id) ?? []).reduce(
+        (sum, child) => sum + 1 + count(child),
+        0,
+      );
+    return new Map(comments.map((item) => [item.id, count(item.id)]));
+  }
+
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  private log(message: string): void {
+    this.logger.log(message, CommentService.name);
+  }
+  private error(message: string): void {
+    this.logger.error(message, CommentService.name);
   }
 }

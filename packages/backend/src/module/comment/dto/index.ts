@@ -5,3 +5,7 @@ export * from './comment-response.dto';
 export * from './comment-list-item.dto';
 export * from './react-comment.dto';
 export * from './approve-comment.dto';
+export * from './public-comment.dto';
+export * from './admin-comment.dto';
+export * from './pending-comment.dto';
+export * from './comment-location.dto';

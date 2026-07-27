@@ -6,6 +6,9 @@ import {
   IsBoolean,
   ValidateNested,
   IsObject,
+  IsArray,
+  ArrayNotEmpty,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -42,6 +45,9 @@ export class DatabaseConfigDto implements IDatabaseConfig {
 
   @IsOptional()
   @IsString()
+  @Matches(/^[A-Za-z0-9_]+$/, {
+    message: '表前缀只能包含字母、数字和下划线',
+  })
   tablePrefix?: string;
 }
 
@@ -49,6 +55,7 @@ export class DatabaseConfigDto implements IDatabaseConfig {
  * 迁移源类型
  */
 export type MigrationSource = 'typecho';
+export type MigrationResource = 'posts' | 'pages' | 'comments';
 
 /**
  * 字段映射接口
@@ -91,6 +98,12 @@ export class MigrateDataDto {
   @IsOptional()
   @IsObject()
   fieldMapping?: IFieldMapping;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsEnum(['posts', 'pages', 'comments'], { each: true })
+  resources?: MigrationResource[];
 }
 
 /**
@@ -101,6 +114,13 @@ export interface IMigrationStats {
   pagesImported: number;
   postsFailed: number;
   pagesFailed: number;
+  commentsImported: number;
+  commentsExisting: number;
+  commentsSkippedByType: number;
+  commentsSkippedByStatus: number;
+  commentsMissingPost: number;
+  commentsMissingParent: number;
+  commentsFailed: number;
   duration: string;
 }
 
@@ -153,4 +173,21 @@ export interface IRawPage {
   status: string;
   authorId: number;
   authorEmail?: string;
+}
+
+export interface IRawComment {
+  coid: number;
+  cid: number;
+  created: number;
+  author: string;
+  authorId: number;
+  ownerId: number;
+  mail: string;
+  url: string;
+  ip: string;
+  agent: string;
+  text: string;
+  type: string;
+  status: string;
+  parent: number;
 }
