@@ -112,7 +112,7 @@ useWebSiteJsonLd({
 }
 
 .landing-shell {
-  padding-top: clamp(3.5rem, 9vw, 6.5rem);
+  padding-top: clamp(6.5rem, 12vw, 7.5rem);
   padding-bottom: clamp(5rem, 12vw, 8rem);
 }
 </style>
