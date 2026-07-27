@@ -187,7 +187,9 @@ describe('comment navigation and pending tree', () => {
     assert.match(editor, /focus-within:border-destructive focus-within:ring-destructive\/20/)
     assert.match(editor, /disabled && 'bg-input\/50 dark:bg-input\/80'/)
     assert.match(editor, /disabled:cursor-not-allowed disabled:opacity-50/)
-    assert.match(editor, /pr-28 pb-14/)
+    assert.match(editor, /resize-none/)
+    assert.doesNotMatch(editor, /resize-y|pr-28/)
+    assert.match(editor, /px-2\.5 pt-2 pb-14/)
     assert.match(
       form,
       /@media \(max-width: 640px\)[\s\S]*\.guest-fields[\s\S]*grid-template-columns: 1fr/,

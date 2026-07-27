@@ -44,7 +44,7 @@ function handleInput(event: Event): void {
     <textarea
       v-model="model"
       data-slot="comment-editor"
-      class="placeholder:text-muted-foreground min-h-32 w-full resize-y bg-transparent px-2.5 pt-2 pr-28 pb-14 text-base outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+      class="placeholder:text-muted-foreground min-h-32 w-full resize-none bg-transparent px-2.5 pt-2 pb-14 text-base outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
       :aria-invalid="activeInvalid || undefined"
       :disabled="disabled"
       :maxlength="maxlength"
