@@ -12,7 +12,20 @@ defineProps<{
 }>();
 
 const hiddenCoverIds = ref(new Set<number>());
+const loadedCoverIds = ref(new Set<number>());
 
+/**
+ * 封面加载完成，结束骨架屏并渐入图片
+ * @param postId - 文章 ID
+ */
+function handleCoverLoad(postId: number): void {
+  loadedCoverIds.value = new Set(loadedCoverIds.value).add(postId);
+}
+
+/**
+ * 封面加载失败时隐藏封面区域
+ * @param postId - 文章 ID
+ */
 function handleCoverError(postId: number): void {
   hiddenCoverIds.value = new Set(hiddenCoverIds.value).add(postId);
 }
@@ -45,13 +58,21 @@ function handleCoverError(postId: number): void {
         :to="{ name: ROUTE_NAMES.POST_DETAIL, params: { slug: post.slug } }"
         class="landing-post-card"
       >
-        <img
+        <div
           v-if="index === 0 && post.cover && !hiddenCoverIds.has(post.id)"
-          :src="post.cover"
-          alt=""
-          loading="lazy"
-          @error="handleCoverError(post.id)"
-        />
+          class="landing-post-card__cover cover-block"
+          :class="{ shimmer: !loadedCoverIds.has(post.id) }"
+        >
+          <img
+            :src="post.cover"
+            alt=""
+            class="cover-block-image"
+            :class="{ loaded: loadedCoverIds.has(post.id) }"
+            loading="lazy"
+            @load="handleCoverLoad(post.id)"
+            @error="handleCoverError(post.id)"
+          />
+        </div>
         <div class="landing-post-card__body">
           <time v-if="post.publishedAt" :datetime="post.publishedAtIso">
             {{ post.publishedAt }}
@@ -131,11 +152,13 @@ function handleCoverError(postId: number): void {
   transition: background-color 160ms ease, transform 180ms ease;
 }
 
-.landing-post-card > img {
-  display: block;
-  width: 100%;
+.landing-post-card__cover.cover-block {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.landing-post-card__cover .cover-block-image {
   aspect-ratio: 16 / 8;
-  object-fit: cover;
 }
 
 .landing-post-card__body {
@@ -214,8 +237,13 @@ function handleCoverError(postId: number): void {
 
 @media (prefers-reduced-motion: reduce) {
   .landing-post-card,
-  .landing-post-card__arrow {
+  .landing-post-card__arrow,
+  .landing-post-card__cover .cover-block-image {
     transition: none;
+  }
+
+  .landing-post-card__cover.cover-block.shimmer {
+    animation: none;
   }
 }
 </style>
