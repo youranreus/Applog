@@ -449,3 +449,25 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 15: 对齐后台评论管理表格样式
+
+**Date**: 2026-07-27
+**Task**: 对齐后台评论管理表格样式
+**Branch**: `master`
+
+### Summary
+
+将评论管理表对齐文章/页面 admin-content-table 视觉；时间列前置仅日期，目标列去掉父级/后代数，状态改为圆点；并补充 frontend component-guidelines 约定。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ae11764` | (see git log) |
+| `665a46b` | (see git log) |
+
+### Status
+
+[OK] **Completed**
