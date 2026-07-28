@@ -32,3 +32,5 @@ coverage
 workers/garmin-sync/.venv/
 workers/garmin-sync/src/*.egg-info/
 workers/garmin-sync/**/__pycache__/
+
+venv
