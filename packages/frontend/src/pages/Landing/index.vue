@@ -86,15 +86,15 @@ useWebSiteJsonLd({
         :subtitle="profileSubtitle"
         :social-links="socialLinks"
       />
-      <LandingDuolingoStats
-        v-if="duolingoLoading || duolingoStats"
-        :stats="duolingoStats"
-        :loading="duolingoLoading"
-      />
       <LandingRecentPosts
         :posts="recentPosts"
         :loading="postsLoading"
         :has-error="hasPostError"
+      />
+      <LandingDuolingoStats
+        v-if="duolingoLoading || duolingoStats"
+        :stats="duolingoStats"
+        :loading="duolingoLoading"
       />
       <LandingSlogan v-if="slogan" :slogan="slogan" />
     </div>
