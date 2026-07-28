@@ -51,61 +51,25 @@ GARMIN_IS_CN=true
 
    每次发布包含 worker 变更时，重新执行最后一条 `pip install`，并增加 `--upgrade`。
 
-3. 确认启动器可执行：
+3. 确认启动和定时任务管理脚本可执行：
 
    ```bash
    chmod +x /opt/applog/current/workers/garmin-sync/start-worker
+   chmod +x /opt/applog/current/workers/garmin-sync/manage-timer
    ```
 
-4. 安装 `/etc/systemd/system/applog-garmin-sync.service`：
-
-   ```ini
-   [Unit]
-   Description=AppLog Garmin activity snapshot sync
-   After=network-online.target
-   Wants=network-online.target
-
-   [Service]
-   Type=oneshot
-   User=applog
-   Group=applog
-   WorkingDirectory=/opt/applog/current/workers/garmin-sync
-   Environment=GARMIN_PYTHON_BIN=/opt/applog/venvs/garmin-sync/bin/python
-   ExecStart=/opt/applog/current/workers/garmin-sync/start-worker sync
-   TimeoutStartSec=5min
-   NoNewPrivileges=true
-   PrivateTmp=true
-   ProtectSystem=strict
-   ProtectHome=true
-
-   [Install]
-   WantedBy=multi-user.target
-   ```
-
-5. 安装 `/etc/systemd/system/applog-garmin-sync.timer`。首次验证前不要启动 timer：
-
-   ```ini
-   [Unit]
-   Description=Run AppLog Garmin sync every 30 minutes
-
-   [Timer]
-   OnCalendar=*:0/30
-   Persistent=true
-   RandomizedDelaySec=2min
-   AccuracySec=1min
-   Unit=applog-garmin-sync.service
-
-   [Install]
-   WantedBy=timers.target
-   ```
-
-6. 重新加载 systemd 配置：
+4. 注册 systemd service 和 timer。注册操作会自动写入当前项目路径、Python 路径和共享 `.env` 路径，但不会启动 timer：
 
    ```bash
-   sudo systemctl daemon-reload
+   cd /opt/applog/current/workers/garmin-sync
+   sudo ./manage-timer register \
+     --user applog \
+     --python /opt/applog/venvs/garmin-sync/bin/python
    ```
 
-7. 在可信终端完成一次交互式 Garmin 登录。使用 transient service 可以复用正式 worker 的用户和 Python 环境，同时保留邮箱、密码和 MFA 的交互输入：
+   `--user` 指定实际运行 worker 的低权限系统用户，unit 会自动使用该用户的主组。如果 `.env` 不在默认的 `/opt/applog/current/packages/backend/.env`，追加 `--env-file /absolute/path/to/.env`。重复执行 `register` 会幂等更新 unit 配置并执行 `systemctl daemon-reload`。
+
+5. 在可信终端完成一次交互式 Garmin 登录。使用 transient service 可以复用正式 worker 的用户和 Python 环境，同时保留邮箱、密码和 MFA 的交互输入：
 
    ```bash
    sudo systemd-run --pty --wait --collect \
@@ -119,7 +83,7 @@ GARMIN_IS_CN=true
 
    CLI 临时读取 Garmin 邮箱、密码和 MFA 验证码；成功后只把 `client.dumps()` 产生的 token JSON 以 AES-256-GCM 加密写入 MySQL。密码与 MFA 不会持久化。
 
-8. 手动运行一次 worker，并检查状态、日志、数据库快照和公开 `GET /garmin/stats`：
+6. 手动运行一次 worker，并检查状态、日志、数据库快照和公开 `GET /garmin/stats`：
 
    ```bash
    sudo systemctl start applog-garmin-sync.service
@@ -127,11 +91,12 @@ GARMIN_IS_CN=true
    sudo journalctl -u applog-garmin-sync.service -n 100 --no-pager
    ```
 
-9. 验证通过后启用每 30 分钟一次的 timer：
+7. 验证通过后启用每 30 分钟一次的 timer：
 
    ```bash
-   sudo systemctl enable --now applog-garmin-sync.timer
-   systemctl list-timers applog-garmin-sync.timer
+   cd /opt/applog/current/workers/garmin-sync
+   sudo ./manage-timer enable
+   ./manage-timer status
    ```
 
    systemd 不会并发启动同一个 oneshot service；数据库 advisory lock 也会跳过来自其他节点或手动触发的重叠调用。
@@ -141,8 +106,8 @@ GARMIN_IS_CN=true
 ## 日常检查
 
 ```bash
-systemctl status applog-garmin-sync.timer
-systemctl list-timers applog-garmin-sync.timer
+cd /opt/applog/current/workers/garmin-sync
+./manage-timer status
 sudo journalctl -u applog-garmin-sync.service --since today
 ```
 
@@ -158,14 +123,15 @@ sudo journalctl -u applog-garmin-sync.service --since today
 token 被撤销或失效时，先停用 timer，再重新运行首次部署中的 transient provision 命令：
 
 ```bash
-sudo systemctl disable --now applog-garmin-sync.timer
+cd /opt/applog/current/workers/garmin-sync
+sudo ./manage-timer disable
 ```
 
 认证完成后手动启动一次 service；验证成功再恢复 timer：
 
 ```bash
 sudo systemctl start applog-garmin-sync.service
-sudo systemctl enable --now applog-garmin-sync.timer
+sudo ./manage-timer enable
 ```
 
 ## 加密密钥轮换
@@ -183,7 +149,8 @@ sudo systemctl enable --now applog-garmin-sync.timer
 停止后续同步但保留现有快照：
 
 ```bash
-sudo systemctl disable --now applog-garmin-sync.timer
+cd /opt/applog/current/workers/garmin-sync
+sudo ./manage-timer disable
 ```
 
 这不会删除历史快照，公开 API 仍可返回最近一次成功数据，并在超过 6 小时后标记 stale。若需要立即隐藏页面，只移除 Landing 的 `LandingGarminStats` 组合即可；无需删除表或凭据。

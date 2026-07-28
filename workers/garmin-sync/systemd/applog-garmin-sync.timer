@@ -1,0 +1,12 @@
+[Unit]
+Description=Run AppLog Garmin sync every 30 minutes
+
+[Timer]
+OnCalendar=*:0/30
+Persistent=true
+RandomizedDelaySec=2min
+AccuracySec=1min
+Unit=applog-garmin-sync.service
+
+[Install]
+WantedBy=timers.target

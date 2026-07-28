@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly service_unit="applog-garmin-sync.service"
+readonly timer_unit="applog-garmin-sync.timer"
+readonly unit_dir="/etc/systemd/system"
+
+worker_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+project_dir="$(cd -- "${worker_dir}/../.." && pwd)"
+template_dir="${worker_dir}/systemd"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  manage-timer register [--user USER] [--python PATH] [--env-file PATH]
+  manage-timer enable
+  manage-timer disable
+  manage-timer status
+
+Commands:
+  register  Install or update systemd units without enabling the timer.
+  enable    Enable the timer at boot and start it immediately.
+  disable   Stop the timer and disable it at boot.
+  status    Show the timer and latest worker service status.
+EOF
+}
+
+fail() {
+  echo "Garmin timer: $*" >&2
+  exit 1
+}
+
+require_root() {
+  [[ ${EUID} -eq 0 ]] || fail "this command must be run with sudo or as root"
+}
+
+require_no_arguments() {
+  [[ $# -eq 0 ]] || fail "unexpected arguments: $*"
+}
+
+validate_unit_path() {
+  local label="$1"
+  local value="$2"
+  [[ "${value}" = /* ]] || fail "${label} must be an absolute path: ${value}"
+  [[ "${value}" =~ ^[A-Za-z0-9_./:@+-]+$ ]] ||
+    fail "${label} contains unsupported characters: ${value}"
+}
+
+systemctl_command() {
+  local systemctl_bin
+  systemctl_bin="$(command -v systemctl)" || fail "systemctl is not installed"
+  "${systemctl_bin}" "$@"
+}
+
+register_units() {
+  local service_user="${GARMIN_SERVICE_USER:-applog}"
+  local python_bin="${GARMIN_PYTHON_BIN:-${worker_dir}/.venv/bin/python}"
+  local env_file="${GARMIN_ENV_FILE:-${project_dir}/packages/backend/.env}"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --user)
+        [[ $# -ge 2 ]] || fail "--user requires a name"
+        service_user="$2"
+        shift 2
+        ;;
+      --python)
+        [[ $# -ge 2 ]] || fail "--python requires a path"
+        python_bin="$2"
+        shift 2
+        ;;
+      --env-file)
+        [[ $# -ge 2 ]] || fail "--env-file requires a path"
+        env_file="$2"
+        shift 2
+        ;;
+      *) fail "unknown register option: $1" ;;
+    esac
+  done
+
+  require_root
+  [[ "${service_user}" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] ||
+    fail "invalid service user: ${service_user}"
+  id -u "${service_user}" >/dev/null 2>&1 || fail "service user not found: ${service_user}"
+  local service_group
+  service_group="$(id -gn "${service_user}")"
+  [[ "${service_group}" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] ||
+    fail "invalid service group: ${service_group}"
+  validate_unit_path "worker directory" "${worker_dir}"
+  validate_unit_path "Python executable" "${python_bin}"
+  validate_unit_path "environment file" "${env_file}"
+  [[ -x "${worker_dir}/start-worker" ]] || fail "start-worker is not executable"
+  [[ -x "${python_bin}" ]] || fail "Python executable not found: ${python_bin}"
+  [[ -f "${env_file}" ]] || fail "environment file not found: ${env_file}"
+  [[ -f "${template_dir}/${service_unit}.in" ]] || fail "service template missing"
+  [[ -f "${template_dir}/${timer_unit}" ]] || fail "timer template missing"
+
+  local service_tmp
+  service_tmp="$(mktemp)"
+  trap 'rm -f "${service_tmp}"' EXIT
+  sed \
+    -e "s|@WORKER_DIR@|${worker_dir}|g" \
+    -e "s|@PYTHON_BIN@|${python_bin}|g" \
+    -e "s|@ENV_FILE@|${env_file}|g" \
+    -e "s|@SERVICE_USER@|${service_user}|g" \
+    -e "s|@SERVICE_GROUP@|${service_group}|g" \
+    "${template_dir}/${service_unit}.in" >"${service_tmp}"
+
+  install -m 0644 "${service_tmp}" "${unit_dir}/${service_unit}"
+  install -m 0644 "${template_dir}/${timer_unit}" "${unit_dir}/${timer_unit}"
+  systemctl_command daemon-reload
+  rm -f "${service_tmp}"
+  trap - EXIT
+  echo "Garmin timer registered but not enabled."
+  echo "Run '$0 enable' when the manual worker check succeeds."
+}
+
+command_name="${1:-}"
+[[ -n "${command_name}" ]] || {
+  usage
+  exit 2
+}
+shift
+
+case "${command_name}" in
+  register)
+    register_units "$@"
+    ;;
+  enable)
+    require_no_arguments "$@"
+    require_root
+    systemctl_command enable --now "${timer_unit}"
+    ;;
+  disable)
+    require_no_arguments "$@"
+    require_root
+    systemctl_command disable --now "${timer_unit}"
+    ;;
+  status)
+    require_no_arguments "$@"
+    systemctl_command status "${timer_unit}" "${service_unit}" --no-pager
+    ;;
+  -h | --help | help)
+    usage
+    ;;
+  *)
+    usage >&2
+    fail "unknown command: ${command_name}"
+    ;;
+esac
