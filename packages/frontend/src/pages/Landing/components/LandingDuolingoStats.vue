@@ -287,9 +287,6 @@ watch(
       </div>
     </div>
 
-    <p class="duolingo-stats__disclaimer">
-      个人学习数据展示，与 Duolingo Inc. 无官方关联。
-    </p>
   </section>
 </template>
 
@@ -334,8 +331,7 @@ watch(
 }
 
 .duolingo-stats__stale,
-.duolingo-stats__year-header p,
-.duolingo-stats__disclaimer {
+.duolingo-stats__year-header p {
   color: var(--landing-muted);
   font-size: 0.75rem;
   line-height: 1.5;
@@ -549,10 +545,6 @@ watch(
 
 .heatmap-legend i {
   flex: none;
-}
-
-.duolingo-stats__disclaimer {
-  margin-top: 1rem;
 }
 
 .duolingo-skeleton {

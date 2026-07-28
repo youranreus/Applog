@@ -160,9 +160,6 @@ watch(
       </div>
     </div>
 
-    <p class="garmin-stats__disclaimer">
-      数据来源于 Garmin Connect；本页面与 Garmin Ltd. 无官方关联。
-    </p>
   </section>
 </template>
 
@@ -195,8 +192,7 @@ watch(
   line-height: 1.18;
 }
 
-.garmin-stats__stale,
-.garmin-stats__disclaimer {
+.garmin-stats__stale {
   color: var(--landing-muted);
   font-size: 0.75rem;
   line-height: 1.5;
@@ -289,7 +285,7 @@ watch(
   display: block;
   width: 100%;
   height: 100%;
-  padding: 0.4rem;
+  padding: 1.35rem;
   overflow: visible;
 }
 
@@ -302,7 +298,8 @@ watch(
   padding: 0.15rem 0.4rem;
   overflow: hidden;
   border-radius: 980px;
-  background: color-mix(in srgb, var(--landing-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--landing-muted) 14%, transparent);
+  background: color-mix(in srgb, var(--landing-surface) 90%, transparent);
   color: var(--landing-text);
   font-size: 0.625rem;
   font-weight: 600;
@@ -316,21 +313,21 @@ watch(
 
 .garmin-activity__path {
   fill: none;
-  stroke: var(--landing-primary);
+  stroke: color-mix(in srgb, var(--landing-muted) 58%, var(--landing-text));
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2;
+  stroke-width: 1.75;
 }
 
 .garmin-activity__start {
-  fill: var(--landing-primary);
-  stroke: var(--landing-surface);
+  fill: var(--landing-text);
+  stroke: var(--landing-surface-soft);
   stroke-width: 1.25;
 }
 
 .garmin-activity__end {
-  fill: var(--landing-text);
-  stroke: var(--landing-surface);
+  fill: var(--landing-muted);
+  stroke: var(--landing-surface-soft);
   stroke-width: 1.25;
 }
 
@@ -387,10 +384,6 @@ watch(
   height: 0.7rem;
   flex: none;
   stroke-width: 1.7;
-}
-
-.garmin-stats__disclaimer {
-  margin-top: 1rem;
 }
 
 .garmin-stats__skeleton {
