@@ -64,6 +64,8 @@ GARMIN_IS_CN=true
 
    bootstrap 会创建或更新虚拟环境、安装 worker、注册并确保 systemd timer 处于关闭状态、交互读取 Garmin 邮箱/密码/MFA、加密保存 token，并执行一次同步。它不会把密码或 MFA 写入磁盘。
 
+   如果已有虚拟环境不完整（例如存在 `bin/python` 但缺少 pip），bootstrap 会先尝试通过 Python 自带的 `ensurepip` 修复。如果仍提示 pip 不可用，请为所选 Python 安装对应的 venv/ensurepip 组件，再原样重跑 bootstrap；不需要手动调用虚拟环境中的 `bin/pip`。
+
    如果配置目录不在默认位置，追加 `--env-dir /absolute/path/to/backend-config`；若已完成 token provision，可用 `--skip-provision`；若只想完成安装和注册，可再加 `--skip-sync`。重复运行 bootstrap 会更新依赖和 unit、关闭 timer，并默认再次进入 provision，因此常规发布建议使用 `--skip-provision`，验证完成后重新 enable。
 
 4. 检查首次同步状态、日志、数据库快照和公开 `GET /garmin/stats`：
