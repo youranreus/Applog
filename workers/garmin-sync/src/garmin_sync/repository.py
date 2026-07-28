@@ -11,9 +11,10 @@ LOCK_NAME = "applog_garmin_sync"
 
 
 def _mysql_datetime(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value
-    return value.astimezone(UTC).replace(tzinfo=None)
+    """Normalize to UTC-naive MySQL DATETIME(3) precision."""
+    if value.tzinfo is not None:
+        value = value.astimezone(UTC).replace(tzinfo=None)
+    return value.replace(microsecond=value.microsecond // 1000 * 1000)
 
 
 class MySQLRepository:

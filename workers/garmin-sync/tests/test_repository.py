@@ -1,7 +1,14 @@
 import sys
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from garmin_sync.repository import MySQLRepository
+from garmin_sync.repository import MySQLRepository, _mysql_datetime
+
+
+def test_mysql_datetime_matches_datetime_three_precision():
+    value = datetime(2026, 7, 28, 11, 39, 46, 344123, tzinfo=UTC)
+
+    assert _mysql_datetime(value) == datetime(2026, 7, 28, 11, 39, 46, 344000)
 
 
 def test_repository_uses_garmin_mysql_environment(monkeypatch):
