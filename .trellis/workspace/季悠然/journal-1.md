@@ -547,3 +547,25 @@ Duolingo Client 超时调至 15s、timeout 重试 1 次、username→userId 缓�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 19: 优化 Landing Garmin 运动卡片展示
+
+**Date**: 2026-07-28
+**Task**: 优化 Landing Garmin 运动卡片展示
+**Branch**: `master`
+
+### Summary
+
+完成 Garmin 活动卡片横滑、类型化运动封面与 GPS 路线展示；补充卡路里和地点信息，采用统一浅色运动图形，扩大路线留白，并移除 Garmin 与 Duolingo 免责声明。专项测试、类型检查、生产构建和桌面/移动端浏览器回归通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ba63231` | (see git log) |
+| `6ce1023` | (see git log) |
+
+### Status
+
+[OK] **Completed**
