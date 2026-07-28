@@ -454,16 +454,18 @@ watch(
   --heatmap-weekday-w: 1rem;
   --heatmap-layout-gap: 0.5rem;
   --heatmap-weeks: 53;
+  /* cqi 相对本栏宽度，避免自定义属性里的 100% 解析到热力图自身造成循环/铺不满 */
   --heatmap-cell: max(
     8px,
     calc(
       (
-          100% - var(--heatmap-weekday-w) - var(--heatmap-layout-gap) -
+          100cqi - var(--heatmap-weekday-w) - var(--heatmap-layout-gap) -
             (var(--heatmap-weeks) - 1) * var(--heatmap-gap)
         ) / var(--heatmap-weeks)
     )
   );
 
+  container-type: inline-size;
   display: grid;
   grid-template-columns: var(--heatmap-weekday-w) minmax(0, 1fr);
   gap: var(--heatmap-layout-gap);
@@ -495,19 +497,23 @@ watch(
 }
 
 .heatmap {
+  /* 列宽按栏宽反算格子边长，总宽刚好铺满；过窄触底 8px 时再横向滚动 */
   display: grid;
-  width: 100%;
+  width: max-content;
+  max-width: none;
+  grid-template-columns: repeat(var(--heatmap-weeks), var(--heatmap-cell));
   grid-template-rows: repeat(7, var(--heatmap-cell));
-  grid-auto-columns: var(--heatmap-cell);
   grid-auto-flow: column;
-  gap: var(--heatmap-gap);
+  column-gap: var(--heatmap-gap);
+  row-gap: var(--heatmap-gap);
 }
 
 .heatmap__cell,
 .heatmap__blank {
   display: block;
-  width: var(--heatmap-cell);
-  height: var(--heatmap-cell);
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
   border-radius: 2px;
 }
 
@@ -536,8 +542,9 @@ watch(
 }
 
 .heatmap-legend .heatmap__cell {
-  --heatmap-cell: 11px;
   flex: none;
+  width: 11px;
+  height: 11px;
 }
 
 .heatmap-legend i {
