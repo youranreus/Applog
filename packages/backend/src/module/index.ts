@@ -8,3 +8,4 @@ export * from './analytics/analytics.module';
 export * from './weather/weather.module';
 export * from './visitor-cursor/visitor-cursor.module';
 export * from './duolingo/duolingo.module';
+export * from './garmin/garmin.module';

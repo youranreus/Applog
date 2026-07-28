@@ -1,0 +1,27 @@
+[project]
+name = "applog-garmin-sync"
+version = "0.1.0"
+description = "Read-only Garmin Connect snapshot worker for AppLog"
+requires-python = ">=3.12"
+dependencies = [
+  "cryptography==45.0.7",
+  "garminconnect==0.3.7",
+  "PyMySQL==1.1.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.1",
+  "ruff==0.12.7",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

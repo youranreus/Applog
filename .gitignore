@@ -29,3 +29,6 @@ coverage
 
 .turbo
 .claude/*.local.json
+workers/garmin-sync/.venv/
+workers/garmin-sync/src/*.egg-info/
+workers/garmin-sync/**/__pycache__/

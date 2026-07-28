@@ -1,6 +1,7 @@
 export * from "./types/system-config.js";
 export * from "./types/visitor-cursor.js";
 export * from "./types/duolingo.js";
+export * from "./types/garmin.js";
 export * from "./constants/system-config.js";
 export * from "./constants/visitor-cursor.js";
 export * from "./utils/system-config.js";

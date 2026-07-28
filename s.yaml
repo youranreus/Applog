@@ -1,9 +1,9 @@
 edition: 3.0.0
 name: web-framework-app
-access: 'undefined'
+access: "undefined"
 vars:
-  region: 'cn-shenzhen'
-  functionName: 'applog-serverless'
+  region: "cn-shenzhen"
+  functionName: "applog-serverless"
 resources:
   applog:
     component: fc3
@@ -58,4 +58,35 @@ resources:
               - DELETE
               - HEAD
               - OPTIONS
-  
+  garmin_sync:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: applog-garmin-sync
+      description: Read-only Garmin activity snapshot worker
+      runtime: python3.12
+      code: ./workers/garmin-sync
+      handler: index.handler
+      cpu: 0.5
+      diskSize: 512
+      memorySize: 512
+      timeout: 300
+      internetAccess: true
+      logConfig: auto
+      environmentVariables:
+        PYTHONUSERBASE: /code/python
+        PYTHONPATH: /code/src:/code/python
+        GARMIN_IS_CN: ${env(GARMIN_IS_CN)}
+        GARMIN_TOKEN_ENCRYPTION_KEY: ${env(GARMIN_TOKEN_ENCRYPTION_KEY)}
+        MYSQL_SERVER: ${env(MYSQL_SERVER)}
+        MYSQL_PORT: ${env(MYSQL_PORT)}
+        MYSQL_USER: ${env(MYSQL_USER)}
+        MYSQL_PASSWORD: ${env(MYSQL_PASSWORD)}
+        MYSQL_DATABASE: ${env(MYSQL_DATABASE)}
+      triggers:
+        - triggerName: garmin-sync-every-30-minutes
+          triggerType: timer
+          triggerConfig:
+            cronExpression: "@every 30m"
+            enable: false
+            payload: "{}"

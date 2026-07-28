@@ -1,0 +1,1 @@
+"""AppLog Garmin synchronization worker."""

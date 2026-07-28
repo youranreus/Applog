@@ -16,6 +16,7 @@ import {
   WeatherModule,
   VisitorCursorModule,
   DuolingoModule,
+  GarminModule,
 } from '@/module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -52,6 +53,7 @@ import { ENTITY_LIST } from '@/entities';
     WeatherModule,
     VisitorCursorModule,
     DuolingoModule,
+    GarminModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],
