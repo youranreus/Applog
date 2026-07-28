@@ -494,3 +494,25 @@ MarkdownEditor 改用外侧 Tabs + Textarea，预览同框 550px；aria-invalid 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 17: 修复 Duolingo lookup 超时并调整 Landing 顺序
+
+**Date**: 2026-07-28
+**Task**: 修复 Duolingo lookup 超时并调整 Landing 顺序
+**Branch**: `master`
+
+### Summary
+
+Duolingo Client 超时调至 15s、timeout 重试 1 次、username→userId 缓存；Landing 多邻国统计移到最近文章下方；同步 guidelines。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8db5ab0` | (see git log) |
+| `71adf78` | (see git log) |
+
+### Status
+
+[OK] **Completed**

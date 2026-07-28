@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
+- **Total Sessions**: 17
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~496 | Active |
+| `journal-1.md` | ~518 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-07-28 | 修复 Duolingo lookup 超时并调整 Landing 顺序 | `8db5ab0`, `71adf78` | `master` |
 | 16 | 2026-07-28 | Landing 多邻国学习统计 | `5b1866b`, `e8eae7d`, `1ce7ec9` | `master` |
 | 15 | 2026-07-27 | 对齐后台评论管理表格样式 | `ae11764`, `665a46b` | `master` |
 | 14 | 2026-07-27 | 支持文章与页面评论迁移 | `0d495ef` | `master` |
