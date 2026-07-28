@@ -30,6 +30,13 @@
 - The current-year calendar is complete. Elapsed missing dates are zero; future dates are `{ xp: null, future: true }`.
 - `YYYY-MM-DD` strings are calendar keys. Only Unix timestamps are converted through `timeZone`.
 
+## HTTP client resilience
+
+- Single Duolingo HTTP request timeout: **15 seconds** (aligned with the Umami client).
+- On network timeout only (`ECONNABORTED` / `ETIMEDOUT` with no HTTP response), retry the same GET **once** after a short delay (~250ms). Do not retry `unauthorized`, `schema`, or other status-bearing upstream errors.
+- `DuolingoClient` may keep an in-process `username → userId` map and skip the lookup stage on later refreshes for the same username; a username change misses the cache. Lookup/schema failures must not write the cache.
+- Failure warn logs include `stage`, `kind`, `status`, `elapsedMs`, and `attempt`. Never log JWT, Authorization headers, or response bodies.
+
 ## Cache and failure contract
 
 - Successful snapshot TTL: 30 minutes; first-failure suppression: 1 minute.
@@ -40,7 +47,7 @@
 
 ## Frontend presentation
 
-- Place the section after Landing Profile and before Recent Posts.
+- Place the section after Recent Posts and before Slogan.
 - While `useLandingDuolingoStats().loading` is true, show a layout-matching skeleton (real section title, shimmer placeholders for metrics / languages / heatmap); hide the section entirely when loading finishes with `null`.
 - Four quiet typographic metrics, at most two language cards, and a dependency-free yearly heatmap.
 - The mobile heatmap scrolls inside its own region and defaults near the current week; it must not create page-level horizontal overflow.
@@ -49,4 +56,4 @@
 
 ## Verification
 
-Run common build, backend unit tests/build, frontend unit tests/type-check/build, file-level lint, and `git diff --check`. Tests must cover secret preservation, invalid time zones, schema/error classification, cross-year and leap-year dates, duration null semantics, tier bounds, language denominator, cache concurrency, stale fallback, and generation races.
+Run common build, backend unit tests/build, frontend unit tests/type-check/build, file-level lint, and `git diff --check`. Tests must cover secret preservation, invalid time zones, schema/error classification, cross-year and leap-year dates, duration null semantics, tier bounds, language denominator, cache concurrency, stale fallback, generation races, timeout retry success, timeout exhaustion, userId cache skip of lookup, and username-change re-lookup.
