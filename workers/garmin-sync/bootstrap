@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+worker_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+project_dir="$(cd -- "${worker_dir}/../.." && pwd)"
+
+service_user="${GARMIN_SERVICE_USER:-applog}"
+bootstrap_python="${GARMIN_BOOTSTRAP_PYTHON:-python3.12}"
+venv_dir="${GARMIN_VENV_DIR:-/opt/applog/venvs/garmin-sync}"
+env_dir="${GARMIN_ENV_DIR:-${project_dir}/packages/backend}"
+env_file="${GARMIN_ENV_FILE:-}"
+run_provision=true
+run_initial_sync=true
+
+usage() {
+  cat <<'EOF'
+Usage:
+  bootstrap [--user USER] [--python PATH] [--venv PATH]
+            [--env-dir PATH | --env-file PATH]
+            [--skip-provision] [--skip-sync]
+
+Performs the first server deployment of the Garmin worker:
+  1. creates or updates the Python virtual environment;
+  2. installs the worker package;
+  3. registers the systemd service and timer without enabling it;
+  4. provisions the encrypted Garmin token interactively;
+  5. runs one initial synchronization.
+
+The timer remains disabled until manage-timer enable is run explicitly.
+EOF
+}
+
+fail() {
+  echo "Garmin bootstrap: $*" >&2
+  exit 1
+}
+
+validate_path() {
+  local label="$1"
+  local value="$2"
+  [[ "${value}" = /* ]] || fail "${label} must be an absolute path: ${value}"
+  [[ "${value}" =~ ^[A-Za-z0-9_./:@+-]+$ ]] ||
+    fail "${label} contains unsupported characters: ${value}"
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --user)
+      [[ $# -ge 2 ]] || fail "--user requires a name"
+      service_user="$2"
+      shift 2
+      ;;
+    --python)
+      [[ $# -ge 2 ]] || fail "--python requires a path or command"
+      bootstrap_python="$2"
+      shift 2
+      ;;
+    --venv)
+      [[ $# -ge 2 ]] || fail "--venv requires a path"
+      venv_dir="$2"
+      shift 2
+      ;;
+    --env-dir)
+      [[ $# -ge 2 ]] || fail "--env-dir requires a path"
+      env_dir="$2"
+      env_file=""
+      shift 2
+      ;;
+    --env-file)
+      [[ $# -ge 2 ]] || fail "--env-file requires a path"
+      env_file="$2"
+      shift 2
+      ;;
+    --skip-provision)
+      run_provision=false
+      shift
+      ;;
+    --skip-sync)
+      run_initial_sync=false
+      shift
+      ;;
+    -h | --help | help)
+      usage
+      exit 0
+      ;;
+    *) fail "unknown option: $1" ;;
+  esac
+done
+
+[[ ${EUID} -eq 0 ]] || fail "run this script with sudo or as root"
+[[ "${service_user}" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] ||
+  fail "invalid service user: ${service_user}"
+id -u "${service_user}" >/dev/null 2>&1 || fail "service user not found: ${service_user}"
+service_group="$(id -gn "${service_user}")"
+[[ "${service_group}" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] ||
+  fail "invalid service group: ${service_group}"
+
+if [[ "${bootstrap_python}" != /* ]]; then
+  requested_python="${bootstrap_python}"
+  bootstrap_python="$(command -v "${requested_python}")" ||
+    fail "Python command not found: ${requested_python}"
+fi
+validate_path "bootstrap Python" "${bootstrap_python}"
+validate_path "virtual environment" "${venv_dir}"
+[[ "${venv_dir}" != "/" ]] || fail "virtual environment cannot be the filesystem root"
+[[ -x "${bootstrap_python}" ]] || fail "Python executable not found: ${bootstrap_python}"
+if [[ -n "${env_file}" ]]; then
+  validate_path "environment file" "${env_file}"
+  [[ -f "${env_file}" ]] || fail "environment file not found: ${env_file}"
+else
+  validate_path "environment directory" "${env_dir}"
+  [[ -d "${env_dir}" ]] || fail "environment directory not found: ${env_dir}"
+fi
+[[ -x "${worker_dir}/start-worker" ]] || fail "start-worker is not executable"
+[[ -x "${worker_dir}/manage-timer" ]] || fail "manage-timer is not executable"
+runuser_bin="$(command -v runuser)" || fail "runuser is not installed"
+systemctl_bin="$(command -v systemctl)" || fail "systemctl is not installed"
+if "${systemctl_bin}" cat applog-garmin-sync.timer >/dev/null 2>&1; then
+  "${systemctl_bin}" disable --now applog-garmin-sync.timer
+fi
+
+venv_parent="$(dirname -- "${venv_dir}")"
+[[ "${venv_parent}" != "/" ]] || fail "virtual environment needs a dedicated parent directory"
+if [[ ! -d "${venv_parent}" ]]; then
+  install -d -m 0755 -o "${service_user}" -g "${service_group}" "${venv_parent}"
+fi
+if [[ ! -x "${venv_dir}/bin/python" ]]; then
+  "${runuser_bin}" -u "${service_user}" -- \
+    "${bootstrap_python}" -m venv "${venv_dir}"
+fi
+"${runuser_bin}" -u "${service_user}" -- \
+  "${venv_dir}/bin/pip" install --upgrade "${worker_dir}"
+
+register_args=(
+  register
+  --user "${service_user}"
+  --python "${venv_dir}/bin/python"
+)
+if [[ -n "${env_file}" ]]; then
+  register_args+=(--env-file "${env_file}")
+else
+  register_args+=(--env-dir "${env_dir}")
+fi
+"${worker_dir}/manage-timer" "${register_args[@]}"
+"${worker_dir}/manage-timer" disable
+
+worker_environment=(
+  "GARMIN_PYTHON_BIN=${venv_dir}/bin/python"
+  "GARMIN_ENV_DIR=${env_dir}"
+  "GARMIN_ENV_FILE=${env_file}"
+)
+if [[ "${run_provision}" == true ]]; then
+  "${runuser_bin}" -u "${service_user}" -- env \
+    "${worker_environment[@]}" "${worker_dir}/start-worker" provision
+fi
+if [[ "${run_initial_sync}" == true ]]; then
+  "${systemctl_bin}" start applog-garmin-sync.service
+fi
+
+echo "Garmin worker bootstrap completed; the timer is still disabled."
+echo "Inspect GET /garmin/stats and the service logs, then run:"
+echo "  sudo ${worker_dir}/manage-timer enable"

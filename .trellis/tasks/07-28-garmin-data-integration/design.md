@@ -10,7 +10,7 @@ Trusted local provisioning CLI
   encrypted token record in MySQL
             |
             v
-Alibaba FC Python 3.12 timer worker (read-only)
+Linux systemd Python 3.12 timer worker (read-only)
   python-garminconnect adapter
   activity normalization + SVG route builder
             |
@@ -57,7 +57,7 @@ Add TypeORM entities and matching worker SQL access for three concepts:
 - ciphertext, nonce/IV, authentication tag, encryption version;
 - created/updated timestamps.
 
-The AES-256-GCM key is supplied as `GARMIN_TOKEN_ENCRYPTION_KEY` only to the worker/provisioning CLI. Token rotation writes a complete new encrypted envelope atomically.
+The AES-256-GCM key is supplied as `GARMIN_TOKEN_ENCRYPTION_KEY` through the shared protected backend dotenv files, but only the worker/provisioning CLI reads it. Token rotation writes a complete new encrypted envelope atomically.
 
 #### GarminActivitySnapshot
 
@@ -152,7 +152,7 @@ Network timeout/429 errors use one bounded retry with jitter. Route failure is p
 
 - Additive tables and endpoint only; no existing API contract changes.
 - Existing Landing remains functional when tables are empty or worker is disabled.
-- `s.yaml` gains a separate Python 3.12 function and timer trigger; the existing Node function remains unchanged apart from database entities/module registration and shared environment settings.
+- 服务器通过 bootstrap 脚本安装独立 Python 3.12 虚拟环境并注册 systemd service/timer；现有 Node 服务仅增加数据库实体和模块注册。
 - Because the project currently uses TypeORM `synchronize: true`, backend startup creates additive tables. Deployment order must be backend schema first, then provision tokens, then enable timer.
 - Real-account payloads must be captured only as manually sanitized fixtures; never commit actual account/location data.
 
@@ -160,7 +160,7 @@ Network timeout/429 errors use one bounded retry with jitter. Route failure is p
 
 - Password and MFA code are accepted only by the local provisioning CLI and never persisted.
 - Refresh token is treated as a password-equivalent secret and encrypted at rest with authenticated encryption.
-- The worker encryption key is not shared with the web function.
+- NestJS does not consume, serialize or log the worker encryption key even though deployment keeps it in the shared protected dotenv files.
 - Logs use allowlisted metadata only and never serialize caught response bodies or request headers.
 - Source visibility fails closed. A private/unknown activity is never inserted as published.
 - Public DTO and database schema structurally prevent raw geolocation disclosure; only normalized path geometry is retained.
@@ -177,6 +177,6 @@ Network timeout/429 errors use one bounded retry with jitter. Route failure is p
 ## Key Trade-offs
 
 - Automatic sync is achieved at the cost of relying on an unofficial API.
-- A separate Python function adds deployment surface but isolates credentials, runtime churn and upstream failures from reader traffic.
+- A separate Python systemd service adds deployment surface but isolates credentials, runtime churn and upstream failures from reader traffic.
 - Persisting normalized SVG geometry prevents later map reconstruction; visual changes requiring raw coordinates must re-fetch Garmin data.
 - Full-route display maximizes authenticity but retains recognizable route-shape privacy risk.

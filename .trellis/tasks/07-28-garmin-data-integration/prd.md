@@ -11,7 +11,7 @@
 - Strava 官方将中国列为服务可能部分或完全受限的地区；AppLog 部署于阿里云深圳（`s.yaml:5-17`），因此 Strava 不作为生产依赖。
 - 用户拒绝人工 FIT 上传，接受非官方 `python-garminconnect` 的登录风控、接口变更和后续适配成本，以换取自动同步。
 - `python-garminconnect` 支持中国区账号、MFA、token 持久化/刷新、活动总数、按日期分页读取、活动详情及 GPX/FIT 下载；它需要 Python 3.12+。
-- 阿里云函数计算深圳地域支持 Python 3.12 和定时触发器，可将同步 worker 与现有 Node Web 函数隔离。
+- 用户确认在 Linux 服务器上运行 Python worker，通过 systemd service/timer 与 Web 进程隔离，不使用阿里云 Function Compute 承载同步任务。
 - 用户接受首次在可信本地环境输入 Garmin 邮箱、密码和 MFA；生产只保存加密 token，不长期保存 Garmin 密码，token 失效后由管理员重新认证。
 - 用户要求 SVG 保留从起点到终点的完整路线，不裁剪首尾，并明确接受完整路线轮廓带来的位置隐私风险。
 
@@ -20,14 +20,14 @@
 ### R1 — Automatic read-only synchronization
 
 - 使用独立 Python 3.12 worker 和 `python-garminconnect`，只调用读取、计数和下载接口，不调用上传、修改或删除 Garmin 数据的接口。
-- worker 由阿里云函数计算定时触发；正常运行无需用户操作。
+- worker 由服务器 systemd timer 每 30 分钟触发；正常运行无需用户操作。
 - 首次及持续同步只在本地保留最近 12 个月的公开活动详情；分页/路线处理可跨 invocation 断点续跑。
 - 同步 Garmin 全部历史活动总数，作为公开“累计次数”；活动详情只存 Garmin 侧公开的活动，缺失或隐私状态无法确认时默认不发布。
 
 ### R2 — Credential security
 
 - 首次登录在可信本地环境完成，支持 MFA，生产环境不保存 Garmin 密码。
-- access/refresh token 以 AES-256-GCM 等带认证加密方式存入 MySQL；加密密钥只存在 worker 环境变量中，不下发 NestJS、前端或日志。
+- access/refresh token 以 AES-256-GCM 等带认证加密方式存入 MySQL；加密密钥可随共享 backend `.env*` 部署，但只有 worker 代码读取，不进入公开 DTO、前端或日志。
 - token 刷新后原子替换密文；认证失效时停止重复登录，记录 `reauth_required`，保留最近成功数据。
 
 ### R3 — Public data contract
@@ -81,7 +81,7 @@
 ## Risks and Deferred Items
 
 - 非官方 Garmin endpoint 或登录策略可随时变化；通过独立适配器、持久化快照、低频请求和 `reauth_required` 降低影响，但无法提供官方 SLA。
-- Python 3.12 在阿里云函数计算当前为 public preview；worker 与 Web 请求链路隔离，必要时可迁移到自定义镜像/常驻容器而不改公开 API。
+- systemd unit 依赖稳定的项目发布路径、Python 3.12 虚拟环境和可访问共享 MySQL；bootstrap/register 脚本负责固化这些路径。
 - 路线轮廓即使没有坐标也可能被熟悉地点的人识别；MVP 按用户决定保留完整路线，未来可增加可选隐私裁剪。
 - `python-garminconnect` 响应不是稳定契约；真实账号 PoC 必须先验证中国区账号、活动公开字段、设备字段和路线 payload，再冻结内部 adapter fixture。
 

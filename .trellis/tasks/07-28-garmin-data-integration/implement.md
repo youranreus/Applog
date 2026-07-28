@@ -39,7 +39,7 @@
 
 ### 6. Configure deployment and operations
 
-- Extend `s.yaml` with a separate Python 3.12 FC function in `cn-shenzhen`, adequate timeout/memory, MySQL settings, encryption key and a 30-minute timer trigger.
+- Add a server bootstrap script, independent Python 3.12 virtualenv, systemd service and 30-minute timer, reusing backend dotenv priority and MySQL settings.
 - Ensure deployment order: backend/schema -> worker code -> encrypted token provisioning -> timer enablement.
 - Document local provisioning, reauthentication, manual worker invocation, trigger disablement and secret rotation.
 - Verify no secret is included in deployment output, repository, logs or frontend bundle.
@@ -67,7 +67,7 @@ Run the worker live-account test separately and opt-in only; default test comman
 
 ## Risky Files and Rollback Points
 
-- `s.yaml`: deployment/runtime/trigger changes; deploy the Node schema before enabling the new timer and preserve the existing HTTP trigger.
+- `workers/garmin-sync/bootstrap` and systemd templates: deploy the Node schema before bootstrap and keep the timer disabled until the first manual verification succeeds.
 - `packages/backend/src/entities/index.ts` and `app.module.ts`: central registrations; additive edits only.
 - System credential storage: never log or expose entity serialization; verify encryption with a negative wrong-key test.
 - Route parser: upstream schema can vary; keep adapter fixtures and GPX fallback isolated from domain normalization.
@@ -79,4 +79,4 @@ Run the worker live-account test separately and opt-in only; default test comman
 - Use inline implementation flow; no sub-agent manifests are required under the current no-dispatch constraint.
 - Before editing code, run `trellis-before-dev` and load relevant backend/frontend/common guidance.
 - Do not use a real Garmin credential during ordinary implementation or tests.
-- Confirm the Python 3.12 Function Compute runtime remains available in `cn-shenzhen` before deployment.
+- Confirm Python 3.12, systemd and the chosen low-privilege service user exist on the target server before deployment.

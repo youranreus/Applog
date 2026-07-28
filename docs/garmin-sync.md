@@ -50,58 +50,30 @@ GARMIN_IS_CN=true
 
 1. 先部署并启动 NestJS，确认 TypeORM 已创建 `garmin_credential`、`garmin_activity_snapshot`、`garmin_sync_state` 三张表。
 
-2. 在服务器创建独立虚拟环境并安装 worker。下面假设项目发布目录为 `/opt/applog/current`：
+2. 确保低权限运行用户和 `packages/backend` 下当前生效的环境配置已经存在。下面假设运行用户为 `applog`、项目发布目录为 `/opt/applog/current`。
 
-   ```bash
-   sudo install -d -o applog -g applog /opt/applog/venvs
-   sudo -u applog python3.12 -m venv /opt/applog/venvs/garmin-sync
-   sudo -u applog /opt/applog/venvs/garmin-sync/bin/pip install \
-     /opt/applog/current/workers/garmin-sync
-   ```
-
-   每次发布包含 worker 变更时，重新执行最后一条 `pip install`，并增加 `--upgrade`。
-
-3. 确认启动和定时任务管理脚本可执行：
-
-   ```bash
-   chmod +x /opt/applog/current/workers/garmin-sync/start-worker
-   chmod +x /opt/applog/current/workers/garmin-sync/manage-timer
-   ```
-
-4. 注册 systemd service 和 timer。注册操作会自动写入当前项目路径、Python 路径和共享环境配置目录，但不会启动 timer：
+3. 执行首次部署脚本：
 
    ```bash
    cd /opt/applog/current/workers/garmin-sync
-   sudo ./manage-timer register \
+   sudo ./bootstrap \
      --user applog \
-     --python /opt/applog/venvs/garmin-sync/bin/python
+     --python /usr/bin/python3.12 \
+     --venv /opt/applog/venvs/garmin-sync
    ```
 
-   `--user` 指定实际运行 worker 的低权限系统用户，unit 会自动使用该用户的主组。如果配置目录不在默认的 `/opt/applog/current/packages/backend`，追加 `--env-dir /absolute/path/to/backend-config`。重复执行 `register` 会幂等更新 unit 配置并执行 `systemctl daemon-reload`。
+   bootstrap 会创建或更新虚拟环境、安装 worker、注册并确保 systemd timer 处于关闭状态、交互读取 Garmin 邮箱/密码/MFA、加密保存 token，并执行一次同步。它不会把密码或 MFA 写入磁盘。
 
-5. 在可信终端完成一次交互式 Garmin 登录。使用 transient service 可以复用正式 worker 的用户和 Python 环境，同时保留邮箱、密码和 MFA 的交互输入：
+   如果配置目录不在默认位置，追加 `--env-dir /absolute/path/to/backend-config`；若已完成 token provision，可用 `--skip-provision`；若只想完成安装和注册，可再加 `--skip-sync`。重复运行 bootstrap 会更新依赖和 unit、关闭 timer，并默认再次进入 provision，因此常规发布建议使用 `--skip-provision`，验证完成后重新 enable。
 
-   ```bash
-   sudo systemd-run --pty --wait --collect \
-     --unit=applog-garmin-provision \
-     --property=User=applog \
-     --property=Group=applog \
-     --property=WorkingDirectory=/opt/applog/current/workers/garmin-sync \
-     /usr/bin/env GARMIN_PYTHON_BIN=/opt/applog/venvs/garmin-sync/bin/python \
-     /opt/applog/current/workers/garmin-sync/start-worker provision
-   ```
-
-   CLI 临时读取 Garmin 邮箱、密码和 MFA 验证码；成功后只把 `client.dumps()` 产生的 token JSON 以 AES-256-GCM 加密写入 MySQL。密码与 MFA 不会持久化。
-
-6. 手动运行一次 worker，并检查状态、日志、数据库快照和公开 `GET /garmin/stats`：
+4. 检查首次同步状态、日志、数据库快照和公开 `GET /garmin/stats`：
 
    ```bash
-   sudo systemctl start applog-garmin-sync.service
    sudo systemctl status applog-garmin-sync.service
    sudo journalctl -u applog-garmin-sync.service -n 100 --no-pager
    ```
 
-7. 验证通过后启用每 30 分钟一次的 timer：
+5. 验证通过后启用每 30 分钟一次的 timer：
 
    ```bash
    cd /opt/applog/current/workers/garmin-sync
@@ -130,11 +102,21 @@ sudo journalctl -u applog-garmin-sync.service --since today
 
 ## 重新认证
 
-token 被撤销或失效时，先停用 timer，再重新运行首次部署中的 transient provision 命令：
+token 被撤销或失效时，先停用 timer：
 
 ```bash
 cd /opt/applog/current/workers/garmin-sync
 sudo ./manage-timer disable
+```
+
+然后复用 bootstrap 更新 worker、unit 并重新 provision，但跳过自动同步：
+
+```bash
+sudo ./bootstrap \
+  --user applog \
+  --python /usr/bin/python3.12 \
+  --venv /opt/applog/venvs/garmin-sync \
+  --skip-sync
 ```
 
 认证完成后手动启动一次 service；验证成功再恢复 timer：
