@@ -8,6 +8,15 @@ import {
   getHeatmapLeadingBlanks,
 } from '../duolingo-utils';
 
+/** 指标卡片色盘轮转 tone（与样式 nth / class 对应） */
+type MetricTone = 'green' | 'blue' | 'ink' | 'leaf';
+
+interface IMetricCard {
+  label: string;
+  value: string;
+  tone: MetricTone;
+}
+
 const props = withDefaults(
   defineProps<{
     stats?: IDuolingoLandingStats | null;
@@ -26,12 +35,58 @@ const cells = computed(() =>
 const leadingBlanks = computed(() =>
   getHeatmapLeadingBlanks(props.stats?.yearlyXp.days[0]?.date ?? ''),
 );
+
+/**
+ * 热力图周列数，供 CSS 按容器宽度均分格子。
+ * @returns 至少 1 列
+ */
+const heatmapWeekCount = computed(() =>
+  Math.max(
+    1,
+    Math.ceil((leadingBlanks.value.length + cells.value.length) / 7),
+  ),
+);
+
 const todayKey = computed(
   () =>
     props.stats?.last7Days.days[
       props.stats.last7Days.days.length - 1
     ]?.date ?? '',
 );
+
+/**
+ * 组装顶部四张指标卡片（含色盘 tone）。
+ * @returns 指标卡片列表；无数据时为空数组
+ */
+const metricCards = computed((): IMetricCard[] => {
+  if (!props.stats) return [];
+  return [
+    {
+      label: '当前连胜',
+      value:
+        props.stats.streakDays === null
+          ? '暂无数据'
+          : `${props.stats.streakDays} 天`,
+      tone: 'green',
+    },
+    {
+      label: '当前联赛',
+      value: props.stats.league?.name ?? '暂无可靠数据',
+      tone: 'blue',
+    },
+    {
+      label: '近 7 日经验',
+      value: `${formatXp(props.stats.last7Days.totalXp)} XP`,
+      tone: 'ink',
+    },
+    {
+      label: '近 7 日学习时间',
+      value: formatLearningTime(props.stats.last7Days.totalLearningSeconds),
+      tone: 'leaf',
+    },
+  ];
+});
+
 const yearlySummary = computed(() => {
   if (!props.stats) return '';
   const elapsed = props.stats.yearlyXp.days.filter((day) => !day.future);
@@ -39,6 +94,7 @@ const yearlySummary = computed(() => {
   const totalXp = elapsed.reduce((sum, day) => sum + (day.xp ?? 0), 0);
   return `${props.stats.yearlyXp.year} 年已有 ${activeDays} 个学习日，累计 ${formatXp(totalXp)} XP`;
 });
+
 const fetchedAtText = computed(() => {
   if (!props.stats) return '';
   return new Intl.DateTimeFormat('zh-CN', {
@@ -48,10 +104,17 @@ const fetchedAtText = computed(() => {
     minute: '2-digit',
   }).format(new Date(props.stats.fetchedAt));
 });
-const skeletonHeatmapCells = Array.from({ length: 84 }, (_, index) => index);
+
+/** 骨架态按全年约 53 周铺满宽度 */
+const SKELETON_WEEK_COUNT = 53;
+const skeletonHeatmapCells = Array.from(
+  { length: SKELETON_WEEK_COUNT * 7 },
+  (_, index) => index,
+);
+const skeletonMetricTones: MetricTone[] = ['green', 'blue', 'ink', 'leaf'];
 
 /**
- * 热力图滚动到当前周附近，避免移动端默认停在年初。
+ * 热力图滚动到当前周附近，避免极窄屏溢出时默认停在年初。
  * @returns Promise，等待 DOM 更新完成
  */
 async function scrollToCurrentWeek(): Promise<void> {
@@ -88,7 +151,12 @@ watch(
     <p class="sr-only" aria-live="polite">正在加载学习数据</p>
 
     <dl class="duolingo-stats__metrics" aria-hidden="true">
-      <div v-for="metric in 4" :key="`metric-${metric}`">
+      <div
+        v-for="(tone, index) in skeletonMetricTones"
+        :key="`metric-${index}`"
+        class="duolingo-stats__metric"
+        :class="`duolingo-stats__metric--${tone}`"
+      >
         <dt><span class="duolingo-skeleton duolingo-skeleton--label" /></dt>
         <dd><span class="duolingo-skeleton duolingo-skeleton--value" /></dd>
       </div>
@@ -109,7 +177,10 @@ watch(
         <span class="duolingo-skeleton duolingo-skeleton--year-title" />
         <span class="duolingo-skeleton duolingo-skeleton--year-summary" />
       </div>
-      <div class="heatmap-layout">
+      <div
+        class="heatmap-layout"
+        :style="{ '--heatmap-weeks': String(SKELETON_WEEK_COUNT) }"
+      >
         <div class="heatmap-weekdays">
           <span>日</span><span>一</span><span>二</span><span>三</span>
           <span>四</span><span>五</span><span>六</span>
@@ -143,21 +214,14 @@ watch(
     </header>
 
     <dl class="duolingo-stats__metrics">
-      <div>
-        <dt>当前连胜</dt>
-        <dd>{{ stats.streakDays === null ? '暂无数据' : `${stats.streakDays} 天` }}</dd>
-      </div>
-      <div>
-        <dt>当前联赛</dt>
-        <dd>{{ stats.league?.name ?? '暂无可靠数据' }}</dd>
-      </div>
-      <div>
-        <dt>近 7 日经验</dt>
-        <dd>{{ formatXp(stats.last7Days.totalXp) }} XP</dd>
-      </div>
-      <div>
-        <dt>近 7 日学习时间</dt>
-        <dd>{{ formatLearningTime(stats.last7Days.totalLearningSeconds) }}</dd>
+      <div
+        v-for="metric in metricCards"
+        :key="metric.label"
+        class="duolingo-stats__metric"
+        :class="`duolingo-stats__metric--${metric.tone}`"
+      >
+        <dt>{{ metric.label }}</dt>
+        <dd>{{ metric.value }}</dd>
       </div>
     </dl>
 
@@ -176,7 +240,10 @@ watch(
         <h3>{{ stats.yearlyXp.year }} 年学习节奏</h3>
         <p>{{ yearlySummary }}</p>
       </div>
-      <div class="heatmap-layout">
+      <div
+        class="heatmap-layout"
+        :style="{ '--heatmap-weeks': String(heatmapWeekCount) }"
+      >
         <div class="heatmap-weekdays" aria-hidden="true">
           <span>日</span><span>一</span><span>二</span><span>三</span>
           <span>四</span><span>五</span><span>六</span>
@@ -228,6 +295,17 @@ watch(
 
 <style scoped>
 .duolingo-stats {
+  /* Duolingo section palette — local to this surface */
+  --color-eager-green: #58cc02;
+  --color-storybook-green: #d7ffb8;
+  --color-spark-blue: #1cb0f6;
+  --color-fresh-leaf: #a5ed6e;
+  --color-night-ink: #000437;
+  --color-paper-white: #ffffff;
+  --color-charcoal: #4b4b4b;
+  --color-pencil-gray: #777777;
+  --color-faded-gray: #afafaf;
+
   min-width: 0;
   padding-top: clamp(4.5rem, 10vw, 6.5rem);
 }
@@ -266,32 +344,56 @@ watch(
 .duolingo-stats__metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
   margin-top: 1.5rem;
-  border-block: 1px solid var(--color-pebble);
 }
 
-.duolingo-stats__metrics > div {
+.duolingo-stats__metric {
   min-width: 0;
-  padding: 1.25rem;
-  border-left: 1px solid var(--color-pebble);
+  padding: 1.125rem 1.25rem;
+  border-radius: 16px;
+  background: var(--metric-wash);
+  color: var(--metric-value);
 }
 
-.duolingo-stats__metrics > div:first-child {
-  border-left: 0;
-  padding-left: 0;
-}
-
-.duolingo-stats__metrics dt {
-  color: var(--landing-muted);
+.duolingo-stats__metric dt {
+  color: var(--metric-label);
   font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
-.duolingo-stats__metrics dd {
-  margin-top: 0.4rem;
-  color: var(--landing-text);
-  font-size: clamp(1rem, 0.92rem + 0.25vw, 1.125rem);
-  font-weight: 600;
+.duolingo-stats__metric dd {
+  margin-top: 0.45rem;
+  color: var(--metric-value);
+  font-size: clamp(1.05rem, 0.95rem + 0.35vw, 1.25rem);
+  font-weight: 700;
+  line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+.duolingo-stats__metric--green {
+  --metric-wash: var(--color-eager-green);
+  --metric-value: var(--color-paper-white);
+  --metric-label: color-mix(in srgb, var(--color-paper-white) 82%, var(--color-storybook-green));
+}
+
+.duolingo-stats__metric--blue {
+  --metric-wash: var(--color-spark-blue);
+  --metric-value: var(--color-paper-white);
+  --metric-label: color-mix(in srgb, var(--color-paper-white) 82%, #b8e8fc);
+}
+
+.duolingo-stats__metric--ink {
+  --metric-wash: var(--color-night-ink);
+  --metric-value: var(--color-paper-white);
+  --metric-label: color-mix(in srgb, var(--color-paper-white) 72%, var(--color-spark-blue));
+}
+
+.duolingo-stats__metric--leaf {
+  --metric-wash: var(--color-fresh-leaf);
+  --metric-value: var(--color-night-ink);
+  --metric-label: var(--color-charcoal);
 }
 
 .duolingo-stats__languages {
@@ -326,7 +428,7 @@ watch(
 }
 
 .duolingo-stats__languages strong {
-  color: var(--landing-link);
+  color: var(--color-eager-green);
   font-size: 1.125rem;
 }
 
@@ -348,22 +450,39 @@ watch(
 }
 
 .heatmap-layout {
+  --heatmap-gap: 3px;
+  --heatmap-weekday-w: 1rem;
+  --heatmap-layout-gap: 0.5rem;
+  --heatmap-weeks: 53;
+  --heatmap-cell: max(
+    8px,
+    calc(
+      (
+          100% - var(--heatmap-weekday-w) - var(--heatmap-layout-gap) -
+            (var(--heatmap-weeks) - 1) * var(--heatmap-gap)
+        ) / var(--heatmap-weeks)
+    )
+  );
+
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: var(--heatmap-weekday-w) minmax(0, 1fr);
+  gap: var(--heatmap-layout-gap);
+  width: 100%;
   margin-top: 0.75rem;
 }
 
 .heatmap-weekdays {
   display: grid;
-  grid-template-rows: repeat(7, 11px);
-  gap: 3px;
-  color: var(--landing-muted);
+  grid-template-rows: repeat(7, var(--heatmap-cell));
+  gap: var(--heatmap-gap);
+  color: var(--color-pencil-gray);
   font-size: 0.5625rem;
-  line-height: 11px;
+  line-height: var(--heatmap-cell);
 }
 
 .heatmap-scroll {
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
@@ -371,39 +490,39 @@ watch(
 }
 
 .heatmap-scroll:focus-visible {
-  outline: 2px solid var(--landing-primary);
+  outline: 2px solid var(--color-spark-blue);
   outline-offset: 3px;
 }
 
 .heatmap {
   display: grid;
-  width: max-content;
-  grid-template-rows: repeat(7, 11px);
-  grid-auto-columns: 11px;
+  width: 100%;
+  grid-template-rows: repeat(7, var(--heatmap-cell));
+  grid-auto-columns: var(--heatmap-cell);
   grid-auto-flow: column;
-  gap: 3px;
+  gap: var(--heatmap-gap);
 }
 
 .heatmap__cell,
 .heatmap__blank {
   display: block;
-  width: 11px;
-  height: 11px;
+  width: var(--heatmap-cell);
+  height: var(--heatmap-cell);
   border-radius: 2px;
 }
 
-.heatmap__cell--0 { background: var(--color-pebble); }
-.heatmap__cell--1 { background: #c8e6cc; }
-.heatmap__cell--2 { background: #91cc98; }
-.heatmap__cell--3 { background: #50aa62; }
-.heatmap__cell--4 { background: #24883d; }
+.heatmap__cell--0 { background: color-mix(in srgb, var(--color-faded-gray) 35%, var(--color-paper-white)); }
+.heatmap__cell--1 { background: var(--color-storybook-green); }
+.heatmap__cell--2 { background: var(--color-fresh-leaf); }
+.heatmap__cell--3 { background: var(--color-eager-green); }
+.heatmap__cell--4 { background: color-mix(in srgb, var(--color-eager-green) 72%, var(--color-night-ink)); }
 .heatmap__cell--future {
   background: transparent;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-pebble) 70%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-faded-gray) 55%, transparent);
 }
 
 .heatmap__cell--skeleton {
-  background: var(--color-pebble);
+  background: color-mix(in srgb, var(--color-faded-gray) 28%, var(--color-paper-white));
 }
 
 .heatmap-legend {
@@ -412,8 +531,13 @@ watch(
   justify-content: flex-end;
   gap: 4px;
   margin-top: 0.75rem;
-  color: var(--landing-muted);
+  color: var(--color-pencil-gray);
   font-size: 0.625rem;
+}
+
+.heatmap-legend .heatmap__cell {
+  --heatmap-cell: 11px;
+  flex: none;
 }
 
 .heatmap-legend i {
@@ -429,12 +553,22 @@ watch(
   border-radius: 4px;
   background: linear-gradient(
     90deg,
-    var(--color-pebble) 25%,
-    color-mix(in srgb, var(--color-frost) 70%, var(--color-pebble)) 50%,
-    var(--color-pebble) 75%
+    color-mix(in srgb, currentColor 18%, transparent) 25%,
+    color-mix(in srgb, currentColor 32%, transparent) 50%,
+    color-mix(in srgb, currentColor 18%, transparent) 75%
   );
   background-size: 200% 100%;
   animation: duolingo-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.duolingo-stats__metric--green .duolingo-skeleton,
+.duolingo-stats__metric--blue .duolingo-skeleton,
+.duolingo-stats__metric--ink .duolingo-skeleton {
+  color: var(--color-paper-white);
+}
+
+.duolingo-stats__metric--leaf .duolingo-skeleton {
+  color: var(--color-night-ink);
 }
 
 .duolingo-skeleton--label {
@@ -489,16 +623,7 @@ watch(
 
   .duolingo-stats__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .duolingo-stats__metrics > div:nth-child(3) {
-    border-left: 0;
-    padding-left: 0;
-    border-top: 1px solid var(--color-pebble);
-  }
-
-  .duolingo-stats__metrics > div:nth-child(4) {
-    border-top: 1px solid var(--color-pebble);
+    gap: 0.5rem;
   }
 
   .duolingo-stats__languages {
@@ -517,7 +642,7 @@ watch(
 
   .duolingo-skeleton {
     animation: none;
-    background: var(--color-pebble);
+    background: color-mix(in srgb, currentColor 22%, transparent);
   }
 }
 </style>
