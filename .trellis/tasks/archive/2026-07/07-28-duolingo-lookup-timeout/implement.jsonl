@@ -1,0 +1,4 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/backend/index.md", "reason": "Backend pre-dev checklist and guideline index"}
+{"file": ".trellis/spec/backend/backend/duolingo-guidelines.md", "reason": "Duolingo HTTP/cache/error contract to preserve and update"}
+{"file": ".trellis/tasks/archive/2026-07/07-27-landing-duolingo-stats/research/duodash-data-sources.md", "reason": "Upstream endpoints and lookup auth evidence"}
