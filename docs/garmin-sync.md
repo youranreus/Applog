@@ -10,7 +10,7 @@ Garmin 接入由独立 Python worker 完成。生产环境默认在 Linux 服务
 - 与 NestJS 使用同一 MySQL 数据库
 - 专用的低权限系统用户，例如 `applog`
 
-worker 需要以下环境变量：
+worker 默认与 NestJS 共用 `packages/backend/.env`。在现有文件中追加 Garmin 专用配置即可；MySQL 配置直接复用：
 
 - `MYSQL_SERVER`、`MYSQL_PORT`、`MYSQL_USER`、`MYSQL_PASSWORD`、`MYSQL_DATABASE`
 - `GARMIN_TOKEN_ENCRYPTION_KEY`：32 字节随机密钥的 Base64 文本
@@ -22,7 +22,9 @@ worker 需要以下环境变量：
 openssl rand -base64 32
 ```
 
-密钥只进入服务器受控环境和可信的首次认证环境，不写入数据库、仓库、日志或前端配置。生产环境建议把变量存放在 `/etc/applog/garmin-sync.env`，文件属主设为 `root:applog`，权限设为 `0640`：
+密钥只进入服务器受控环境和可信的首次认证环境，不写入数据库、仓库、日志或前端配置。生产环境中的 `packages/backend/.env` 应只允许部署用户和 `applog` 组读取，例如权限设为 `0640`。
+
+worker 启动器默认按仓库结构定位该文件；如果部署时配置文件在其他位置，可用 `GARMIN_ENV_FILE` 指定绝对路径。已经由 systemd、容器或 shell 注入的环境变量优先于 `.env` 中的同名值。
 
 ```ini
 MYSQL_SERVER=127.0.0.1
@@ -49,7 +51,13 @@ GARMIN_IS_CN=true
 
    每次发布包含 worker 变更时，重新执行最后一条 `pip install`，并增加 `--upgrade`。
 
-3. 安装 `/etc/systemd/system/applog-garmin-sync.service`：
+3. 确认启动器可执行：
+
+   ```bash
+   chmod +x /opt/applog/current/workers/garmin-sync/start-worker
+   ```
+
+4. 安装 `/etc/systemd/system/applog-garmin-sync.service`：
 
    ```ini
    [Unit]
@@ -62,8 +70,8 @@ GARMIN_IS_CN=true
    User=applog
    Group=applog
    WorkingDirectory=/opt/applog/current/workers/garmin-sync
-   EnvironmentFile=/etc/applog/garmin-sync.env
-   ExecStart=/opt/applog/venvs/garmin-sync/bin/python -c "from garmin_sync.handler import handler; handler({}, None)"
+   Environment=GARMIN_PYTHON_BIN=/opt/applog/venvs/garmin-sync/bin/python
+   ExecStart=/opt/applog/current/workers/garmin-sync/start-worker sync
    TimeoutStartSec=5min
    NoNewPrivileges=true
    PrivateTmp=true
@@ -74,7 +82,7 @@ GARMIN_IS_CN=true
    WantedBy=multi-user.target
    ```
 
-4. 安装 `/etc/systemd/system/applog-garmin-sync.timer`。首次验证前不要启动 timer：
+5. 安装 `/etc/systemd/system/applog-garmin-sync.timer`。首次验证前不要启动 timer：
 
    ```ini
    [Unit]
@@ -91,13 +99,13 @@ GARMIN_IS_CN=true
    WantedBy=timers.target
    ```
 
-5. 重新加载 systemd 配置：
+6. 重新加载 systemd 配置：
 
    ```bash
    sudo systemctl daemon-reload
    ```
 
-6. 在可信终端完成一次交互式 Garmin 登录。使用 transient service 可以复用生产环境变量，同时保留邮箱、密码和 MFA 的交互输入：
+7. 在可信终端完成一次交互式 Garmin 登录。使用 transient service 可以复用正式 worker 的用户和 Python 环境，同时保留邮箱、密码和 MFA 的交互输入：
 
    ```bash
    sudo systemd-run --pty --wait --collect \
@@ -105,13 +113,13 @@ GARMIN_IS_CN=true
      --property=User=applog \
      --property=Group=applog \
      --property=WorkingDirectory=/opt/applog/current/workers/garmin-sync \
-     --property=EnvironmentFile=/etc/applog/garmin-sync.env \
-     /opt/applog/venvs/garmin-sync/bin/python -m garmin_sync.provision
+     /usr/bin/env GARMIN_PYTHON_BIN=/opt/applog/venvs/garmin-sync/bin/python \
+     /opt/applog/current/workers/garmin-sync/start-worker provision
    ```
 
    CLI 临时读取 Garmin 邮箱、密码和 MFA 验证码；成功后只把 `client.dumps()` 产生的 token JSON 以 AES-256-GCM 加密写入 MySQL。密码与 MFA 不会持久化。
 
-7. 手动运行一次 worker，并检查状态、日志、数据库快照和公开 `GET /garmin/stats`：
+8. 手动运行一次 worker，并检查状态、日志、数据库快照和公开 `GET /garmin/stats`：
 
    ```bash
    sudo systemctl start applog-garmin-sync.service
@@ -119,7 +127,7 @@ GARMIN_IS_CN=true
    sudo journalctl -u applog-garmin-sync.service -n 100 --no-pager
    ```
 
-8. 验证通过后启用每 30 分钟一次的 timer：
+9. 验证通过后启用每 30 分钟一次的 timer：
 
    ```bash
    sudo systemctl enable --now applog-garmin-sync.timer
@@ -163,7 +171,7 @@ sudo systemctl enable --now applog-garmin-sync.timer
 ## 加密密钥轮换
 
 1. 停用 timer。
-2. 生成新密钥并更新 `/etc/applog/garmin-sync.env`。
+2. 生成新密钥并更新 `packages/backend/.env`。
 3. 使用同一新密钥重新运行 provision，覆盖数据库中的旧加密信封。
 4. 手动启动 service 并检查公开 API。
 5. 验证通过后恢复 timer。

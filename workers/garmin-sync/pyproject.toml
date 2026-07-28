@@ -7,6 +7,7 @@ dependencies = [
   "cryptography==45.0.7",
   "garminconnect==0.3.7",
   "PyMySQL==1.1.2",
+  "python-dotenv==1.2.2",
 ]
 
 [project.optional-dependencies]

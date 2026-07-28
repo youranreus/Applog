@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+worker_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+project_dir="$(cd -- "${worker_dir}/../.." && pwd)"
+env_file="${GARMIN_ENV_FILE:-${project_dir}/packages/backend/.env}"
+python_bin="${GARMIN_PYTHON_BIN:-${worker_dir}/.venv/bin/python}"
+
+if [[ ! -f "${env_file}" ]]; then
+  echo "Garmin environment file not found: ${env_file}" >&2
+  exit 1
+fi
+
+if [[ ! -x "${python_bin}" ]]; then
+  echo "Garmin Python executable not found: ${python_bin}" >&2
+  echo "Set GARMIN_PYTHON_BIN to the worker virtualenv Python path." >&2
+  exit 1
+fi
+
+if [[ $# -eq 0 ]]; then
+  set -- sync
+fi
+
+exec "${python_bin}" -m garmin_sync.cli --env-file "${env_file}" "$@"
