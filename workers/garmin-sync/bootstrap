@@ -132,15 +132,30 @@ fi
 venv_python="${venv_dir}/bin/python"
 if ! "${runuser_bin}" -u "${service_user}" -- \
   "${venv_python}" -m pip --version >/dev/null 2>&1; then
-  echo "Garmin bootstrap: pip is missing from ${venv_dir}; repairing it with ensurepip."
+  echo "Garmin bootstrap: pip is missing from ${venv_dir}; repairing it."
+  if "${runuser_bin}" -u "${service_user}" -- \
+    "${venv_python}" -m ensurepip --version >/dev/null 2>&1; then
+    if ! "${runuser_bin}" -u "${service_user}" -- \
+      "${venv_python}" -m ensurepip --upgrade; then
+      echo "Garmin bootstrap: ensurepip failed; trying the bootstrap Python's pip."
+    fi
+  fi
   if ! "${runuser_bin}" -u "${service_user}" -- \
-    "${venv_python}" -m ensurepip --upgrade; then
-    fail "pip is unavailable in ${venv_dir}; ensure ${bootstrap_python} provides ensurepip (or install the matching Python venv package), then rerun bootstrap"
+    "${venv_python}" -m pip --version >/dev/null 2>&1; then
+    echo "Garmin bootstrap: ensurepip did not provide pip; using the bootstrap Python's pip."
+    "${runuser_bin}" -u "${service_user}" -- \
+      "${bootstrap_python}" -m pip --version >/dev/null 2>&1 || \
+      fail "neither ensurepip nor pip is available from ${bootstrap_python}"
+    if ! "${runuser_bin}" -u "${service_user}" -- \
+      "${bootstrap_python}" -m pip --python "${venv_dir}" \
+      install --upgrade pip; then
+      fail "could not install pip into ${venv_dir}; bootstrap Python pip 22.3 or newer is required"
+    fi
   fi
 fi
 "${runuser_bin}" -u "${service_user}" -- \
   "${venv_python}" -m pip --version >/dev/null 2>&1 || \
-  fail "pip is still unavailable in ${venv_dir} after ensurepip"
+  fail "pip is still unavailable in ${venv_dir} after repair"
 "${runuser_bin}" -u "${service_user}" -- \
   "${venv_python}" -m pip install --upgrade "${worker_dir}"
 
