@@ -25,15 +25,15 @@ class MySQLRepository:
 
     @classmethod
     def from_environment(cls, encryption_key: bytes) -> "MySQLRepository":
-        """Build a repository from the same MYSQL_* settings as NestJS."""
+        """Build a repository from the Garmin-specific MySQL settings."""
         import pymysql
 
         connection = pymysql.connect(
-            host=os.environ["MYSQL_SERVER"],
-            port=int(os.getenv("MYSQL_PORT", "3306")),
-            user=os.environ["MYSQL_USER"],
-            password=os.environ["MYSQL_PASSWORD"],
-            database=os.environ["MYSQL_DATABASE"],
+            host=os.environ["GARMIN_MYSQL_SERVER"],
+            port=int(os.getenv("GARMIN_MYSQL_PORT", "3306")),
+            user=os.environ["GARMIN_MYSQL_USER"],
+            password=os.environ["GARMIN_MYSQL_PASSWORD"],
+            database=os.environ["GARMIN_MYSQL_DATABASE"],
             charset="utf8mb4",
             autocommit=True,
         )

@@ -10,9 +10,9 @@ Garmin 接入由独立 Python worker 完成。生产环境默认在 Linux 服务
 - 与 NestJS 使用同一 MySQL 数据库
 - 专用的低权限系统用户，例如 `applog`
 
-worker 默认与 NestJS 共用 `packages/backend` 下的环境配置文件。在当前生效的高优先级文件（例如 `.env.development.local`）中追加 Garmin 专用配置即可；MySQL 配置直接复用：
+worker 默认从 NestJS 的 `packages/backend` 目录加载环境配置文件，但使用独立的 Garmin MySQL 连接变量。在当前生效的高优先级文件（例如 `.env.development.local`）中追加：
 
-- `MYSQL_SERVER`、`MYSQL_PORT`、`MYSQL_USER`、`MYSQL_PASSWORD`、`MYSQL_DATABASE`
+- `GARMIN_MYSQL_SERVER`、`GARMIN_MYSQL_PORT`、`GARMIN_MYSQL_USER`、`GARMIN_MYSQL_PASSWORD`、`GARMIN_MYSQL_DATABASE`
 - `GARMIN_TOKEN_ENCRYPTION_KEY`：32 字节随机密钥的 Base64 文本
 - `GARMIN_IS_CN`：Garmin 中国区账号设为 `true`，国际区设为 `false`
 
@@ -37,11 +37,11 @@ worker 启动器默认按仓库结构定位 `packages/backend`，并使用与 Ne
 前面的文件已经提供同名变量时，后面的文件不会覆盖它；systemd、容器或 shell 显式注入的环境变量又高于所有 `.env` 文件。如果部署时配置目录在其他位置，可用 `GARMIN_ENV_DIR` 或注册参数 `--env-dir` 指定绝对路径。`GARMIN_ENV_FILE` / `--env-file` 会改为只读取一个明确文件，通常不建议在标准部署中使用。
 
 ```ini
-MYSQL_SERVER=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_USER=applog
-MYSQL_PASSWORD=replace-with-database-password
-MYSQL_DATABASE=applog
+GARMIN_MYSQL_SERVER=127.0.0.1
+GARMIN_MYSQL_PORT=3306
+GARMIN_MYSQL_USER=applog_garmin
+GARMIN_MYSQL_PASSWORD=replace-with-database-password
+GARMIN_MYSQL_DATABASE=applog
 GARMIN_TOKEN_ENCRYPTION_KEY=replace-with-base64-key
 GARMIN_IS_CN=true
 ```
