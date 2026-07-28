@@ -516,3 +516,34 @@ Duolingo Client 超时调至 15s、timeout 重试 1 次、username→userId 缓�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 18: 完成 Garmin 运动数据接入与服务器部署
+
+**Date**: 2026-07-28
+**Task**: 完成 Garmin 运动数据接入与服务器部署
+**Branch**: `master`
+
+### Summary
+
+完成 Garmin 公开活动同步、抽象全程路线、Landing 展示及 systemd 运维；生产验证累计 272、公开快照 114、页面展示正常。修复独立 MySQL 配置、Python 3.13 venv/pip bootstrap 与 DATETIME(3) reconcile 精度问题。Garmin、后端、worker 构建测试通过；记录一项任务开始前已存在的评论前端源码断言失败。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e799029` | (see git log) |
+| `8be7aa1` | (see git log) |
+| `17c5a29` | (see git log) |
+| `b10fa7b` | (see git log) |
+| `06a49ba` | (see git log) |
+| `8c2751d` | (see git log) |
+| `38798ba` | (see git log) |
+| `52060f7` | (see git log) |
+| `c4d1d63` | (see git log) |
+| `d967104` | (see git log) |
+| `9a58fb4` | (see git log) |
+
+### Status
+
+[OK] **Completed**

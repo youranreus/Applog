@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 17
+- **Total Sessions**: 18
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~518 | Active |
+| `journal-1.md` | ~549 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 18 | 2026-07-28 | 完成 Garmin 运动数据接入与服务器部署 | `e799029`, `8be7aa1`, `17c5a29`, `b10fa7b`, `06a49ba`, `8c2751d`, `38798ba`, `52060f7`, `c4d1d63`, `d967104`, `9a58fb4` | `master` |
 | 17 | 2026-07-28 | 修复 Duolingo lookup 超时并调整 Landing 顺序 | `8db5ab0`, `71adf78` | `master` |
 | 16 | 2026-07-28 | Landing 多邻国学习统计 | `5b1866b`, `e8eae7d`, `1ce7ec9` | `master` |
 | 15 | 2026-07-27 | 对齐后台评论管理表格样式 | `ae11764`, `665a46b` | `master` |
