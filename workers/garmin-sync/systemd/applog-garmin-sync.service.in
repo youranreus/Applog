@@ -9,6 +9,7 @@ User=@SERVICE_USER@
 Group=@SERVICE_GROUP@
 WorkingDirectory=@WORKER_DIR@
 Environment="GARMIN_PYTHON_BIN=@PYTHON_BIN@"
+Environment="GARMIN_ENV_DIR=@ENV_DIR@"
 Environment="GARMIN_ENV_FILE=@ENV_FILE@"
 ExecStart=@WORKER_DIR@/start-worker sync
 TimeoutStartSec=5min

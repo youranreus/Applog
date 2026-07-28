@@ -13,7 +13,8 @@ template_dir="${worker_dir}/systemd"
 usage() {
   cat <<'EOF'
 Usage:
-  manage-timer register [--user USER] [--python PATH] [--env-file PATH]
+  manage-timer register [--user USER] [--python PATH] [--env-dir PATH]
+                        [--env-file PATH]
   manage-timer enable
   manage-timer disable
   manage-timer status
@@ -56,7 +57,8 @@ systemctl_command() {
 register_units() {
   local service_user="${GARMIN_SERVICE_USER:-applog}"
   local python_bin="${GARMIN_PYTHON_BIN:-${worker_dir}/.venv/bin/python}"
-  local env_file="${GARMIN_ENV_FILE:-${project_dir}/packages/backend/.env}"
+  local env_dir="${GARMIN_ENV_DIR:-${project_dir}/packages/backend}"
+  local env_file="${GARMIN_ENV_FILE:-}"
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -75,6 +77,12 @@ register_units() {
         env_file="$2"
         shift 2
         ;;
+      --env-dir)
+        [[ $# -ge 2 ]] || fail "--env-dir requires a path"
+        env_dir="$2"
+        env_file=""
+        shift 2
+        ;;
       *) fail "unknown register option: $1" ;;
     esac
   done
@@ -89,10 +97,15 @@ register_units() {
     fail "invalid service group: ${service_group}"
   validate_unit_path "worker directory" "${worker_dir}"
   validate_unit_path "Python executable" "${python_bin}"
-  validate_unit_path "environment file" "${env_file}"
   [[ -x "${worker_dir}/start-worker" ]] || fail "start-worker is not executable"
   [[ -x "${python_bin}" ]] || fail "Python executable not found: ${python_bin}"
-  [[ -f "${env_file}" ]] || fail "environment file not found: ${env_file}"
+  if [[ -n "${env_file}" ]]; then
+    validate_unit_path "environment file" "${env_file}"
+    [[ -f "${env_file}" ]] || fail "environment file not found: ${env_file}"
+  else
+    validate_unit_path "environment directory" "${env_dir}"
+    [[ -d "${env_dir}" ]] || fail "environment directory not found: ${env_dir}"
+  fi
   [[ -f "${template_dir}/${service_unit}.in" ]] || fail "service template missing"
   [[ -f "${template_dir}/${timer_unit}" ]] || fail "timer template missing"
 
@@ -102,6 +115,7 @@ register_units() {
   sed \
     -e "s|@WORKER_DIR@|${worker_dir}|g" \
     -e "s|@PYTHON_BIN@|${python_bin}|g" \
+    -e "s|@ENV_DIR@|${env_dir}|g" \
     -e "s|@ENV_FILE@|${env_file}|g" \
     -e "s|@SERVICE_USER@|${service_user}|g" \
     -e "s|@SERVICE_GROUP@|${service_group}|g" \

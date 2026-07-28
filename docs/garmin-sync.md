@@ -10,7 +10,7 @@ Garmin 接入由独立 Python worker 完成。生产环境默认在 Linux 服务
 - 与 NestJS 使用同一 MySQL 数据库
 - 专用的低权限系统用户，例如 `applog`
 
-worker 默认与 NestJS 共用 `packages/backend/.env`。在现有文件中追加 Garmin 专用配置即可；MySQL 配置直接复用：
+worker 默认与 NestJS 共用 `packages/backend` 下的环境配置文件。在当前生效的高优先级文件（例如 `.env.development.local`）中追加 Garmin 专用配置即可；MySQL 配置直接复用：
 
 - `MYSQL_SERVER`、`MYSQL_PORT`、`MYSQL_USER`、`MYSQL_PASSWORD`、`MYSQL_DATABASE`
 - `GARMIN_TOKEN_ENCRYPTION_KEY`：32 字节随机密钥的 Base64 文本
@@ -22,9 +22,19 @@ worker 默认与 NestJS 共用 `packages/backend/.env`。在现有文件中追�
 openssl rand -base64 32
 ```
 
-密钥只进入服务器受控环境和可信的首次认证环境，不写入数据库、仓库、日志或前端配置。生产环境中的 `packages/backend/.env` 应只允许部署用户和 `applog` 组读取，例如权限设为 `0640`。
+密钥只进入服务器受控环境和可信的首次认证环境，不写入数据库、仓库、日志或前端配置。生产环境中实际生效的 `.env*` 文件应只允许部署用户和 worker 运行组读取，例如权限设为 `0640`。
 
-worker 启动器默认按仓库结构定位该文件；如果部署时配置文件在其他位置，可用 `GARMIN_ENV_FILE` 指定绝对路径。已经由 systemd、容器或 shell 注入的环境变量优先于 `.env` 中的同名值。
+worker 启动器默认按仓库结构定位 `packages/backend`，并使用与 NestJS 相同的从高到低优先级：
+
+```text
+.env.production.local
+.env.development.local
+.env.production
+.env.development
+.env
+```
+
+前面的文件已经提供同名变量时，后面的文件不会覆盖它；systemd、容器或 shell 显式注入的环境变量又高于所有 `.env` 文件。如果部署时配置目录在其他位置，可用 `GARMIN_ENV_DIR` 或注册参数 `--env-dir` 指定绝对路径。`GARMIN_ENV_FILE` / `--env-file` 会改为只读取一个明确文件，通常不建议在标准部署中使用。
 
 ```ini
 MYSQL_SERVER=127.0.0.1
@@ -58,7 +68,7 @@ GARMIN_IS_CN=true
    chmod +x /opt/applog/current/workers/garmin-sync/manage-timer
    ```
 
-4. 注册 systemd service 和 timer。注册操作会自动写入当前项目路径、Python 路径和共享 `.env` 路径，但不会启动 timer：
+4. 注册 systemd service 和 timer。注册操作会自动写入当前项目路径、Python 路径和共享环境配置目录，但不会启动 timer：
 
    ```bash
    cd /opt/applog/current/workers/garmin-sync
@@ -67,7 +77,7 @@ GARMIN_IS_CN=true
      --python /opt/applog/venvs/garmin-sync/bin/python
    ```
 
-   `--user` 指定实际运行 worker 的低权限系统用户，unit 会自动使用该用户的主组。如果 `.env` 不在默认的 `/opt/applog/current/packages/backend/.env`，追加 `--env-file /absolute/path/to/.env`。重复执行 `register` 会幂等更新 unit 配置并执行 `systemctl daemon-reload`。
+   `--user` 指定实际运行 worker 的低权限系统用户，unit 会自动使用该用户的主组。如果配置目录不在默认的 `/opt/applog/current/packages/backend`，追加 `--env-dir /absolute/path/to/backend-config`。重复执行 `register` 会幂等更新 unit 配置并执行 `systemctl daemon-reload`。
 
 5. 在可信终端完成一次交互式 Garmin 登录。使用 transient service 可以复用正式 worker 的用户和 Python 环境，同时保留邮箱、密码和 MFA 的交互输入：
 
@@ -137,7 +147,7 @@ sudo ./manage-timer enable
 ## 加密密钥轮换
 
 1. 停用 timer。
-2. 生成新密钥并更新 `packages/backend/.env`。
+2. 生成新密钥并更新当前生效的高优先级配置文件。
 3. 使用同一新密钥重新运行 provision，覆盖数据库中的旧加密信封。
 4. 手动启动 service 并检查公开 API。
 5. 验证通过后恢复 timer。
