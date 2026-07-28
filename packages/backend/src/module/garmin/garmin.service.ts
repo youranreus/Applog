@@ -48,6 +48,8 @@ export class GarminService {
           date: activity.startedAt.toISOString(),
           distanceMeters: activity.distanceMeters,
           durationSeconds: activity.durationSeconds,
+          calories: activity.calories,
+          locationName: activity.locationName,
           deviceSource: activity.deviceSource,
           route:
             activity.routePathData && activity.routeViewBox

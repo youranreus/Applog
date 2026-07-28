@@ -3,16 +3,28 @@ import { describe, it } from 'node:test'
 import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
-const { formatActivityDate, formatDistance, formatDuration, getRouteEndpoints } = await jiti.import(
-  '../src/pages/Landing/components/LandingGarminStats/utils.ts',
-)
+const {
+  formatActivityDate,
+  formatCalories,
+  formatDistance,
+  formatDuration,
+  getRouteEndpoints,
+} = await jiti.import('../src/pages/Landing/components/LandingGarminStats/utils.ts')
 
 describe('Landing Garmin view utils', () => {
-  it('格式化距离和时长，不伪造缺失距离', () => {
-    assert.equal(formatDistance(null), '距离暂无')
+  it('格式化距离和时长，缺失或非法距离返回 null 供 UI 省略', () => {
+    assert.equal(formatDistance(null), null)
+    assert.equal(formatDistance(-1), null)
+    assert.equal(formatDistance(Number.NaN), null)
     assert.equal(formatDistance(5_123), '5.12 km')
     assert.equal(formatDuration(59), '0:59')
     assert.equal(formatDuration(3_661), '1:01:01')
+  })
+
+  it('格式化消耗热量，非法值返回 null', () => {
+    assert.equal(formatCalories(null), null)
+    assert.equal(formatCalories(-1), null)
+    assert.equal(formatCalories(342.6), '343 kcal')
   })
 
   it('按上海时区展示活动日期', () => {

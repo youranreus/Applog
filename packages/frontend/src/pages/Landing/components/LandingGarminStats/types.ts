@@ -17,11 +17,13 @@ export interface IRouteEndpoints {
 
 export interface IGarminActivityView {
   key: string
+  type: string
   typeDisplay: string
   dateText: string
-  distanceText: string
+  locationText: string | null
+  distanceText: string | null
+  caloriesText: string | null
   durationText: string
-  sourceText: string
   route: {
     pathData: string
     viewBox: string

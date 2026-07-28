@@ -143,11 +143,12 @@ class MySQLRepository:
                         INSERT INTO garmin_activity_snapshot
                           (sourceActivityId, activityType, activityTypeDisplay,
                            startedAt,
-                           distanceMeters, durationSeconds, deviceSource, routePathData,
+                           distanceMeters, durationSeconds, calories, locationName,
+                           deviceSource, routePathData,
                            routeViewBox, routeProcessed, published,
                            sourceUpdatedAt, lastSeenAt,
                            createdAt, updatedAt)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                                 TRUE, %s, %s,
                                 CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
                         ON DUPLICATE KEY UPDATE
@@ -156,6 +157,8 @@ class MySQLRepository:
                           startedAt = VALUES(startedAt),
                           distanceMeters = VALUES(distanceMeters),
                           durationSeconds = VALUES(durationSeconds),
+                          calories = VALUES(calories),
+                          locationName = VALUES(locationName),
                           deviceSource = VALUES(deviceSource),
                           routePathData = COALESCE(
                             VALUES(routePathData), routePathData
@@ -174,6 +177,8 @@ class MySQLRepository:
                             _mysql_datetime(snapshot.started_at),
                             snapshot.distance_meters,
                             snapshot.duration_seconds,
+                            snapshot.calories,
+                            snapshot.location_name,
                             snapshot.device_source,
                             snapshot.route_path_data,
                             snapshot.route_view_box,

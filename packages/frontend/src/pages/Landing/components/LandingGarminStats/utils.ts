@@ -13,10 +13,24 @@ export function formatActivityDate(value: string): string {
   }).format(new Date(value))
 }
 
-/** 格式化活动距离；null 明确表示无可靠距离。 */
-export function formatDistance(meters: number | null): string {
-  if (meters === null) return '距离暂无'
+/**
+ * 格式化活动距离；无可靠距离时返回 null，由 UI 省略该项。
+ * @param meters - 距离（米），缺失为 null
+ * @returns 展示文案或 null
+ */
+export function formatDistance(meters: number | null): string | null {
+  if (meters === null || !Number.isFinite(meters) || meters < 0) return null
   return `${(meters / 1000).toFixed(2)} km`
+}
+
+/**
+ * 格式化消耗热量；无可靠数据时返回 null，由 UI 省略该项。
+ * @param calories - 卡路里，缺失为 null
+ * @returns 展示文案或 null
+ */
+export function formatCalories(calories: number | null): string | null {
+  if (calories === null || !Number.isFinite(calories) || calories < 0) return null
+  return `${Math.round(calories)} kcal`
 }
 
 /** 格式化活动时长为 H:MM:SS 或 M:SS。 */

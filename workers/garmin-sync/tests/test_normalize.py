@@ -9,6 +9,8 @@ PUBLIC_ACTIVITY = {
     "startTimeGMT": "2026-07-28 06:30:00",
     "distance": 5_123.4,
     "duration": 1_845.7,
+    "calories": 342.6,
+    "locationName": "深圳湾公园",
     "deviceModel": "Forerunner 265",
 }
 
@@ -24,7 +26,63 @@ class NormalizeActivityTests(unittest.TestCase):
         self.assertEqual(snapshot.started_at.isoformat(), "2026-07-28T06:30:00")
         self.assertEqual(snapshot.distance_meters, 5_123.4)
         self.assertEqual(snapshot.duration_seconds, 1_846)
+        self.assertEqual(snapshot.calories, 343)
+        self.assertEqual(snapshot.location_name, "深圳湾公园")
         self.assertEqual(snapshot.device_source, "Forerunner 265")
+
+    def test_maps_required_chinese_type_labels(self) -> None:
+        for type_key, label in [
+            ("elliptical", "椭圆机"),
+            ("track_running", "操场跑步"),
+            ("soccer", "足球"),
+            ("indoor_cycling", "室内骑行"),
+            ("strength_training", "力量训练"),
+        ]:
+            activity = {
+                **PUBLIC_ACTIVITY,
+                "activityType": {"typeKey": type_key},
+            }
+            snapshot = normalize_activity(activity)
+            self.assertIsNotNone(snapshot)
+            assert snapshot is not None
+            self.assertEqual(snapshot.activity_type, type_key)
+            self.assertEqual(snapshot.activity_type_display, label)
+
+    def test_unknown_type_falls_back_to_readable_label(self) -> None:
+        activity = {
+            **PUBLIC_ACTIVITY,
+            "activityType": {"typeKey": "custom_workout"},
+        }
+        snapshot = normalize_activity(activity)
+        self.assertIsNotNone(snapshot)
+        assert snapshot is not None
+        self.assertEqual(snapshot.activity_type_display, "custom workout")
+
+    def test_calories_reject_invalid_values(self) -> None:
+        for calories in [-1, float("nan"), float("inf"), "120", None]:
+            activity = {**PUBLIC_ACTIVITY, "calories": calories}
+            snapshot = normalize_activity(activity)
+            self.assertIsNotNone(snapshot)
+            assert snapshot is not None
+            self.assertIsNone(snapshot.calories)
+
+    def test_location_name_sanitization(self) -> None:
+        cases = [
+            ({"locationName": "  南山海岸线  "}, "南山海岸线"),
+            ({"locationName": "", "location": "市民中心"}, "市民中心"),
+            ({"locationName": "22.5, 114.0"}, None),
+            ({"locationName": "lat 22.5 lon 114.0"}, None),
+            ({"locationName": "a" * 80}, "a" * 64),
+            ({"locationName": None, "location": {"name": "x"}}, None),
+        ]
+        for fields, expected in cases:
+            activity = {**PUBLIC_ACTIVITY}
+            activity.pop("locationName", None)
+            activity.update(fields)
+            snapshot = normalize_activity(activity)
+            self.assertIsNotNone(snapshot)
+            assert snapshot is not None
+            self.assertEqual(snapshot.location_name, expected)
 
     def test_unknown_or_private_visibility_fails_closed(self) -> None:
         for privacy in [None, {}, {"typeKey": "private"}, "public"]:

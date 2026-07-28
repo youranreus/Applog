@@ -14,6 +14,8 @@ class ActivitySnapshot:
     started_at: datetime
     distance_meters: float | None
     duration_seconds: int
+    calories: int | None
+    location_name: str | None
     device_source: str | None
     source_updated_at: datetime | None
     route_path_data: str | None = None

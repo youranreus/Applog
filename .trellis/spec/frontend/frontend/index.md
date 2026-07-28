@@ -24,6 +24,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] Visitor cursor changes follow the cross-layer [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md)
 - [ ] Comment UI, pending storage, or meme rendering changes follow the cross-layer [Comment Contract](../../backend/backend/comment-guidelines.md)
 - [ ] Duolingo Landing/config UI changes follow the cross-layer [Duolingo Contract](../../backend/backend/duolingo-guidelines.md)
+- [ ] Garmin Landing activity UI changes follow the cross-layer [Garmin Contract](../../backend/backend/garmin-guidelines.md)
 
 
 ---
@@ -41,6 +42,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 | [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Public-route cursor identity, polling, API, and rendering | Filled |
 | [Comment Contract](../../backend/backend/comment-guidelines.md) | Public trees, safe rendering, pending capability storage, and moderation | Filled |
 | [Duolingo Contract](../../backend/backend/duolingo-guidelines.md) | Public learning stats, admin secret form, heatmap semantics, and degradation | Filled |
+| [Garmin Contract](../../backend/backend/garmin-guidelines.md) | Landing activity cards, covers, optional metrics, and privacy bounds | Filled |
 
 ---
 

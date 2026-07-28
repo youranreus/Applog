@@ -50,6 +50,8 @@ describe('GarminService public landing snapshot', () => {
       ),
       distanceMeters: 5000 + index,
       durationSeconds: 1800 + index,
+      calories: 340 + index,
+      locationName: index === 0 ? '深圳湾公园' : null,
       deviceSource: 'Forerunner',
       routePathData: 'M 4 96 L 96 4',
       routeViewBox: '0 0 100 100',
@@ -76,11 +78,15 @@ describe('GarminService public landing snapshot', () => {
       date: '2026-07-28T06:00:00.000Z',
       distanceMeters: 5000,
       durationSeconds: 1800,
+      calories: 340,
+      locationName: '深圳湾公园',
       deviceSource: 'Forerunner',
       route: { pathData: 'M 4 96 L 96 4', viewBox: '0 0 100 100' },
     });
     assert.equal(JSON.stringify(result).includes('private-'), false);
     assert.equal(JSON.stringify(result).includes('latitude'), false);
+    assert.equal(JSON.stringify(result).includes('longitude'), false);
+    assert.equal(JSON.stringify(result).includes('sourceActivityId'), false);
   });
 
   it('同步失败或超过六小时仍返回最后快照，但标记 stale', async () => {

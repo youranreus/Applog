@@ -11,6 +11,8 @@ export interface IGarminLandingActivity {
   date: string;
   distanceMeters: number | null;
   durationSeconds: number;
+  calories: number | null;
+  locationName: string | null;
   deviceSource: string | null;
   route: IGarminRoutePreview | null;
 }

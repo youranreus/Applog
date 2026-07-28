@@ -33,6 +33,12 @@ export class GarminActivitySnapshotEntity {
   @Column({ type: 'int', unsigned: true, nullable: false })
   durationSeconds: number;
 
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  calories: number | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  locationName: string | null;
+
   @Column({ type: 'varchar', length: 128, nullable: true })
   deviceSource: string | null;
 

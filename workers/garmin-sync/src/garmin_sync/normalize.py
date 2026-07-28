@@ -1,6 +1,7 @@
 """Fail-closed normalization for unstable Garmin payloads."""
 
 import math
+import re
 from datetime import datetime
 from typing import Any
 from xml.etree import ElementTree
@@ -11,11 +12,35 @@ TYPE_LABELS = {
     "running": "跑步",
     "trail_running": "越野跑",
     "treadmill_running": "跑步机",
+    "track_running": "操场跑步",
+    "virtual_run": "虚拟跑",
+    "ultra_run": "超马",
     "cycling": "骑行",
+    "indoor_cycling": "室内骑行",
+    "mountain_biking": "山地骑行",
+    "gravel_cycling": "砾石骑行",
     "walking": "步行",
     "hiking": "徒步",
     "swimming": "游泳",
+    "open_water_swimming": "公开水域游泳",
+    "lap_swimming": "泳池游泳",
+    "elliptical": "椭圆机",
+    "soccer": "足球",
+    "strength_training": "力量训练",
+    "cardio": "有氧训练",
+    "yoga": "瑜伽",
 }
+
+_LOCATION_MAX_LENGTH = 64
+_COORDINATE_PAIR = re.compile(
+    r"(?:^|[\s,;/|])"
+    r"-?\d{1,3}(?:\.\d+)?\s*[,;/\s]\s*-?\d{1,3}(?:\.\d+)?"
+    r"(?:$|[\s,;/|])"
+)
+_COORDINATE_KEYWORD = re.compile(
+    r"(?:lat|lon|latitude|longitude)\s*[:=]?\s*-?\d",
+    re.IGNORECASE,
+)
 
 
 def _parse_datetime(value: object) -> datetime | None:
@@ -42,6 +67,33 @@ def _public(activity: dict[str, Any]) -> bool:
         and isinstance(privacy.get("typeKey"), str)
         and privacy["typeKey"].casefold() in {"public", "everyone"}
     )
+
+
+def _normalize_calories(value: object) -> int | None:
+    """Round finite non-negative calories; reject invalid values as null."""
+    number = _finite_number(value)
+    if number is None or number < 0:
+        return None
+    return round(number)
+
+
+def _normalize_location_name(activity: dict[str, Any]) -> str | None:
+    """Keep a short display location string; reject coordinate-like values."""
+    raw: object = None
+    for key in ("locationName", "location"):
+        candidate = activity.get(key)
+        if isinstance(candidate, str) and candidate.strip():
+            raw = candidate
+            break
+    if not isinstance(raw, str):
+        return None
+    cleaned = " ".join(raw.split())
+    if not cleaned:
+        return None
+    wrapped = f" {cleaned} "
+    if _COORDINATE_PAIR.search(wrapped) or _COORDINATE_KEYWORD.search(cleaned):
+        return None
+    return cleaned[:_LOCATION_MAX_LENGTH]
 
 
 def normalize_activity(activity: object) -> ActivitySnapshot | None:
@@ -80,6 +132,8 @@ def normalize_activity(activity: object) -> ActivitySnapshot | None:
         started_at=started_at,
         distance_meters=distance,
         duration_seconds=round(duration),
+        calories=_normalize_calories(activity.get("calories")),
+        location_name=_normalize_location_name(activity),
         device_source=device,
         source_updated_at=_parse_datetime(activity.get("lastUpdatedDate")),
     )
