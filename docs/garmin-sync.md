@@ -94,7 +94,7 @@ renderer；健康检查通过后用同目录临时文件和原子 `mv` 发布 ma
 恢复 timer。禁止在 timer 运行时先覆盖 live manifest，以免 worker 观察到
 “新 manifest + 旧 renderer”。
 
-当前固定工具链为 Martin `1.11.0`、`@protomaps/basemaps` `5.7.2` 与 PMTiles CLI `1.31.2`。地图包按月从明确的 Protomaps daily build 生成，不使用 `latest`。初始覆盖为大湾区高精度（z7–15，可在 renderer 内 overzoom）与全球 z0–6；区域外需要街区级细节时返回 `region_missing`，不会拉伸低精度数据冒充细节。
+当前固定工具链为 Martin `1.12.0`、`@protomaps/basemaps` `5.7.2` 与 PMTiles CLI `1.31.2`。地图包按月从明确的 Protomaps daily build 生成，不使用 `latest`。初始覆盖为大湾区高精度（z7–15，可在 renderer 内 overzoom）与全球 z0–6；区域外需要街区级细节时返回 `region_missing`，不会拉伸低精度数据冒充细节。
 
 Martin 静态渲染只在 Linux 上运行。激活前必须在部署机执行：
 

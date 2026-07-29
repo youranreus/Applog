@@ -41,7 +41,7 @@ def build_release(tmp_path, *, external_style=False, renderer_hash=None):
                 "releaseId": "release-1",
                 "styleId": "applog-light",
                 "styleVersion": "5.7.2",
-                "rendererVersion": "1.11.0",
+                "rendererVersion": "1.12.0",
                 "regions": [
                     {"id": "fixture", "bounds": [-1, -1, 1, 1], "maxZoom": 24}
                 ],

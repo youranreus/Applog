@@ -15,7 +15,7 @@ for (const key of ['releaseId', 'sourceBuildDate', 'sourceBuildUrl', 'sourceBuil
 if (manifest.styleId !== 'applog-light' || manifest.styleVersion !== '5.7.2') {
   throw new Error('unexpected style identity')
 }
-if (manifest.rendererVersion !== '1.11.0' || manifest.pmtilesCliVersion !== '1.31.2') {
+if (manifest.rendererVersion !== '1.12.0' || manifest.pmtilesCliVersion !== '1.31.2') {
   throw new Error('unexpected renderer toolchain')
 }
 

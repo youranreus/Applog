@@ -3,7 +3,7 @@
 ARG PMTILES_IMAGE=protomaps/go-pmtiles:v1.31.2
 ARG NODE_IMAGE=node:24.14.1-bookworm
 ARG GO_IMAGE=golang:1.25.6-bookworm
-ARG MARTIN_IMAGE=ghcr.io/maplibre/martin:1.11.0
+ARG MARTIN_IMAGE=ghcr.io/maplibre/martin:1.12.0
 
 FROM ${PMTILES_IMAGE} AS pmtiles
 
@@ -17,7 +17,7 @@ ARG PROTOMAPS_BUILD_URL
 ARG PROTOMAPS_BUILD_BLAKE3
 ARG RELEASE_ID
 ARG MARTIN_IMAGE_DIGEST=development-unverified
-ARG MARTIN_IMAGE=ghcr.io/maplibre/martin:1.11.0
+ARG MARTIN_IMAGE=ghcr.io/maplibre/martin:1.12.0
 ARG PMTILES_IMAGE=protomaps/go-pmtiles:v1.31.2
 ARG NODE_IMAGE=node:24.14.1-bookworm
 ARG GO_IMAGE=golang:1.25.6-bookworm
@@ -77,7 +77,7 @@ LABEL org.opencontainers.image.title="AppLog Garmin map renderer" \
       io.applog.maps.release-id="${RELEASE_ID}" \
       io.applog.maps.protomaps-build-date="${PROTOMAPS_BUILD_DATE}" \
       io.applog.maps.protomaps-build-blake3="${PROTOMAPS_BUILD_BLAKE3}" \
-      io.applog.maps.martin-version="1.11.0" \
+      io.applog.maps.martin-version="1.12.0" \
       io.applog.maps.pmtiles-version="1.31.2" \
       io.applog.maps.style-version="5.7.2" \
       io.applog.maps.attribution="© OpenStreetMap contributors" \

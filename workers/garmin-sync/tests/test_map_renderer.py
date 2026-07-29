@@ -23,7 +23,7 @@ def manifest_file(tmp_path):
                 "releaseId": "2026-07-test",
                 "styleId": "applog-light",
                 "styleVersion": "5.7.2",
-                "rendererVersion": "1.11.0",
+                "rendererVersion": "1.12.0",
                 "regions": [
                     {
                         "id": "public-fixture",

@@ -10,7 +10,7 @@ def test_dockerfile_is_pinned_and_bakes_the_release() -> None:
     assert "protomaps/go-pmtiles:v1.31.2" in dockerfile
     assert "COPY --from=pmtiles /go-pmtiles /usr/local/bin/pmtiles" in dockerfile
     assert "node:24.14.1-bookworm" in dockerfile
-    assert "ghcr.io/maplibre/martin:1.11.0" in dockerfile
+    assert "ghcr.io/maplibre/martin:1.12.0" in dockerfile
     assert "@protomaps/basemaps@5.7.2" in dockerfile
     assert "COPY --from=assets" in dockerfile
     assert "/opt/applog/maps/current" in dockerfile
@@ -62,7 +62,8 @@ def test_container_config_only_reads_baked_assets() -> None:
     assert "on_invalid: abort" in config
     assert "basemap: /opt/applog/maps/current/basemap.pmtiles" in config
     assert "- /opt/applog/maps/current/fonts" in config
-    assert "rendering: true" in config
+    assert "enabled: true" in config
+    assert "workers: 1" in config
     assert "applog-light: /opt/applog/maps/current/style.json" in config
     assert "http://" not in config
     assert "https://" not in config

@@ -5,7 +5,7 @@ set -euo pipefail
 readonly release_dir="${1:?release output directory is required}"
 readonly build_mode="${BUILD_MODE:-fixture}"
 readonly style_version="5.7.2"
-readonly renderer_version="1.11.0"
+readonly renderer_version="1.12.0"
 readonly fixture_id="public-victoria-park-20260728"
 
 fail() {

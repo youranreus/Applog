@@ -27,8 +27,8 @@ OCI digest. Never use `latest`, infer a bbox from private activities, or pass
 Garmin/database secrets as build arguments:
 
 ```bash
-docker pull ghcr.io/maplibre/martin:1.11.0
-MARTIN_DIGEST="$(docker image inspect ghcr.io/maplibre/martin:1.11.0 \
+docker pull ghcr.io/maplibre/martin:1.12.0
+MARTIN_DIGEST="$(docker image inspect ghcr.io/maplibre/martin:1.12.0 \
   --format '{{index .RepoDigests 0}}' | sed 's/.*@//')"
 
 # Resolve these three exact digest references from the approved registries.
@@ -144,7 +144,7 @@ external immutable release.
 
 Pinned toolchain:
 
-- Martin `1.11.0` (exact binary checksum or container digest required)
+- Martin `1.12.0` (exact binary checksum or container digest required)
 - `@protomaps/basemaps` `5.7.2`
 - PMTiles CLI `1.31.2`
 

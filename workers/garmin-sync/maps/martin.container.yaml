@@ -13,6 +13,8 @@ fonts:
   paths:
     - /opt/applog/maps/current/fonts
 styles:
-  rendering: true
+  rendering:
+    enabled: true
+    workers: 1
   sources:
     applog-light: /opt/applog/maps/current/style.json
