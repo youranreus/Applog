@@ -2,6 +2,7 @@ import { createAlova, type Method } from 'alova';
 import VueHook from 'alova/vue';
 import adapterFetch from 'alova/fetch';
 import type { IRestfulResponse } from '@/types/api';
+import { API_BASE_URL } from './api-url';
 import { getToken } from './token';
 
 /**
@@ -14,7 +15,7 @@ import { getToken } from './token';
  * - 当 code !== 0 时抛出异常
  */
 export const alovaInstance = createAlova({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000',
+  baseURL: API_BASE_URL,
   statesHook: VueHook,
   requestAdapter: adapterFetch(),
   /**

@@ -11,8 +11,22 @@ const {
   getRouteEndpoints,
   getGarminMetricGroups,
 } = await jiti.import('../src/pages/Landing/components/LandingGarminStats/utils.ts')
+const { resolveApiAssetUrl } = await jiti.import('../src/utils/api-url.ts')
 
 describe('Landing Garmin view utils', () => {
+  it('按 API base 解析媒体地址并保留已有绝对地址', () => {
+    const coverPath = '/garmin/covers/example.webp'
+    assert.equal(
+      resolveApiAssetUrl(coverPath, 'http://localhost:4000'),
+      'http://localhost:4000/garmin/covers/example.webp',
+    )
+    assert.equal(resolveApiAssetUrl(coverPath, '/api/'), '/api/garmin/covers/example.webp')
+    assert.equal(
+      resolveApiAssetUrl('https://cdn.example.com/example.webp', '/api'),
+      'https://cdn.example.com/example.webp',
+    )
+  })
+
   it('格式化距离和时长，缺失或非法距离返回 null 供 UI 省略', () => {
     assert.equal(formatDistance(null), null)
     assert.equal(formatDistance(-1), null)

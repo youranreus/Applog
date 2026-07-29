@@ -1,8 +1,14 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { resolveApiAssetUrl } from '@/utils/api-url'
 import ActivityTypeCover from './ActivityTypeCover.vue'
 import type { IGarminActivityView } from './types'
 
-defineProps<{ activity: IGarminActivityView }>()
+const props = defineProps<{ activity: IGarminActivityView }>()
+
+const coverUrl = computed(() =>
+  props.activity.cover ? resolveApiAssetUrl(props.activity.cover.url) : null,
+)
 </script>
 
 <template>
@@ -10,7 +16,7 @@ defineProps<{ activity: IGarminActivityView }>()
     <img
       v-if="activity.cover"
       class="garmin-cover__image"
-      :src="activity.cover.url"
+      :src="coverUrl ?? undefined"
       :width="activity.cover.width"
       :height="activity.cover.height"
       :alt="`${activity.typeDisplay}活动封面`"
