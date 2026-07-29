@@ -127,7 +127,13 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   matching `MYSQL_*` keys used by NestJS/FC.
 - Cover configuration uses `GARMIN_MAP_COVERS_ENABLED`, `GARMIN_MAP_PROVIDER`,
   `GARMIN_MAP_TILE_URL`, `GARMIN_MAP_ATTRIBUTION`, and an identifiable
-  `GARMIN_MAP_USER_AGENT`.
+  `GARMIN_MAP_USER_AGENT`. `GARMIN_MAP_ROUTE_PADDING_PIXELS` controls the
+  per-edge route margin in final cover pixels (default `72`); the renderer
+  applies it at 2x before downsampling. Provider, tile URL, and attribution
+  remain deployment-controlled and have no production defaults in source. A
+  remote provider is active only when all three values are present; partial
+  configuration uses the local fallback and must not invalidate an otherwise
+  current fallback cover on every invocation.
 - Activity-list pages are durably indexed before their list cursor advances.
 - `garmin_sync_stream_state.cursor` is a MySQL 5.7 reserved identifier. Every
   Python SQL reference must use `` `cursor` `` in `SELECT`, `INSERT`, update
@@ -151,6 +157,12 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 - Cover URLs are content-immutable: identical ETags skip writes; changed bytes
   receive a fresh random `coverId`, and the media row plus any existing snapshot
   reference are updated in one transaction before the new URL is returned.
+- If identical bytes are regenerated under a new provider or `renderVersion`, keep
+  the existing `coverId` and bytes but refresh that currentness metadata; otherwise
+  the route stays permanently stale and consumes the route budget every invocation.
+- A route cover counts as current only when both `renderVersion` and the configured
+  provider match. Renderer or provider changes must requeue route-point loading for
+  the newest public candidates instead of treating any historical cover as final.
 
 ### 4. Validation & Error Matrix
 
@@ -161,6 +173,7 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 | FIT exceeds the configured cap | Record partial status; do not fail unrelated activities or streams |
 | Required health domain fails for a historical date | Record `failed`; do not advance that date cursor |
 | Map provider/rendering fails | Preserve the last good cover; otherwise use the coordinate-free fallback without failing data sync |
+| Provider name, tile URL, or attribution is missing | Treat remote maps as disabled, render locally, and compare currentness without a preferred remote provider |
 | Activity becomes private/unpublished | Remove it from public projection; private history remains; detail and old cover URLs become unreadable |
 | Snapshot has migration-window null `publicId` | Omit it from public stats until a random public id exists |
 | Ciphertext, AAD, key, or content hash is wrong | Decryption fails closed; never return or normalize the payload |

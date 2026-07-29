@@ -10,7 +10,9 @@ from .route import build_route_preview
 
 COVER_WIDTH = 480
 COVER_HEIGHT = 480
-RENDER_VERSION = "garmin-cover-v1"
+DEFAULT_ROUTE_PADDING_PIXELS = 72
+MAX_ROUTE_PADDING_PIXELS = 200
+RENDER_VERSION = "garmin-cover-v2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,11 +97,31 @@ def _render_route_fallback(points: list[tuple[float, float]]) -> ActivityCover:
     return _encode_webp(image, provider="local-route", attribution=None)
 
 
+def _route_padding_pixels() -> int:
+    value = os.getenv("GARMIN_MAP_ROUTE_PADDING_PIXELS")
+    if value is None:
+        return DEFAULT_ROUTE_PADDING_PIXELS
+    try:
+        return max(0, min(int(value), MAX_ROUTE_PADDING_PIXELS))
+    except ValueError:
+        return DEFAULT_ROUTE_PADDING_PIXELS
+
+
+def configured_route_provider() -> str | None:
+    """Return the active remote provider only when its full contract is set."""
+    provider_name = os.getenv("GARMIN_MAP_PROVIDER")
+    tile_url = os.getenv("GARMIN_MAP_TILE_URL")
+    attribution = os.getenv("GARMIN_MAP_ATTRIBUTION")
+    if provider_name and tile_url and attribution:
+        return provider_name
+    return None
+
+
 def render_route_cover(points: list[tuple[float, float]]) -> ActivityCover:
     """Render configured tiles at 2x, falling back to a local dark route."""
     tile_url = os.getenv("GARMIN_MAP_TILE_URL")
     attribution = os.getenv("GARMIN_MAP_ATTRIBUTION")
-    provider_name = os.getenv("GARMIN_MAP_PROVIDER")
+    provider_name = configured_route_provider()
     if not tile_url or not attribution or not provider_name:
         return _render_route_fallback(points)
     try:
@@ -128,10 +150,13 @@ def render_route_cover(points: list[tuple[float, float]]) -> ActivityCover:
             )
         )
         line = [staticmaps.create_latlng(lat, lon) for lat, lon in points]
-        context.add_object(
-            staticmaps.Line(
-                line, color=staticmaps.parse_color("#e8edef"), width=5
-            )
+        route = staticmaps.Line(
+            line, color=staticmaps.parse_color("#e8edef"), width=5
+        )
+        context.add_object(route)
+        context.add_bounds(
+            route.bounds(),
+            extra_pixel_bounds=_route_padding_pixels() * 2,
         )
         image = context.render_pillow(COVER_WIDTH * 2, COVER_HEIGHT * 2)
         image = image.convert("RGB").resize(

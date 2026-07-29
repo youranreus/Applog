@@ -88,6 +88,59 @@ class SyncServiceTests(unittest.TestCase):
         self.assertFalse(repository.payload["backfill_complete"])
         self.assertIsNotNone(repository.payload["backfill_cursor"])
 
+    def test_stale_cover_version_requeues_route_for_configured_provider(self) -> None:
+        class VersionAwareRepository(FakeRepository):
+            def processed_route_ids(self) -> set[str]:
+                return {"1"}
+
+            def covered_activity_ids(
+                self, render_version: str, preferred_provider: str | None
+            ) -> set[str]:
+                self.cover_query = (render_version, preferred_provider)
+                return set()
+
+        adapter = FakeAdapter()
+        repository = VersionAwareRepository()
+
+        with patch.dict(
+            "os.environ",
+            {
+                "GARMIN_MAP_PROVIDER": "carto-dark",
+                "GARMIN_MAP_TILE_URL": "https://tiles.test/$z/$x/$y.png",
+                "GARMIN_MAP_ATTRIBUTION": "Test maps",
+            },
+        ):
+            SyncService(adapter, repository).run()
+
+        self.assertEqual(repository.cover_query, ("garmin-cover-v2", "carto-dark"))
+        self.assertEqual(adapter.route_id, "1")
+
+    def test_incomplete_provider_configuration_does_not_require_remote_provider(
+        self,
+    ) -> None:
+        class VersionAwareRepository(FakeRepository):
+            def covered_activity_ids(
+                self, render_version: str, preferred_provider: str | None
+            ) -> set[str]:
+                self.cover_query = (render_version, preferred_provider)
+                return {"1"}
+
+            def processed_route_ids(self) -> set[str]:
+                return {"1"}
+
+        adapter = FakeAdapter()
+        repository = VersionAwareRepository()
+
+        with patch.dict(
+            "os.environ",
+            {"GARMIN_MAP_PROVIDER": "carto-dark"},
+            clear=True,
+        ):
+            SyncService(adapter, repository).run()
+
+        self.assertEqual(repository.cover_query, ("garmin-cover-v2", None))
+        self.assertFalse(hasattr(adapter, "route_id"))
+
 
 if __name__ == "__main__":
     unittest.main()

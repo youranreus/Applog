@@ -5,7 +5,12 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
-from .cover import render_pin_cover, render_route_cover
+from .cover import (
+    RENDER_VERSION,
+    configured_route_provider,
+    render_pin_cover,
+    render_route_cover,
+)
 from .models import ActivitySnapshot, NormalizedActivityDetail, SyncResult
 from .normalize import (
     normalize_activity,
@@ -94,7 +99,9 @@ class SyncService:
         self._archive_health_days(synced_at)
         processed_routes = self._repository.processed_route_ids()
         covered_activity_ids = (
-            self._repository.covered_activity_ids()
+            self._repository.covered_activity_ids(
+                RENDER_VERSION, configured_route_provider()
+            )
             if hasattr(self._repository, "covered_activity_ids")
             else set()
         )

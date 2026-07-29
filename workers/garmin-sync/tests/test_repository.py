@@ -76,9 +76,43 @@ def test_stream_cursor_sql_quotes_mysql_reserved_cursor_column():
     assert "UPDATE `cursor` = VALUES(`cursor`)" in upsert_sql
 
 
+def test_covered_activity_ids_require_current_renderer_and_provider():
+    captured = {}
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, sql, params):
+            captured["sql"] = sql
+            captured["params"] = params
+
+        def fetchall(self):
+            return [("activity-1",)]
+
+    connection = SimpleNamespace(cursor=lambda: Cursor())
+    repository = MySQLRepository(connection, b"token-key")
+
+    assert repository.covered_activity_ids("garmin-cover-v2", "carto-dark") == {
+        "activity-1"
+    }
+    assert "cover.renderVersion = %s" in captured["sql"]
+    assert "cover.provider = %s" in captured["sql"]
+    assert captured["params"] == (
+        "garmin-cover-v2",
+        "carto-dark",
+        "carto-dark",
+    )
+
+
 def test_activity_cover_skips_unchanged_immutable_content():
     statements = []
-    rows = iter([(7,), ("existing-cover", "local-route", "same-etag")])
+    rows = iter(
+        [(7,), ("existing-cover", "local-route", "same-etag", "garmin-cover-v2")]
+    )
 
     class Cursor:
         def __enter__(self):
@@ -106,9 +140,52 @@ def test_activity_cover_skips_unchanged_immutable_content():
     assert len(statements) == 2
 
 
+def test_activity_cover_refreshes_currentness_metadata_without_rotating_id():
+    statements = []
+    rows = iter(
+        [(7,), ("existing-cover", "old-provider", "same-etag", "garmin-cover-v1")]
+    )
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, sql, params):
+            statements.append((sql, params))
+
+        def fetchone(self):
+            return next(rows)
+
+    connection = SimpleNamespace(cursor=lambda: Cursor(), begin=lambda: None)
+    repository = MySQLRepository(connection, b"token-key")
+    cover = ActivityCover(
+        b"same", 480, 480, "same-etag", "new-provider", "New attribution"
+    )
+
+    assert (
+        repository.store_activity_cover(
+            "activity-1", cover, generated_at=datetime(2026, 7, 29, tzinfo=UTC)
+        )
+        == "existing-cover"
+    )
+    assert len(statements) == 3
+    metadata_sql, metadata_params = statements[2]
+    assert "SET provider = %s" in metadata_sql
+    assert metadata_params[:3] == (
+        "new-provider",
+        "New attribution",
+        "garmin-cover-v2",
+    )
+
+
 def test_activity_cover_rotates_id_and_snapshot_reference_for_changed_content():
     statements = []
-    rows = iter([(7,), ("existing-cover", "local-route", "old-etag")])
+    rows = iter(
+        [(7,), ("existing-cover", "local-route", "old-etag", "garmin-cover-v1")]
+    )
 
     class Cursor:
         def __enter__(self):

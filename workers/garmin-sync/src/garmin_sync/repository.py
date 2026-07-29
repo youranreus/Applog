@@ -252,14 +252,19 @@ class MySQLRepository:
             rows = cursor.fetchall()
         return [(int(row[0]), str(row[1])) for row in rows]
 
-    def covered_activity_ids(self) -> set[str]:
-        """Return source IDs that already have a generated public cover."""
+    def covered_activity_ids(
+        self, render_version: str, preferred_provider: str | None
+    ) -> set[str]:
+        """Return source IDs whose route covers match the active renderer."""
         with self._connection.cursor() as cursor:
             cursor.execute(
                 "SELECT activity.sourceActivityId "
                 "FROM garmin_activity_cover cover "
                 "INNER JOIN garmin_private_activity activity "
-                "ON activity.id = cover.privateActivityId"
+                "ON activity.id = cover.privateActivityId "
+                "WHERE cover.renderVersion = %s "
+                "AND (%s IS NULL OR cover.provider = %s)",
+                (render_version, preferred_provider, preferred_provider),
             )
             return {str(row[0]) for row in cursor.fetchall()}
 
@@ -363,7 +368,8 @@ class MySQLRepository:
                 return None
             private_id = int(private_row[0])
             cursor.execute(
-                "SELECT coverId, provider, etag FROM garmin_activity_cover "
+                "SELECT coverId, provider, etag, renderVersion "
+                "FROM garmin_activity_cover "
                 "WHERE privateActivityId = %s LIMIT 1",
                 (private_id,),
             )
@@ -377,6 +383,22 @@ class MySQLRepository:
                 if new_rank < existing_rank:
                     return existing_cover_id
                 if str(existing[2]) == cover.etag:
+                    if (
+                        existing_provider != cover.provider
+                        or str(existing[3]) != cover.render_version
+                    ):
+                        cursor.execute(
+                            "UPDATE garmin_activity_cover SET provider = %s, "
+                            "attribution = %s, renderVersion = %s, generatedAt = %s "
+                            "WHERE privateActivityId = %s",
+                            (
+                                cover.provider,
+                                cover.attribution,
+                                cover.render_version,
+                                _mysql_datetime(generated_at),
+                                private_id,
+                            ),
+                        )
                     return existing_cover_id
 
             cover_id = str(uuid.uuid4())
