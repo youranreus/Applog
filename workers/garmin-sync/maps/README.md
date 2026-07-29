@@ -14,12 +14,15 @@ have outbound network access. Use the repository root as the build context so
 Fast public-fixture build for CI and host validation:
 
 ```bash
-docker build \
-  --file workers/garmin-sync/maps/Dockerfile \
-  --tag applog-map-renderer:fixture \
-  --build-arg BUILD_MODE=fixture \
-  --build-arg RELEASE_ID=fixture-public-victoria-park-20260728 \
-  .
+./workers/garmin-sync/maps/build-map-image.sh
+```
+
+Pass an explicit tag as the second argument when needed. Set `NO_CACHE=1` to
+force a clean rebuild:
+
+```bash
+NO_CACHE=1 ./workers/garmin-sync/maps/build-map-image.sh \
+  fixture applog-map-renderer:fixture
 ```
 
 Production builds require one explicit Protomaps daily build and the Martin
@@ -51,6 +54,18 @@ docker build \
   --build-arg MARTIN_IMAGE="ghcr.io/maplibre/martin@${MARTIN_DIGEST}" \
   --build-arg MARTIN_IMAGE_DIGEST="${MARTIN_DIGEST}" \
   .
+```
+
+The equivalent scripted production build is:
+
+```bash
+PROTOMAPS_BUILD_DATE=20260728 \
+PROTOMAPS_BUILD_URL=https://build.protomaps.com/20260728.pmtiles \
+PROTOMAPS_BUILD_BLAKE3=REPLACE_WITH_OFFICIAL_BUILD_HASH \
+MARTIN_IMAGE="ghcr.io/maplibre/martin@${MARTIN_DIGEST}" \
+PMTILES_IMAGE="${PMTILES_IMAGE}" NODE_IMAGE="${NODE_IMAGE}" GO_IMAGE="${GO_IMAGE}" \
+  ./workers/garmin-sync/maps/build-map-image.sh production \
+  registry.example/applog-map-renderer:20260728
 ```
 
 For production, also pass digest-pinned `PMTILES_IMAGE`, `NODE_IMAGE`, and

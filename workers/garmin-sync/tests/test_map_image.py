@@ -92,3 +92,17 @@ def test_build_context_excludes_secrets_and_private_data() -> None:
     assert not any(".env" in line for line in dockerignore[1:])
     assert not any("packages/backend" in line for line in dockerignore[1:])
     assert not any(".trellis" in line for line in dockerignore[1:])
+
+
+def test_map_image_build_script_has_safe_fixture_and_production_modes() -> None:
+    script = (MAPS_DIR / "build-map-image.sh").read_text()
+
+    assert 'mode="${1:-fixture}"' in script
+    assert 'image_tag="${2:-applog-map-renderer:fixture}"' in script
+    assert 'BUILD_MODE=fixture' in script
+    assert 'BUILD_MODE=production' in script
+    assert 'SOURCE_REVISION="$(git -C "${repo_root}" rev-parse HEAD)"' in script
+    assert "for name in MARTIN_IMAGE PMTILES_IMAGE NODE_IMAGE GO_IMAGE" in script
+    assert 'require_digest_ref "${name}"' in script
+    assert 'MARTIN_IMAGE_DIGEST="${MARTIN_IMAGE##*@}"' in script
+    assert 'exec docker build "${build_args[@]}" "${repo_root}"' in script
