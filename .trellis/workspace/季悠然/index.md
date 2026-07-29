@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 19
-- **Last Active**: 2026-07-28
+- **Total Sessions**: 20
+- **Last Active**: 2026-07-29
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~571 | Active |
+| `journal-1.md` | ~598 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 20 | 2026-07-29 | 完成 Landing Garmin 活动明细与地图交互 | `b3ae5b8`, `d6c2fbc`, `d4912a4`, `55d1231`, `50747df`, `29dd546`, `213b276` | `master` |
 | 19 | 2026-07-28 | 优化 Landing Garmin 运动卡片展示 | `ba63231`, `6ce1023` | `master` |
 | 18 | 2026-07-28 | 完成 Garmin 运动数据接入与服务器部署 | `e799029`, `8be7aa1`, `17c5a29`, `b10fa7b`, `06a49ba`, `8c2751d`, `38798ba`, `52060f7`, `c4d1d63`, `d967104`, `9a58fb4` | `master` |
 | 17 | 2026-07-28 | 修复 Duolingo lookup 超时并调整 Landing 顺序 | `8db5ab0`, `71adf78` | `master` |

@@ -569,3 +569,30 @@ Duolingo Client 超时调至 15s、timeout 重试 1 次、username→userId 缓�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 20: 完成 Landing Garmin 活动明细与地图交互
+
+**Date**: 2026-07-29
+**Task**: 完成 Landing Garmin 活动明细与地图交互
+**Branch**: `master`
+
+### Summary
+
+完成 Garmin 私有归档与增量同步、公开活动详情和封面接口、Landing 详情交互，并修复封面 API 加载、持久化一致性、地图留白及 renderer/provider 缓存失效问题；worker、backend、common 与 Garmin frontend 专项质量门通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b3ae5b8` | (see git log) |
+| `d6c2fbc` | (see git log) |
+| `d4912a4` | (see git log) |
+| `55d1231` | (see git log) |
+| `50747df` | (see git log) |
+| `29dd546` | (see git log) |
+| `213b276` | (see git log) |
+
+### Status
+
+[OK] **Completed**
