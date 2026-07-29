@@ -9,6 +9,7 @@
     "build:fe": "turbo run build --filter=@applog/frontend",
     "build:be": "turbo run build --filter=@applog/backend",
     "build": "turbo run build",
+    "maps:style": "node workers/garmin-sync/maps/generate-style.mjs",
     "c": "git-cz"
   },
   "private": true,
@@ -16,6 +17,7 @@
   "author": "youranreus (https://mitsuha.space)",
   "license": "ISC",
   "devDependencies": {
+    "@protomaps/basemaps": "5.7.2",
     "commitizen": "^4.3.0",
     "cz-customizable": "^7.0.0",
     "turbo": "^2.8.11"

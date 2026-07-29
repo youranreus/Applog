@@ -1,0 +1,24 @@
+[Unit]
+Description=AppLog loopback Protomaps static renderer
+Before=applog-garmin-sync.service
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+Group=@SERVICE_GROUP@
+WorkingDirectory=@MAP_RELEASE_DIR@
+Environment="APPLOG_MAP_RELEASE_DIR=@MAP_RELEASE_DIR@"
+ExecStart=@MARTIN_BIN@ --config @MARTIN_CONFIG@
+Restart=on-failure
+RestartSec=3s
+TimeoutStartSec=30s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

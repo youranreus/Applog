@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 from garmin_sync.cover import ActivityCover
 from garmin_sync.models import NormalizedHealthDaily
+from garmin_sync.payload_codec import encrypt_payload
 from garmin_sync.repository import MySQLRepository, _mysql_datetime
 
 
@@ -76,6 +77,49 @@ def test_stream_cursor_sql_quotes_mysql_reserved_cursor_column():
     assert "UPDATE `cursor` = VALUES(`cursor`)" in upsert_sql
 
 
+def test_activity_weather_payload_is_decrypted_only_inside_private_repository():
+    key = bytes(range(32))
+    envelope = encrypt_payload(
+        {"latitude": 22.5, "longitude": 113.9},
+        key,
+        domain="activity",
+        owner_key="7",
+        payload_kind="weather",
+    )
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, sql, params):
+            assert "payload.payloadKind = 'weather'" in sql
+            assert params == ("activity-1",)
+
+        def fetchone(self):
+            return (
+                "7",
+                envelope.ciphertext,
+                envelope.nonce,
+                envelope.auth_tag,
+                envelope.content_hash,
+                envelope.content_type,
+                envelope.compression,
+                envelope.version,
+            )
+
+    repository = MySQLRepository(
+        SimpleNamespace(cursor=lambda: Cursor()), b"token-key", key
+    )
+
+    assert repository.get_activity_weather_payload("activity-1") == {
+        "latitude": 22.5,
+        "longitude": 113.9,
+    }
+
+
 def test_covered_activity_ids_require_current_renderer_and_provider():
     captured = {}
 
@@ -96,23 +140,22 @@ def test_covered_activity_ids_require_current_renderer_and_provider():
     connection = SimpleNamespace(cursor=lambda: Cursor())
     repository = MySQLRepository(connection, b"token-key")
 
-    assert repository.covered_activity_ids("garmin-cover-v3", "carto-dark") == {
+    assert repository.covered_activity_ids("garmin-cover-v4-test", "protomaps") == {
         "activity-1"
     }
     assert "cover.renderVersion = %s" in captured["sql"]
-    assert "cover.provider = %s" in captured["sql"]
     assert "activity.activityType = %s" in captured["sql"]
-    assert "cover.provider IN (%s, %s)" in captured["sql"]
-    assert "cover.provider <> %s" in captured["sql"]
+    assert "cover.provider IN (%s, %s, %s)" in captured["sql"]
     assert captured["params"] == (
-        "garmin-cover-v3",
+        "garmin-cover-v4-test",
         "soccer",
-        "local-heatmap",
-        "local",
+        "protomaps-heatmap",
+        "protomaps-point",
+        "no-map",
         "soccer",
-        "local-heatmap",
-        "carto-dark",
-        "carto-dark",
+        "protomaps-route",
+        "protomaps-point",
+        "no-map",
     )
 
 
@@ -121,7 +164,7 @@ def test_activity_cover_skips_unchanged_immutable_content():
     rows = iter(
         [
             (7, "running"),
-            ("existing-cover", "local-route", "same-etag", "garmin-cover-v3"),
+            ("existing-cover", "local-route", "same-etag", "garmin-cover-v4"),
         ]
     )
 
@@ -191,7 +234,7 @@ def test_activity_cover_refreshes_currentness_metadata_without_rotating_id():
     assert metadata_params[:3] == (
         "new-provider",
         "New attribution",
-        "garmin-cover-v3",
+        "garmin-cover-v4",
     )
 
 
@@ -225,7 +268,9 @@ def test_activity_cover_rotates_id_and_snapshot_reference_for_changed_content():
         rollback=lambda: transaction_calls.append("rollback"),
     )
     repository = MySQLRepository(connection, b"token-key")
-    cover = ActivityCover(b"changed", 480, 480, "new-etag", "remote", "Map data")
+    cover = ActivityCover(
+        b"changed", 480, 480, "new-etag", "protomaps-route", "Map data"
+    )
 
     cover_id = repository.store_activity_cover(
         "activity-1", cover, generated_at=datetime(2026, 7, 29, tzinfo=UTC)

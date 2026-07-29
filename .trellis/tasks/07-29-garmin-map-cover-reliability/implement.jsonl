@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/backend/garmin-guidelines.md", "reason": "Garmin private/public data, cover storage, sync and privacy contracts"}
+{"file": ".trellis/spec/backend/backend/logging-guidelines.md", "reason": "Coordinate-free structured error logging requirements"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "Worker validation and quality requirements"}
+{"file": ".trellis/tasks/07-29-garmin-map-cover-reliability/research/protomaps-implementation-brief.md", "reason": "Curated official-source Protomaps, Martin, licensing, release and fallback decisions"}

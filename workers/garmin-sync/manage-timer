@@ -4,6 +4,7 @@ set -euo pipefail
 
 readonly service_unit="applog-garmin-sync.service"
 readonly timer_unit="applog-garmin-sync.timer"
+readonly renderer_unit="applog-map-renderer.service"
 readonly unit_dir="/etc/systemd/system"
 
 worker_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,13 +15,14 @@ usage() {
   cat <<'EOF'
 Usage:
   manage-timer register [--user USER] [--python PATH] [--env-dir PATH]
-                        [--env-file PATH]
+                        [--env-file PATH] [--martin PATH --map-release PATH]
   manage-timer enable
   manage-timer disable
   manage-timer status
 
 Commands:
-  register  Install or update systemd units without enabling the timer.
+  register  Install or update systemd units without enabling the timer. When
+            Martin and a verified release are supplied, also install renderer.
   enable    Enable the timer at boot and start it immediately.
   disable   Stop the timer and disable it at boot.
   status    Show the timer and latest worker service status.
@@ -59,6 +61,9 @@ register_units() {
   local python_bin="${GARMIN_PYTHON_BIN:-${worker_dir}/.venv/bin/python}"
   local env_dir="${GARMIN_ENV_DIR:-${project_dir}/packages/backend}"
   local env_file="${GARMIN_ENV_FILE:-}"
+  local martin_bin="${GARMIN_MAP_MARTIN_BIN:-}"
+  local map_release="${GARMIN_MAP_RELEASE_DIR:-}"
+  local martin_config="${GARMIN_MAP_MARTIN_CONFIG:-${worker_dir}/maps/martin.yaml}"
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -81,6 +86,21 @@ register_units() {
         [[ $# -ge 2 ]] || fail "--env-dir requires a path"
         env_dir="$2"
         env_file=""
+        shift 2
+        ;;
+      --martin)
+        [[ $# -ge 2 ]] || fail "--martin requires a path"
+        martin_bin="$2"
+        shift 2
+        ;;
+      --map-release)
+        [[ $# -ge 2 ]] || fail "--map-release requires a path"
+        map_release="$2"
+        shift 2
+        ;;
+      --martin-config)
+        [[ $# -ge 2 ]] || fail "--martin-config requires a path"
+        martin_config="$2"
         shift 2
         ;;
       *) fail "unknown register option: $1" ;;
@@ -108,6 +128,19 @@ register_units() {
   fi
   [[ -f "${template_dir}/${service_unit}.in" ]] || fail "service template missing"
   [[ -f "${template_dir}/${timer_unit}" ]] || fail "timer template missing"
+  if [[ -n "${martin_bin}" || -n "${map_release}" ]]; then
+    [[ -n "${martin_bin}" && -n "${map_release}" ]] || \
+      fail "--martin and --map-release must be supplied together"
+    validate_unit_path "Martin executable" "${martin_bin}"
+    validate_unit_path "map release" "${map_release}"
+    validate_unit_path "Martin config" "${martin_config}"
+    [[ -x "${martin_bin}" ]] || fail "Martin executable not found: ${martin_bin}"
+    [[ -d "${map_release}" ]] || fail "map release not found: ${map_release}"
+    [[ -f "${map_release}/manifest.json" ]] || fail "map manifest missing"
+    [[ -f "${martin_config}" ]] || fail "Martin config missing"
+    [[ -f "${template_dir}/${renderer_unit}.in" ]] || \
+      fail "renderer service template missing"
+  fi
 
   local service_tmp
   service_tmp="$(mktemp)"
@@ -123,6 +156,19 @@ register_units() {
 
   install -m 0644 "${service_tmp}" "${unit_dir}/${service_unit}"
   install -m 0644 "${template_dir}/${timer_unit}" "${unit_dir}/${timer_unit}"
+  if [[ -n "${martin_bin}" ]]; then
+    local renderer_tmp
+    renderer_tmp="$(mktemp)"
+    sed \
+      -e "s|@SERVICE_USER@|${service_user}|g" \
+      -e "s|@SERVICE_GROUP@|${service_group}|g" \
+      -e "s|@MARTIN_BIN@|${martin_bin}|g" \
+      -e "s|@MARTIN_CONFIG@|${martin_config}|g" \
+      -e "s|@MAP_RELEASE_DIR@|${map_release}|g" \
+      "${template_dir}/${renderer_unit}.in" >"${renderer_tmp}"
+    install -m 0644 "${renderer_tmp}" "${unit_dir}/${renderer_unit}"
+    rm -f "${renderer_tmp}"
+  fi
   systemctl_command daemon-reload
   rm -f "${service_tmp}"
   trap - EXIT

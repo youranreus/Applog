@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/backend/garmin-guidelines.md", "reason": "Verify Garmin cover behavior and public/private boundaries"}
+{"file": ".trellis/spec/backend/backend/logging-guidelines.md", "reason": "Verify typed failures without coordinate leakage"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "Verify tests, lint and rollback coverage"}
+{"file": ".trellis/tasks/07-29-garmin-map-cover-reliability/research/protomaps-implementation-brief.md", "reason": "Verify implementation follows researched provider and deployment boundaries"}

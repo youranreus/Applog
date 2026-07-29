@@ -1,7 +1,7 @@
 [Unit]
 Description=AppLog Garmin activity snapshot sync
-After=network-online.target
-Wants=network-online.target
+After=network-online.target applog-map-renderer.service
+Wants=network-online.target applog-map-renderer.service
 
 [Service]
 Type=oneshot
@@ -11,6 +11,7 @@ WorkingDirectory=@WORKER_DIR@
 Environment="GARMIN_PYTHON_BIN=@PYTHON_BIN@"
 Environment="GARMIN_ENV_DIR=@ENV_DIR@"
 Environment="GARMIN_ENV_FILE=@ENV_FILE@"
+ExecStartPre=-@WORKER_DIR@/start-worker map-health
 ExecStart=@WORKER_DIR@/start-worker sync
 TimeoutStartSec=5min
 NoNewPrivileges=true

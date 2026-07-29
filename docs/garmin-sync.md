@@ -19,10 +19,11 @@ worker 默认从 NestJS 的 `packages/backend` 目录加载环境配置文件。
 - `GARMIN_REQUEST_BUDGET`：单轮 Garmin 请求上限，默认 `80`
 - `GARMIN_HEALTH_EMPTY_DAY_LIMIT`：连续多少个无任何观测值的历史自然日后判定已到上游边界，默认 `30`
 - `GARMIN_PRIVATE_ARCHIVE_ENABLED`、`GARMIN_HEALTH_BACKFILL_ENABLED`、`GARMIN_MAP_COVERS_ENABLED`：三个独立回滚开关
-- 地图流启用 provider 时配置 `GARMIN_MAP_PROVIDER`、`GARMIN_MAP_TILE_URL`、`GARMIN_MAP_ATTRIBUTION` 和可识别的 `GARMIN_MAP_USER_AGENT`
-- `GARMIN_MAP_ROUTE_PADDING_PIXELS`：路线到封面四边的最终像素留白，默认 `28`
+- `GARMIN_MAP_RENDERER_URL`：只允许 loopback HTTP，标准值为 `http://127.0.0.1:3000`
+- `GARMIN_MAP_RELEASE_MANIFEST`：当前不可变 Protomaps release 的 `manifest.json` 绝对路径
+- `GARMIN_MAP_RENDER_TIMEOUT_SECONDS`：localhost 静态图总超时，默认 `8`
 
-普通户外活动会把 GPS 路线放大到封面主轴约 88% 的范围；足球活动仅在拿到真实 GPS 采样点时生成本地球场热力图。椭圆机等无 GPS 活动继续使用无坐标封面，不会伪造地图或热力分布。
+地图底图由本机 Martin 读取 Protomaps PMTiles 后生成，不调用 CARTO 或其他在线地图 API。普通户外活动使用统一 Web Mercator camera，在 480×480 封面保留 32px 目标安全区；足球仅在拿到真实 GPS 采样时在同一底图上生成密度热力图。椭圆机等活动没有轨迹但 Garmin weather payload 有合法位置时显示单点标记，内部 provenance 标记为 `weather`；完全没有坐标时显示明确的无地图封面。
 
 生成加密密钥：
 
@@ -58,7 +59,44 @@ GARMIN_HEALTH_EMPTY_DAY_LIMIT=30
 GARMIN_PRIVATE_ARCHIVE_ENABLED=true
 GARMIN_HEALTH_BACKFILL_ENABLED=true
 GARMIN_MAP_COVERS_ENABLED=true
-GARMIN_MAP_ROUTE_PADDING_PIXELS=28
+GARMIN_MAP_RENDERER_URL=http://127.0.0.1:3000
+GARMIN_MAP_RELEASE_MANIFEST=/opt/applog/maps/current/manifest.json
+GARMIN_MAP_RENDER_TIMEOUT_SECONDS=8
+```
+
+## Protomaps 地图发布
+
+生产地图包不进入 Git。仓库中的 `workers/garmin-sync/maps/` 保存固定版本、样式生成器、Martin 配置、manifest 模板和许可说明。每个生产 release 必须包含 `basemap.pmtiles`、`style.json`、本地字体、`manifest.json` 和许可证；详细构建与验证命令见该目录 README。
+
+当前固定工具链为 Martin `1.11.0`、`@protomaps/basemaps` `5.7.2` 与 PMTiles CLI `1.31.2`。地图包按月从明确的 Protomaps daily build 生成，不使用 `latest`。初始覆盖为大湾区高精度（z7–15，可在 renderer 内 overzoom）与全球 z0–6；区域外需要街区级细节时返回 `region_missing`，不会拉伸低精度数据冒充细节。
+
+Martin 静态渲染只在 Linux 上运行。激活前必须在部署机执行：
+
+```bash
+cd /opt/applog/current/workers/garmin-sync
+/opt/applog/venvs/garmin-sync/bin/python -m garmin_sync.map_release verify \
+  /opt/applog/maps/releases/RELEASE_ID --pmtiles /usr/local/bin/pmtiles \
+  --martin /usr/local/bin/martin
+APPLOG_MAP_RELEASE_DIR=/opt/applog/maps/releases/RELEASE_ID \
+  /usr/local/bin/martin --config ./maps/martin.yaml
+```
+
+另一个终端运行 100 张串行原型门禁并人工检查四张公开 fixture：
+
+```bash
+/opt/applog/venvs/garmin-sync/bin/python -m garmin_sync.map_prototype \
+  --manifest /opt/applog/maps/releases/RELEASE_ID/manifest.json \
+  --output /tmp/applog-map-prototype --iterations 100 \
+  --renderer-pid MARTIN_PID
+```
+
+通过后原子激活完整 release：
+
+```bash
+/opt/applog/venvs/garmin-sync/bin/python -m garmin_sync.map_release activate \
+  /opt/applog/maps/releases/RELEASE_ID /opt/applog/maps
+sudo systemctl restart applog-map-renderer.service
+curl --fail --silent http://127.0.0.1:3000/health
 ```
 
 ## 首次部署
@@ -74,7 +112,9 @@ GARMIN_MAP_ROUTE_PADDING_PIXELS=28
    sudo ./bootstrap \
      --user applog \
      --python /usr/bin/python3.12 \
-     --venv /opt/applog/venvs/garmin-sync
+     --venv /opt/applog/venvs/garmin-sync \
+     --martin /usr/local/bin/martin \
+     --map-release /opt/applog/maps/current
    ```
 
    bootstrap 会创建或更新虚拟环境、安装 worker、注册并确保 systemd timer 处于关闭状态、交互读取 Garmin 邮箱/密码/MFA、加密保存 token，并执行一次同步。它不会把密码或 MFA 写入磁盘。
@@ -113,7 +153,7 @@ sudo journalctl -u applog-garmin-sync.service --since today
 - worker 每次优先刷新近期公开投影和今天/昨天健康数据，再推进一个有界历史页。
 - 只有 Garmin payload 明确标记为 `public` 或 `everyone` 的活动才会发布；未知隐私状态一律拒绝。
 - 活动所有可用端点和 FIT、全天健康 payload 使用独立数据密钥压缩加密；精确坐标和逐点数据不会进入公开快照。
-- 公开候选最多六条生成 WebP 封面；tile provider 故障时保留旧图或回退本地深色路线/图钉，不使同步失败。
+- 公开候选最多六条生成 WebP 封面；renderer 故障时保留已有高质量地图，首次生成使用带错误分类的本地降级图，不使数据同步失败。
 - 私有活动历史不再因年龄删除；取消公开或上游删除只撤销公开投影。重复执行通过 source id、自然日、payload hash 和 stream cursor 幂等。
 - 健康回填不使用固定年数截断，而在连续 `GARMIN_HEALTH_EMPTY_DAY_LIMIT` 个自然日无观测值后确认上游边界；归一化摘要保留真实 `0`，local/GMT 边界只在 Garmin 实际返回时间戳时写入。
 - 认证错误把状态标记为 `reauth_required`；网络、限流或存储错误标记为 `degraded`。旧快照仍可读取并在超过 6 小时后显示 stale。

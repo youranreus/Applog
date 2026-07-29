@@ -1,23 +1,43 @@
-"""Static WebP activity cover rendering without embedded source metadata."""
+"""Static WebP activity covers with private, camera-aligned overlays."""
 
 import hashlib
 import io
 import math
-import os
-import tempfile
 from dataclasses import dataclass
+from typing import Any
 
-from .route import build_route_preview
+from .evidence import LocationEvidence
+from .map_renderer import (
+    PROTOMAPS_ATTRIBUTION,
+    BasemapRenderError,
+    LocalMapRenderer,
+    active_render_version,
+    configured_renderer,
+    configured_route_provider,
+)
+from .spatial import MapCamera, fit_camera, valid_points
 
 COVER_WIDTH = 480
 COVER_HEIGHT = 480
-DEFAULT_ROUTE_PADDING_PIXELS = 28
+RENDER_SCALE = 2
+DEFAULT_ROUTE_PADDING_PIXELS = 32
 MAX_ROUTE_PADDING_PIXELS = 200
-RENDER_VERSION = "garmin-cover-v3"
-LOCAL_COVER_PROVIDER = "local"
-LOCAL_ROUTE_PROVIDER = "local-route"
-LOCAL_HEATMAP_PROVIDER = "local-heatmap"
+RENDER_VERSION = "garmin-cover-v4"
 SOCCER_ACTIVITY_TYPE = "soccer"
+
+NO_MAP_PROVIDER = "no-map"
+FALLBACK_NO_MAP_PROVIDER = "fallback-no-map"
+LOCAL_POINT_PROVIDER = "local-point"
+LOCAL_ROUTE_PROVIDER = "local-route"
+PROTOMAPS_POINT_PROVIDER = "protomaps-point"
+PROTOMAPS_ROUTE_PROVIDER = "protomaps-route"
+PROTOMAPS_HEATMAP_PROVIDER = "protomaps-heatmap"
+CURRENT_MAP_PROVIDERS = {
+    PROTOMAPS_POINT_PROVIDER,
+    PROTOMAPS_ROUTE_PROVIDER,
+    PROTOMAPS_HEATMAP_PROVIDER,
+    NO_MAP_PROVIDER,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,139 +49,259 @@ class ActivityCover:
     provider: str
     attribution: str | None
     render_version: str = RENDER_VERSION
+    outcome: str = "map_success"
+    failure_category: str | None = None
+    provenance: str | None = None
 
 
 def _encode_webp(
-    image: object, *, provider: str, attribution: str | None
+    image: Any,
+    *,
+    provider: str,
+    attribution: str | None,
+    outcome: str,
+    failure_category: str | None = None,
+    provenance: str | None = None,
 ) -> ActivityCover:
     output = io.BytesIO()
     image.save(output, "WEBP", quality=84, method=6, exif=b"")
     data = output.getvalue()
     return ActivityCover(
-        image_data=data,
-        width=COVER_WIDTH,
-        height=COVER_HEIGHT,
-        etag=hashlib.sha256(data).hexdigest(),
+        data,
+        COVER_WIDTH,
+        COVER_HEIGHT,
+        hashlib.sha256(data).hexdigest(),
+        provider,
+        attribution,
+        active_render_version(),
+        outcome,
+        failure_category,
+        provenance,
+    )
+
+
+def _blank_canvas() -> Any:
+    from PIL import Image, ImageDraw
+
+    size = COVER_WIDTH * RENDER_SCALE
+    image = Image.new("RGBA", (size, size), "#e8eceb")
+    draw = ImageDraw.Draw(image)
+    grid = 64
+    for position in range(-size, size * 2, grid):
+        draw.line((position, 0, position - size, size), fill="#d9dfdd", width=2)
+    return image
+
+
+def _finalize(
+    image: Any,
+    *,
+    provider: str,
+    attribution: str | None,
+    outcome: str,
+    failure_category: str | None = None,
+    provenance: str | None = None,
+) -> ActivityCover:
+    from PIL import Image
+
+    final = image.convert("RGB").resize(
+        (COVER_WIDTH, COVER_HEIGHT), Image.Resampling.LANCZOS
+    )
+    return _encode_webp(
+        final,
         provider=provider,
         attribution=attribution,
+        outcome=outcome,
+        failure_category=failure_category,
+        provenance=provenance,
+    )
+
+
+def render_no_map_cover(
+    *, failure_category: str | None = None
+) -> ActivityCover:
+    """Render an explicit coordinate-free cover without implying a location."""
+    from PIL import ImageDraw
+
+    image = _blank_canvas()
+    draw = ImageDraw.Draw(image)
+    center = COVER_WIDTH
+    stroke = "#65706d"
+    fill = "#f5f7f6"
+    draw.rounded_rectangle(
+        (center - 170, center - 130, center + 170, center + 130),
+        radius=28,
+        fill=fill,
+        outline=stroke,
+        width=8,
+    )
+    draw.line(
+        (center - 56, center - 126, center - 56, center + 126),
+        fill=stroke,
+        width=6,
+    )
+    draw.line(
+        (center + 56, center - 126, center + 56, center + 126),
+        fill=stroke,
+        width=6,
+    )
+    draw.line(
+        (center - 190, center - 190, center + 190, center + 190),
+        fill="#9a5a55",
+        width=18,
+    )
+    provider = FALLBACK_NO_MAP_PROVIDER if failure_category else NO_MAP_PROVIDER
+    return _finalize(
+        image,
+        provider=provider,
+        attribution=None,
+        outcome="fallback_created" if failure_category else "no_coordinates",
+        failure_category=failure_category,
     )
 
 
 def render_pin_cover() -> ActivityCover:
-    """Render a quiet local cover for indoor or coordinate-free activities."""
-    from PIL import Image, ImageDraw
+    """Backward-compatible name for the explicit coordinate-free cover."""
+    return render_no_map_cover()
 
-    scale = 2
-    size = COVER_WIDTH * scale
-    image = Image.new("RGB", (size, size), "#15191d")
+
+def _draw_marker(image: Any, point: tuple[float, float]) -> None:
+    from PIL import ImageDraw
+
     draw = ImageDraw.Draw(image)
-    center = size // 2
+    x, y = point
+    radius = 17
     draw.ellipse(
-        (center - 76, center - 98, center + 76, center + 54),
-        fill="#dfe5e8",
+        (x - radius, y - radius, x + radius, y + radius),
+        fill="#ffffff",
+        outline="#263936",
+        width=7,
     )
-    draw.polygon(
-        [(center - 56, center + 8), (center + 56, center + 8), (center, center + 118)],
-        fill="#dfe5e8",
-    )
-    draw.ellipse(
-        (center - 28, center - 51, center + 28, center + 5),
-        fill="#15191d",
-    )
-    image = image.resize((COVER_WIDTH, COVER_HEIGHT), Image.Resampling.LANCZOS)
-    return _encode_webp(image, provider=LOCAL_COVER_PROVIDER, attribution=None)
+    draw.ellipse((x - 6, y - 6, x + 6, y + 6), fill="#d95f54")
 
 
-def _render_route_fallback(points: list[tuple[float, float]]) -> ActivityCover:
-    from PIL import Image, ImageDraw
+def _project_scaled(
+    camera: MapCamera, point: tuple[float, float]
+) -> tuple[float, float]:
+    x, y = camera.project(point)
+    return x * RENDER_SCALE, y * RENDER_SCALE
 
-    preview = build_route_preview(points, max_points=320)
-    if preview is None:
-        return render_pin_cover()
-    scale = 2
-    size = COVER_WIDTH * scale
-    image = Image.new("RGB", (size, size), "#15191d")
-    draw = ImageDraw.Draw(image)
-    normalized_coordinates = []
-    for command in preview.path_data.split(" L "):
-        pair = command.removeprefix("M ").split()
-        normalized_coordinates.append((float(pair[0]), float(pair[1])))
-    xs = [point[0] for point in normalized_coordinates]
-    ys = [point[1] for point in normalized_coordinates]
-    width = max(xs) - min(xs)
-    height = max(ys) - min(ys)
-    padding = _route_padding_pixels() * scale
-    drawable = size - 2 * padding
-    route_scale = drawable / max(width, height)
-    content_width = width * route_scale
-    content_height = height * route_scale
-    offset_x = (size - content_width) / 2
-    offset_y = (size - content_height) / 2
-    coordinates = [
-        (
-            offset_x + (x - min(xs)) * route_scale,
-            offset_y + (y - min(ys)) * route_scale,
+
+def _renderer_or_error(renderer: LocalMapRenderer | None) -> LocalMapRenderer:
+    if renderer is not None:
+        return renderer
+    configured = configured_renderer()
+    if configured is None:
+        raise BasemapRenderError("renderer_unhealthy")
+    return configured
+
+
+def render_point_cover(
+    point: tuple[float, float],
+    *,
+    provenance: str,
+    renderer: LocalMapRenderer | None = None,
+) -> ActivityCover:
+    """Render a mapped activity/weather point, with a typed local fallback."""
+    valid = valid_points([point])
+    if not valid:
+        return render_no_map_cover()
+    camera = fit_camera(valid, padding=DEFAULT_ROUTE_PADDING_PIXELS)
+    try:
+        basemap = _renderer_or_error(renderer).render(camera, valid)
+        _draw_marker(basemap, _project_scaled(camera, valid[0]))
+        return _finalize(
+            basemap,
+            provider=PROTOMAPS_POINT_PROVIDER,
+            attribution=PROTOMAPS_ATTRIBUTION,
+            outcome="map_success",
+            provenance=provenance,
         )
-        for x, y in normalized_coordinates
-    ]
-    draw.line(coordinates, fill="#e5ecef", width=7, joint="curve")
-    radius = 10
-    for point, color in ((coordinates[0], "#ffffff"), (coordinates[-1], "#8f9aa0")):
+    except BasemapRenderError as error:
+        image = _blank_canvas()
+        _draw_marker(image, _project_scaled(camera, valid[0]))
+        return _finalize(
+            image,
+            provider=LOCAL_POINT_PROVIDER,
+            attribution=None,
+            outcome="fallback_created",
+            failure_category=error.category,
+            provenance=provenance,
+        )
+
+
+def _draw_route(
+    image: Any, camera: MapCamera, points: list[tuple[float, float]]
+) -> None:
+    from PIL import ImageDraw
+
+    coordinates = [_project_scaled(camera, point) for point in points]
+    draw = ImageDraw.Draw(image)
+    draw.line(
+        coordinates,
+        fill="#203f3a",
+        width=8,
+        joint="curve",
+    )
+    endpoint_radius = 8
+    for point, fill in ((coordinates[0], "#ffffff"), (coordinates[-1], "#d95f54")):
         draw.ellipse(
             (
-                point[0] - radius,
-                point[1] - radius,
-                point[0] + radius,
-                point[1] + radius,
+                point[0] - endpoint_radius,
+                point[1] - endpoint_radius,
+                point[0] + endpoint_radius,
+                point[1] + endpoint_radius,
             ),
-            fill=color,
+            fill=fill,
+            outline="#203f3a",
+            width=3,
         )
-    image = image.resize((COVER_WIDTH, COVER_HEIGHT), Image.Resampling.LANCZOS)
-    return _encode_webp(image, provider=LOCAL_ROUTE_PROVIDER, attribution=None)
 
 
-def _project_soccer_points(
+def render_route_cover(
     points: list[tuple[float, float]],
-) -> list[tuple[float, float]]:
-    valid = [
-        (float(latitude), float(longitude))
-        for latitude, longitude in points
-        if math.isfinite(latitude)
-        and math.isfinite(longitude)
-        and -90 <= latitude <= 90
-        and -180 <= longitude <= 180
-    ]
-    if len(set(valid)) < 2:
-        return []
-    mean_latitude = math.radians(sum(point[0] for point in valid) / len(valid))
-    projected = [
-        (
-            math.radians(longitude) * math.cos(mean_latitude),
-            math.radians(latitude),
+    *,
+    renderer: LocalMapRenderer | None = None,
+) -> ActivityCover:
+    """Render a route after fitting the final camera; never crop an overlay."""
+    route = valid_points(points)
+    if len(set(route)) < 2:
+        if route:
+            return render_point_cover(
+                route[0], provenance="activity", renderer=renderer
+            )
+        return render_no_map_cover()
+    camera = fit_camera(
+        route,
+        padding=DEFAULT_ROUTE_PADDING_PIXELS,
+        overlay_radius=4,
+    )
+    try:
+        basemap = _renderer_or_error(renderer).render(camera, route)
+        _draw_route(basemap, camera, route)
+        return _finalize(
+            basemap,
+            provider=PROTOMAPS_ROUTE_PROVIDER,
+            attribution=PROTOMAPS_ATTRIBUTION,
+            outcome="map_success",
         )
-        for latitude, longitude in valid
-    ]
-    center_x = sum(point[0] for point in projected) / len(projected)
-    center_y = sum(point[1] for point in projected) / len(projected)
-    centered = [(x - center_x, y - center_y) for x, y in projected]
-    variance_x = sum(x * x for x, _ in centered)
-    variance_y = sum(y * y for _, y in centered)
-    covariance = sum(x * y for x, y in centered)
-    angle = 0.5 * math.atan2(2 * covariance, variance_x - variance_y)
-    cosine = math.cos(-angle)
-    sine = math.sin(-angle)
-    return [
-        (x * cosine - y * sine, x * sine + y * cosine)
-        for x, y in centered
-    ]
+    except BasemapRenderError as error:
+        image = _blank_canvas()
+        _draw_route(image, camera, route)
+        return _finalize(
+            image,
+            provider=LOCAL_ROUTE_PROVIDER,
+            attribution=None,
+            outcome="fallback_created",
+            failure_category=error.category,
+        )
 
 
 def _heat_palette() -> list[int]:
     stops = (
-        (0.0, (27, 152, 142)),
-        (0.42, (46, 213, 155)),
-        (0.72, (246, 211, 72)),
-        (1.0, (255, 111, 54)),
+        (0.0, (36, 137, 133)),
+        (0.42, (61, 190, 139)),
+        (0.72, (241, 197, 66)),
+        (1.0, (224, 81, 67)),
     )
     palette: list[int] = []
     for value in range(256):
@@ -180,210 +320,133 @@ def _heat_palette() -> list[int]:
     return palette
 
 
-def render_soccer_heatmap_cover(
-    points: list[tuple[float, float]],
-) -> ActivityCover:
-    """Render a pitch heatmap derived only from real GPS sample density."""
-    from PIL import Image, ImageDraw, ImageFilter, ImageOps
+def _draw_heatmap(
+    image: Any, camera: MapCamera, points: list[tuple[float, float]]
+) -> Any:
+    from PIL import Image
 
-    projected = _project_soccer_points(points)
-    if not projected:
-        return render_pin_cover()
-
-    scale = 2
-    size = COVER_WIDTH * scale
-    image = Image.new("RGBA", (size, size), "#111a18")
-    draw = ImageDraw.Draw(image)
-    pitch = (64, 168, size - 64, size - 168)
-    draw.rounded_rectangle(pitch, radius=18, fill="#16362c", outline="#8eb5a5", width=3)
-
-    xs = [point[0] for point in projected]
-    ys = [point[1] for point in projected]
-    width = max(xs) - min(xs)
-    height = max(ys) - min(ys)
-    if width <= 0 and height <= 0:
-        return render_pin_cover()
-
-    grid_width = 84
-    grid_height = 60
-    counts = [0] * (grid_width * grid_height)
-    for x, y in projected:
-        normalized_x = 0.5 if width <= 0 else (x - min(xs)) / width
-        normalized_y = 0.5 if height <= 0 else (y - min(ys)) / height
-        grid_x = 3 + round(normalized_x * (grid_width - 7))
-        grid_y = 3 + round(normalized_y * (grid_height - 7))
-        counts[grid_y * grid_width + grid_x] += 1
-
-    maximum = max(counts)
-    density = Image.new("L", (grid_width, grid_height))
-    density.putdata(
-        [
-            round(255 * math.log1p(count) / math.log1p(maximum)) if count else 0
-            for count in counts
-        ]
-    )
-    density = density.resize(
-        (pitch[2] - pitch[0], pitch[3] - pitch[1]), Image.Resampling.BICUBIC
-    ).filter(ImageFilter.GaussianBlur(radius=34))
-    density = ImageOps.autocontrast(density)
-
+    grid_size = 120
+    render_size = COVER_WIDTH * RENDER_SCALE
+    counts: dict[tuple[int, int], int] = {}
+    for point in points:
+        x, y = _project_scaled(camera, point)
+        cell = (
+            max(0, min(grid_size - 1, round(x / render_size * grid_size))),
+            max(0, min(grid_size - 1, round(y / render_size * grid_size))),
+        )
+        counts[cell] = counts.get(cell, 0) + 1
+    field = [0.0] * (grid_size * grid_size)
+    spread = 10
+    sigma_squared = 12.25
+    for (x, y), count in counts.items():
+        weight = math.log1p(count)
+        for grid_y in range(max(0, y - spread), min(grid_size, y + spread + 1)):
+            for grid_x in range(
+                max(0, x - spread), min(grid_size, x + spread + 1)
+            ):
+                distance_squared = (grid_x - x) ** 2 + (grid_y - y) ** 2
+                field[grid_y * grid_size + grid_x] += weight * math.exp(
+                    -distance_squared / (2 * sigma_squared)
+                )
+    maximum = max(field)
+    density = Image.new("L", (grid_size, grid_size))
+    density.putdata([round(255 * value / maximum) for value in field])
+    density = density.resize((render_size, render_size), Image.Resampling.BICUBIC)
     heat = density.convert("P")
     heat.putpalette(_heat_palette())
     heat = heat.convert("RGBA")
-    heat.putalpha(density.point(lambda value: 0 if value < 10 else min(224, value)))
-    overlay = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    overlay.paste(heat, (pitch[0], pitch[1]))
-    image = Image.alpha_composite(image, overlay)
+    heat.putalpha(density.point(lambda value: 0 if value < 3 else min(190, value)))
+    return Image.alpha_composite(image.convert("RGBA"), heat)
 
-    draw = ImageDraw.Draw(image)
-    line_color = "#b8d4c8"
-    middle_x = size // 2
-    middle_y = size // 2
-    draw.line((middle_x, pitch[1], middle_x, pitch[3]), fill=line_color, width=3)
-    draw.ellipse(
-        (middle_x - 74, middle_y - 74, middle_x + 74, middle_y + 74),
-        outline=line_color,
-        width=3,
+
+def render_soccer_heatmap_cover(
+    points: list[tuple[float, float]],
+    *,
+    renderer: LocalMapRenderer | None = None,
+) -> ActivityCover:
+    """Render real GPS density over a camera-aligned Protomaps basemap."""
+    samples = valid_points(points)
+    if len(set(samples)) < 2:
+        if samples:
+            return render_point_cover(
+                samples[0], provenance="activity", renderer=renderer
+            )
+        return render_no_map_cover()
+    camera = fit_camera(
+        samples,
+        padding=DEFAULT_ROUTE_PADDING_PIXELS,
+        overlay_radius=20,
     )
-    draw.ellipse(
-        (middle_x - 5, middle_y - 5, middle_x + 5, middle_y + 5),
-        fill=line_color,
-    )
-    penalty_depth = 112
-    penalty_height = 264
-    for side in (-1, 1):
-        edge = pitch[0] if side < 0 else pitch[2]
-        inner = edge - side * penalty_depth
-        draw.rectangle(
-            (
-                min(edge, inner),
-                middle_y - penalty_height // 2,
-                max(edge, inner),
-                middle_y + penalty_height // 2,
-            ),
-            outline=line_color,
-            width=3,
+    try:
+        basemap = _renderer_or_error(renderer).render(camera, samples)
+        image = _draw_heatmap(basemap, camera, samples)
+        return _finalize(
+            image,
+            provider=PROTOMAPS_HEATMAP_PROVIDER,
+            attribution=PROTOMAPS_ATTRIBUTION,
+            outcome="map_success",
         )
+    except BasemapRenderError as error:
+        return render_no_map_cover(failure_category=error.category)
 
-    image = image.convert("RGB").resize(
-        (COVER_WIDTH, COVER_HEIGHT), Image.Resampling.LANCZOS
-    )
-    return _encode_webp(image, provider=LOCAL_HEATMAP_PROVIDER, attribution=None)
+
+def render_activity_cover(
+    activity_type: str,
+    evidence: LocationEvidence,
+    *,
+    renderer: LocalMapRenderer | None = None,
+) -> ActivityCover:
+    """Select the cover variant without exposing evidence outside the worker."""
+    if evidence.kind == "none":
+        return render_no_map_cover()
+    if evidence.kind == "point":
+        return render_point_cover(
+            evidence.points[0],
+            provenance=evidence.provenance or "activity",
+            renderer=renderer,
+        )
+    points = list(evidence.points)
+    if activity_type == SOCCER_ACTIVITY_TYPE:
+        return render_soccer_heatmap_cover(points, renderer=renderer)
+    return render_route_cover(points, renderer=renderer)
 
 
 def cover_provider_rank(provider: str, activity_type: str) -> int:
-    """Rank cover quality without preserving a heatmap after a type correction."""
-    if provider == LOCAL_HEATMAP_PROVIDER:
-        return 2 if activity_type == SOCCER_ACTIVITY_TYPE else -1
-    return {
-        LOCAL_COVER_PROVIDER: 0,
-        LOCAL_ROUTE_PROVIDER: 1,
-    }.get(provider, 2)
+    """Keep cover upgrades monotonic and reject stale soccer heatmaps."""
+    if provider == PROTOMAPS_HEATMAP_PROVIDER:
+        return 5 if activity_type == SOCCER_ACTIVITY_TYPE else -1
+    if provider == "local-heatmap":
+        return 4 if activity_type == SOCCER_ACTIVITY_TYPE else -1
+    if provider.startswith("carto"):
+        return 4
+    if provider == PROTOMAPS_ROUTE_PROVIDER:
+        return 4
+    if provider == LOCAL_ROUTE_PROVIDER:
+        return 3
+    if provider == PROTOMAPS_POINT_PROVIDER:
+        return 2
+    if provider == LOCAL_POINT_PROVIDER:
+        return 1
+    return 0
 
 
-def _route_padding_pixels() -> int:
-    value = os.getenv("GARMIN_MAP_ROUTE_PADDING_PIXELS")
-    if value is None:
-        return DEFAULT_ROUTE_PADDING_PIXELS
-    try:
-        return max(0, min(int(value), MAX_ROUTE_PADDING_PIXELS))
-    except ValueError:
-        return DEFAULT_ROUTE_PADDING_PIXELS
-
-
-def configured_route_provider() -> str | None:
-    """Return the active remote provider only when its full contract is set."""
-    provider_name = os.getenv("GARMIN_MAP_PROVIDER")
-    tile_url = os.getenv("GARMIN_MAP_TILE_URL")
-    attribution = os.getenv("GARMIN_MAP_ATTRIBUTION")
-    if provider_name and tile_url and attribution:
-        return provider_name
-    return None
-
-
-def _crop_route_to_padding(
-    image: object,
-    line: list[object],
-    *,
-    center: object,
-    zoom: int,
-    tile_size: int,
-) -> object:
-    from staticmaps.transformer import Transformer
-
-    render_size = COVER_WIDTH * 2
-    transformer = Transformer(render_size, render_size, zoom, center, tile_size)
-    pixels = [transformer.ll2pixel(point) for point in line]
-    xs = [point[0] for point in pixels]
-    ys = [point[1] for point in pixels]
-    span = max(max(xs) - min(xs), max(ys) - min(ys))
-    visible_ratio = 1 - 2 * (_route_padding_pixels() + 2) / COVER_WIDTH
-    crop_size = min(float(render_size), span / max(visible_ratio, 0.1))
-    center_x = (min(xs) + max(xs)) / 2
-    center_y = (min(ys) + max(ys)) / 2
-    left = max(0.0, min(center_x - crop_size / 2, render_size - crop_size))
-    top = max(0.0, min(center_y - crop_size / 2, render_size - crop_size))
-    return image.crop((left, top, left + crop_size, top + crop_size))
-
-
-def render_route_cover(points: list[tuple[float, float]]) -> ActivityCover:
-    """Render configured tiles at 2x, falling back to a local dark route."""
-    tile_url = os.getenv("GARMIN_MAP_TILE_URL")
-    attribution = os.getenv("GARMIN_MAP_ATTRIBUTION")
-    provider_name = configured_route_provider()
-    if not tile_url or not attribution or not provider_name:
-        return _render_route_fallback(points)
-    try:
-        import staticmaps
-        from PIL import Image
-
-        context = staticmaps.Context()
-        provider = staticmaps.TileProvider(
-            provider_name,
-            tile_url,
-            attribution=attribution,
-        )
-        context.set_tile_provider(provider)
-        downloader = staticmaps.tile_downloader.TileDownloader()
-        downloader.set_user_agent(
-            os.getenv(
-                "GARMIN_MAP_USER_AGENT",
-                "AppLog-Garmin-Sync/1.0 (+https://github.com/reus/Applog)",
-            )
-        )
-        context.set_tile_downloader(downloader)
-        context.set_cache_dir(
-            os.getenv(
-                "GARMIN_MAP_TILE_CACHE_DIR",
-                os.path.join(tempfile.gettempdir(), "applog-garmin-map-tiles"),
-            )
-        )
-        line = [staticmaps.create_latlng(lat, lon) for lat, lon in points]
-        route = staticmaps.Line(
-            line, color=staticmaps.parse_color("#e8edef"), width=5
-        )
-        context.add_object(route)
-        context.add_bounds(
-            route.bounds(),
-            extra_pixel_bounds=_route_padding_pixels() * 2,
-        )
-        render_size = COVER_WIDTH * 2
-        center, zoom = context.determine_center_zoom(render_size, render_size)
-        if center is None or zoom is None:
-            raise RuntimeError("Cannot render route cover without center and zoom")
-        image = context.render_pillow(render_size, render_size)
-        image = _crop_route_to_padding(
-            image,
-            line,
-            center=center,
-            zoom=zoom,
-            tile_size=provider.tile_size(),
-        )
-        image = image.convert("RGB").resize(
-            (COVER_WIDTH, COVER_HEIGHT), Image.Resampling.LANCZOS
-        )
-        return _encode_webp(
-            image, provider=provider_name, attribution=attribution
-        )
-    except Exception:
-        return _render_route_fallback(points)
+__all__ = [
+    "ActivityCover",
+    "CURRENT_MAP_PROVIDERS",
+    "DEFAULT_ROUTE_PADDING_PIXELS",
+    "NO_MAP_PROVIDER",
+    "PROTOMAPS_HEATMAP_PROVIDER",
+    "PROTOMAPS_POINT_PROVIDER",
+    "PROTOMAPS_ROUTE_PROVIDER",
+    "RENDER_VERSION",
+    "SOCCER_ACTIVITY_TYPE",
+    "active_render_version",
+    "configured_route_provider",
+    "cover_provider_rank",
+    "render_activity_cover",
+    "render_no_map_cover",
+    "render_pin_cover",
+    "render_point_cover",
+    "render_route_cover",
+    "render_soccer_heatmap_cover",
+]

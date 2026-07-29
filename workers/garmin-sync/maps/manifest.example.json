@@ -1,0 +1,25 @@
+{
+  "releaseId": "YYYY-MM-protomaps-build",
+  "styleId": "applog-light",
+  "styleVersion": "5.7.2",
+  "rendererVersion": "1.11.0",
+  "rendererSha256": "replace-with-sha256",
+  "sourceBuildUrl": "https://build.protomaps.com/YYYYMMDD.pmtiles",
+  "sourceBuildHash": "replace-with-upstream-blake3",
+  "regions": [
+    {
+      "id": "greater-bay-area",
+      "bounds": [111.5, 21.5, 115.5, 24.0],
+      "maxZoom": 24
+    },
+    {
+      "id": "global-low",
+      "bounds": [-180, -85, 180, 85],
+      "maxZoom": 6
+    }
+  ],
+  "assets": {
+    "basemap.pmtiles": "replace-with-sha256",
+    "style.json": "replace-with-sha256"
+  }
+}

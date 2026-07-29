@@ -1,18 +1,18 @@
 """Orchestrate one bounded, idempotent Garmin synchronization."""
 
+import hashlib
+import logging
 import os
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from .cover import (
-    RENDER_VERSION,
-    SOCCER_ACTIVITY_TYPE,
+    active_render_version,
     configured_route_provider,
-    render_pin_cover,
-    render_route_cover,
-    render_soccer_heatmap_cover,
+    render_activity_cover,
 )
+from .evidence import extract_activity_point, resolve_location_evidence
 from .models import ActivitySnapshot, NormalizedActivityDetail, SyncResult
 from .normalize import (
     normalize_activity,
@@ -39,6 +39,7 @@ ROUTE_ACTIVITY_TYPES = {
     "walking",
     "hiking",
 }
+LOGGER = logging.getLogger(__name__)
 
 
 class ReadAdapter(Protocol):
@@ -85,11 +86,16 @@ class SyncService:
         raw_activities = self._adapter.get_activities_by_date(
             cutoff.date().isoformat(), synced_at.date().isoformat()
         )
-        snapshots = [
-            snapshot
-            for raw in raw_activities
-            if (snapshot := normalize_activity(raw)) is not None
-        ]
+        snapshots: list[ActivitySnapshot] = []
+        activity_points_by_id: dict[str, tuple[float, float]] = {}
+        for raw in raw_activities:
+            snapshot = normalize_activity(raw)
+            if snapshot is None:
+                continue
+            snapshots.append(snapshot)
+            point = extract_activity_point(raw)
+            if point is not None:
+                activity_points_by_id[snapshot.source_activity_id] = point
         snapshots.sort(key=lambda item: item.started_at, reverse=True)
         detail_by_source_id = self._archive_private_activity_slice(
             raw_activities, synced_at
@@ -102,7 +108,7 @@ class SyncService:
         processed_routes = self._repository.processed_route_ids()
         covered_activity_ids = (
             self._repository.covered_activity_ids(
-                RENDER_VERSION, configured_route_provider()
+                active_render_version(), configured_route_provider()
             )
             if hasattr(self._repository, "covered_activity_ids")
             else set()
@@ -110,6 +116,7 @@ class SyncService:
         route_count = 0
         route_attempt_count = 0
         route_points_by_id: dict[str, list[tuple[float, float]]] = {}
+        route_attempted_ids: set[str] = set()
         for snapshot in snapshots:
             if (
                 snapshot.source_activity_id in processed_routes
@@ -122,6 +129,7 @@ class SyncService:
             if route_attempt_count >= ROUTE_BATCH_SIZE:
                 break
             route_attempt_count += 1
+            route_attempted_ids.add(snapshot.source_activity_id)
             points = self._adapter.get_route_points(snapshot.source_activity_id)
             route_points_by_id[snapshot.source_activity_id] = points
             route = build_route_preview(points)
@@ -131,7 +139,15 @@ class SyncService:
                 route_count += 1
             snapshot.route_processed = True
         self._generate_candidate_covers(
-            snapshots[:6], route_points_by_id, synced_at
+            [
+                snapshot
+                for snapshot in snapshots[:6]
+                if snapshot.source_activity_id not in covered_activity_ids
+            ],
+            route_points_by_id,
+            route_attempted_ids,
+            activity_points_by_id,
+            synced_at,
         )
         unresolved = next(
             (
@@ -157,6 +173,8 @@ class SyncService:
         self,
         candidates: list[ActivitySnapshot],
         route_points_by_id: dict[str, list[tuple[float, float]]],
+        route_attempted_ids: set[str],
+        activity_points_by_id: dict[str, tuple[float, float]],
         synced_at: datetime,
     ) -> None:
         """Generate covers only for the public newest-six projection."""
@@ -166,15 +184,51 @@ class SyncService:
             return
         for snapshot in candidates:
             try:
+                if (
+                    snapshot.activity_type in ROUTE_ACTIVITY_TYPES
+                    and snapshot.source_activity_id not in route_attempted_ids
+                ):
+                    continue
                 points = route_points_by_id.get(snapshot.source_activity_id, [])
-                if snapshot.activity_type == SOCCER_ACTIVITY_TYPE and points:
-                    cover = render_soccer_heatmap_cover(points)
-                else:
-                    cover = render_route_cover(points) if points else render_pin_cover()
+                weather_payload = None
+                if (
+                    not points
+                    and snapshot.source_activity_id not in activity_points_by_id
+                    and hasattr(self._repository, "get_activity_weather_payload")
+                ):
+                    weather_payload = self._repository.get_activity_weather_payload(
+                        snapshot.source_activity_id
+                    )
+                evidence = resolve_location_evidence(
+                    points,
+                    activity_point=activity_points_by_id.get(
+                        snapshot.source_activity_id
+                    ),
+                    weather_payload=weather_payload,
+                )
+                cover = render_activity_cover(snapshot.activity_type, evidence)
                 snapshot.cover_id = self._repository.store_activity_cover(
                     snapshot.source_activity_id, cover, generated_at=synced_at
                 )
-            except Exception:
+                activity_hash = hashlib.sha256(
+                    snapshot.source_activity_id.encode()
+                ).hexdigest()[:12]
+                LOGGER.info(
+                    "Garmin cover outcome=%s category=%s provider=%s activity=%s",
+                    cover.outcome,
+                    cover.failure_category or "none",
+                    cover.provider,
+                    activity_hash,
+                )
+            except Exception as error:
+                activity_hash = hashlib.sha256(
+                    snapshot.source_activity_id.encode()
+                ).hexdigest()[:12]
+                LOGGER.warning(
+                    "Garmin cover outcome=unexpected_error error_type=%s activity=%s",
+                    type(error).__name__,
+                    activity_hash,
+                )
                 continue
 
     def _archive_private_activity_slice(

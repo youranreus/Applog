@@ -7,8 +7,10 @@ from datetime import UTC, datetime
 from typing import Any
 
 from .cover import (
-    LOCAL_COVER_PROVIDER,
-    LOCAL_HEATMAP_PROVIDER,
+    NO_MAP_PROVIDER,
+    PROTOMAPS_HEATMAP_PROVIDER,
+    PROTOMAPS_POINT_PROVIDER,
+    PROTOMAPS_ROUTE_PROVIDER,
     SOCCER_ACTIVITY_TYPE,
     ActivityCover,
     cover_provider_rank,
@@ -20,7 +22,7 @@ from .models import (
     NormalizedHealthDaily,
     PrivateActivity,
 )
-from .payload_codec import encrypt_payload
+from .payload_codec import EncryptedPayload, decrypt_payload, encrypt_payload
 
 LOCK_NAME = "applog_garmin_sync"
 
@@ -258,10 +260,48 @@ class MySQLRepository:
             rows = cursor.fetchall()
         return [(int(row[0]), str(row[1])) for row in rows]
 
+    def get_activity_weather_payload(self, source_activity_id: str) -> Any | None:
+        """Decrypt one archived weather payload inside the trusted worker boundary."""
+        if self._data_encryption_key is None:
+            return None
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT payload.ownerKey, payload.ciphertext, payload.nonce, "
+                "payload.authTag, payload.contentHash, payload.contentType, "
+                "payload.compression, payload.encryptionVersion "
+                "FROM garmin_private_payload payload "
+                "INNER JOIN garmin_private_activity activity "
+                "ON activity.id = payload.ownerKey "
+                "WHERE activity.sourceActivityId = %s "
+                "AND payload.domain = 'activity' "
+                "AND payload.payloadKind = 'weather' LIMIT 1",
+                (source_activity_id,),
+            )
+            row = cursor.fetchone()
+        if not row:
+            return None
+        owner_key = str(row[0])
+        return decrypt_payload(
+            EncryptedPayload(
+                bytes(row[1]),
+                bytes(row[2]),
+                bytes(row[3]),
+                str(row[4]),
+                str(row[5]),
+                str(row[6]),
+                int(row[7]),
+            ),
+            self._data_encryption_key,
+            domain="activity",
+            owner_key=owner_key,
+            payload_kind="weather",
+        )
+
     def covered_activity_ids(
         self, render_version: str, preferred_provider: str | None
     ) -> set[str]:
-        """Return source IDs whose route covers match the active renderer."""
+        """Return source IDs whose activity-aware covers are fully current."""
+        del preferred_provider
         with self._connection.cursor() as cursor:
             cursor.execute(
                 "SELECT activity.sourceActivityId "
@@ -270,19 +310,19 @@ class MySQLRepository:
                 "ON activity.id = cover.privateActivityId "
                 "WHERE cover.renderVersion = %s "
                 "AND ((activity.activityType = %s "
-                "AND cover.provider IN (%s, %s)) "
+                "AND cover.provider IN (%s, %s, %s)) "
                 "OR (activity.activityType <> %s "
-                "AND cover.provider <> %s "
-                "AND (%s IS NULL OR cover.provider = %s)))",
+                "AND cover.provider IN (%s, %s, %s)))",
                 (
                     render_version,
                     SOCCER_ACTIVITY_TYPE,
-                    LOCAL_HEATMAP_PROVIDER,
-                    LOCAL_COVER_PROVIDER,
+                    PROTOMAPS_HEATMAP_PROVIDER,
+                    PROTOMAPS_POINT_PROVIDER,
+                    NO_MAP_PROVIDER,
                     SOCCER_ACTIVITY_TYPE,
-                    LOCAL_HEATMAP_PROVIDER,
-                    preferred_provider,
-                    preferred_provider,
+                    PROTOMAPS_ROUTE_PROVIDER,
+                    PROTOMAPS_POINT_PROVIDER,
+                    NO_MAP_PROVIDER,
                 ),
             )
             return {str(row[0]) for row in cursor.fetchall()}

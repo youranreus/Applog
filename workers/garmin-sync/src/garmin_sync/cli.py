@@ -52,7 +52,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     parser.add_argument(
         "command",
-        choices=("sync", "provision"),
+        choices=("sync", "provision", "map-health"),
         nargs="?",
         default="sync",
     )
@@ -72,6 +72,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         from .provision import main as provision
 
         provision()
+        return
+    if args.command == "map-health":
+        from .map_renderer import check_renderer_health
+
+        if not check_renderer_health():
+            raise SystemExit(1)
+        print("Protomaps renderer healthy")
         return
 
     from .handler import handler

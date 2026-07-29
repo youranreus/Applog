@@ -103,17 +103,16 @@ class SyncServiceTests(unittest.TestCase):
         adapter = FakeAdapter()
         repository = VersionAwareRepository()
 
-        with patch.dict(
-            "os.environ",
-            {
-                "GARMIN_MAP_PROVIDER": "carto-dark",
-                "GARMIN_MAP_TILE_URL": "https://tiles.test/$z/$x/$y.png",
-                "GARMIN_MAP_ATTRIBUTION": "Test maps",
-            },
+        with (
+            patch("garmin_sync.sync.active_render_version", return_value="v4-test"),
+            patch(
+                "garmin_sync.sync.configured_route_provider",
+                return_value="protomaps",
+            ),
         ):
             SyncService(adapter, repository).run()
 
-        self.assertEqual(repository.cover_query, ("garmin-cover-v3", "carto-dark"))
+        self.assertEqual(repository.cover_query, ("v4-test", "protomaps"))
         self.assertEqual(adapter.route_id, "1")
 
     def test_incomplete_provider_configuration_does_not_require_remote_provider(
@@ -132,14 +131,13 @@ class SyncServiceTests(unittest.TestCase):
         adapter = FakeAdapter()
         repository = VersionAwareRepository()
 
-        with patch.dict(
-            "os.environ",
-            {"GARMIN_MAP_PROVIDER": "carto-dark"},
-            clear=True,
+        with (
+            patch("garmin_sync.sync.active_render_version", return_value="v4-local"),
+            patch("garmin_sync.sync.configured_route_provider", return_value=None),
         ):
             SyncService(adapter, repository).run()
 
-        self.assertEqual(repository.cover_query, ("garmin-cover-v3", None))
+        self.assertEqual(repository.cover_query, ("v4-local", None))
         self.assertFalse(hasattr(adapter, "route_id"))
 
     def test_soccer_with_gps_uses_heatmap_cover_instead_of_route_cover(self) -> None:
@@ -158,21 +156,53 @@ class SyncServiceTests(unittest.TestCase):
 
         repository = CoverRepository()
         heatmap = ActivityCover(
-            b"heatmap", 480, 480, "heatmap-etag", "local-heatmap", None
+            b"heatmap", 480, 480, "heatmap-etag", "protomaps-heatmap", None
         )
 
-        with (
-            patch(
-                "garmin_sync.sync.render_soccer_heatmap_cover", return_value=heatmap
-            ) as render_heatmap,
-            patch("garmin_sync.sync.render_route_cover") as render_route,
-        ):
+        with patch(
+            "garmin_sync.sync.render_activity_cover", return_value=heatmap
+        ) as render_cover:
             SyncService(adapter, repository).run()
 
-        render_heatmap.assert_called_once_with([(10.0, 20.0), (10.1, 20.1)])
-        render_route.assert_not_called()
-        self.assertEqual(repository.stored_cover.provider, "local-heatmap")
+        activity_type, evidence = render_cover.call_args.args
+        self.assertEqual(activity_type, "soccer")
+        self.assertEqual(evidence.kind, "route")
+        self.assertEqual(evidence.points, ((10.0, 20.0), (10.1, 20.1)))
+        self.assertEqual(repository.stored_cover.provider, "protomaps-heatmap")
         self.assertEqual(repository.snapshots[0].cover_id, "soccer-cover")
+
+    def test_indoor_activity_uses_archived_weather_as_a_private_point(self) -> None:
+        adapter = FakeAdapter()
+        adapter.get_activities_by_date = lambda start, end: [
+            {
+                **activity(1),
+                "activityType": {"typeKey": "elliptical"},
+            }
+        ]
+
+        class CoverRepository(FakeRepository):
+            def get_activity_weather_payload(self, source_activity_id):
+                self.weather_id = source_activity_id
+                return {"latitude": 22.5, "longitude": 113.9}
+
+            def store_activity_cover(self, source_activity_id, cover, *, generated_at):
+                self.stored_cover = cover
+                return "weather-cover"
+
+        repository = CoverRepository()
+        point_cover = ActivityCover(
+            b"point", 480, 480, "point-etag", "protomaps-point", None
+        )
+        with patch(
+            "garmin_sync.sync.render_activity_cover", return_value=point_cover
+        ) as render_cover:
+            SyncService(adapter, repository).run()
+
+        _, evidence = render_cover.call_args.args
+        self.assertEqual(evidence.kind, "point")
+        self.assertEqual(evidence.provenance, "weather")
+        self.assertEqual(repository.weather_id, "1")
+        self.assertEqual(repository.snapshots[0].cover_id, "weather-cover")
 
 
 if __name__ == "__main__":
