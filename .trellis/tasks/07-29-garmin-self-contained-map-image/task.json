@@ -1,0 +1,31 @@
+{
+  "id": "garmin-self-contained-map-image",
+  "name": "garmin-self-contained-map-image",
+  "title": "Garmin 自包含地图渲染镜像",
+  "description": "构建只服务 AppLog Garmin 封面的自包含离线 Martin/Protomaps OCI 镜像，完整 bake PMTiles、样式、字体、manifest 与许可证。",
+  "status": "in_progress",
+  "dev_type": "feature",
+  "scope": "workers/garmin-sync/maps",
+  "package": "backend",
+  "priority": "P2",
+  "creator": "季悠然",
+  "assignee": "季悠然",
+  "createdAt": "2026-07-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "master",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "07-29-garmin-map-cover-reliability",
+  "relatedFiles": [
+    "workers/garmin-sync/maps/",
+    "workers/garmin-sync/src/garmin_sync/map_release.py",
+    "workers/garmin-sync/src/garmin_sync/map_renderer.py",
+    "docs/garmin-sync.md"
+  ],
+  "notes": "",
+  "meta": {}
+}

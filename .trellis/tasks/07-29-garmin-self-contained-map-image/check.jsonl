@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/backend/garmin-guidelines.md", "reason": "Verify loopback-only renderer and private/public data boundaries"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "Verify tests, exact version pins and rollback coverage"}
+{"file": ".trellis/tasks/07-29-garmin-self-contained-map-image/prd.md", "reason": "Verify self-contained offline image acceptance criteria"}
+{"file": ".trellis/tasks/07-29-garmin-map-cover-reliability/research/prototype-results.md", "reason": "Verify the container preserves established Martin performance and image gates"}

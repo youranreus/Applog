@@ -3,6 +3,136 @@
 The repository contains only reproducible configuration, licenses and test
 fixtures. Production PMTiles and activity-derived images stay outside Git.
 
+## Self-contained Docker image
+
+`Dockerfile` builds the one-purpose AppLog renderer. The final image contains
+Martin, one immutable PMTiles release, the `applog-light` style, Noto fonts,
+the release manifest and notices. It needs no runtime asset volume and must not
+have outbound network access. Use the repository root as the build context so
+`Dockerfile.dockerignore` can reduce it to the public map build inputs.
+
+Fast public-fixture build for CI and host validation:
+
+```bash
+docker build \
+  --file workers/garmin-sync/maps/Dockerfile \
+  --tag applog-map-renderer:fixture \
+  --build-arg BUILD_MODE=fixture \
+  --build-arg RELEASE_ID=fixture-public-victoria-park-20260728 \
+  .
+```
+
+Production builds require one explicit Protomaps daily build and the Martin
+OCI digest. Never use `latest`, infer a bbox from private activities, or pass
+Garmin/database secrets as build arguments:
+
+```bash
+docker pull ghcr.io/maplibre/martin:1.11.0
+MARTIN_DIGEST="$(docker image inspect ghcr.io/maplibre/martin:1.11.0 \
+  --format '{{index .RepoDigests 0}}' | sed 's/.*@//')"
+
+# Resolve these three exact digest references from the approved registries.
+PMTILES_IMAGE=protomaps/go-pmtiles@sha256:REPLACE_WITH_PMtiles_DIGEST
+NODE_IMAGE=node@sha256:REPLACE_WITH_NODE_DIGEST
+GO_IMAGE=golang@sha256:REPLACE_WITH_GO_DIGEST
+
+docker build \
+  --file workers/garmin-sync/maps/Dockerfile \
+  --tag registry.example/applog-map-renderer:20260728 \
+  --build-arg BUILD_MODE=production \
+  --build-arg PROTOMAPS_BUILD_DATE=20260728 \
+  --build-arg PROTOMAPS_BUILD_URL=https://build.protomaps.com/20260728.pmtiles \
+  --build-arg PROTOMAPS_BUILD_BLAKE3=REPLACE_WITH_OFFICIAL_BUILD_HASH \
+  --build-arg RELEASE_ID=20260728-protomaps \
+  --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" \
+  --build-arg PMTILES_IMAGE="${PMTILES_IMAGE}" \
+  --build-arg NODE_IMAGE="${NODE_IMAGE}" \
+  --build-arg GO_IMAGE="${GO_IMAGE}" \
+  --build-arg MARTIN_IMAGE="ghcr.io/maplibre/martin@${MARTIN_DIGEST}" \
+  --build-arg MARTIN_IMAGE_DIGEST="${MARTIN_DIGEST}" \
+  .
+```
+
+For production, also pass digest-pinned `PMTILES_IMAGE`, `NODE_IMAGE`, and
+`GO_IMAGE` build arguments. The Dockerfile defaults document exact versions for
+fixture builds; digest-qualified image references are the production trust
+boundary. The build rejects a Martin digest that does not match `MARTIN_IMAGE`.
+
+Production source verification downloads the complete planet archive before
+extracting the two baked coverage ranges, because a BLAKE3 claim cannot be
+verified from partial HTTP ranges. Budget at least 150 GiB of temporary build
+space for current archives. Builder scratch data does not enter the final image.
+
+Stage the baked manifest before replacing the renderer. This is metadata only;
+the renderer still runs without volumes. Disable the Garmin timer for the
+whole image/manifest switch so the worker cannot observe a mixed release:
+
+```bash
+image=registry.example/applog-map-renderer@sha256:REPLACE_WITH_IMAGE_DIGEST
+sudo /opt/applog/current/workers/garmin-sync/manage-timer disable
+manifest_stage="$(mktemp -d)"
+container="$(docker create "${image}")"
+docker cp "${container}:/opt/applog/maps/current/manifest.json" \
+  "${manifest_stage}/manifest.json"
+docker rm "${container}"
+```
+
+Start with a read-only root and host-loopback publishing. The container listens
+on all interfaces only inside its network namespace; public host publishing is
+unsupported:
+
+```bash
+docker network inspect applog-map-internal >/dev/null 2>&1 || \
+  docker network create --internal applog-map-internal
+
+docker run --detach --name applog-map-renderer \
+  --restart unless-stopped \
+  --publish 127.0.0.1:3000:3000 \
+  --read-only --tmpfs /tmp:size=64m,noexec,nosuid,nodev \
+  --cap-drop ALL --security-opt no-new-privileges \
+  --network applog-map-internal \
+  "${image}"
+
+curl --fail --silent http://127.0.0.1:3000/health
+
+sudo install -d -m 0755 /opt/applog/maps/current
+sudo install -m 0644 "${manifest_stage}/manifest.json" \
+  /opt/applog/maps/current/.manifest.json.next
+sudo mv /opt/applog/maps/current/.manifest.json.next \
+  /opt/applog/maps/current/manifest.json
+sudo /opt/applog/current/workers/garmin-sync/manage-timer enable
+```
+
+The Compose example declares the same `internal: true` boundary. Keep a host
+firewall deny rule as defense in depth and verify static rendering while
+outbound traffic is blocked.
+
+Run the established renderer gate from the host:
+
+```bash
+python -m garmin_sync.map_prototype \
+  --manifest /opt/applog/maps/current/manifest.json \
+  --output /tmp/applog-map-prototype --iterations 100 \
+  --renderer-pid "$(docker inspect --format '{{.State.Pid}}' applog-map-renderer)"
+```
+
+The public fixture image uses its checked-in Victoria Park extract. Run its
+same 100-image gate with `--fixture-profile victoria-park`. On a Linux Docker
+host the opt-in integration test performs the build, starts the image on an
+egress-disabled network, exports its manifest and runs that gate:
+
+```bash
+RUN_MAP_IMAGE_INTEGRATION=1 .venv/bin/python -m pytest \
+  tests/test_map_image_integration.py -q
+```
+
+Deploy and roll back by complete image digest. Always export the manifest from
+the same digest, keep the timer disabled until renderer health passes, and
+publish the manifest with an atomic rename. Never mix a manifest from one image
+with the assets from another. Keep the previous container/image digest and
+manifest until the first bounded sync succeeds so the same sequence can roll
+back both pieces.
+
 `fixtures/public-victoria-park-20260728.pmtiles` is a 465 KiB extract around a
 fixed public landmark, not a location inferred from any activity. Its adjacent
 JSON records the explicit daily build, bbox, zoom range, hash and ODbL notice.
@@ -29,8 +159,11 @@ font files in `fonts/`; Martin generates glyph ranges on loopback.
 Build one disjoint archive from an explicit Protomaps daily build:
 
 ```bash
-pmtiles extract BUILD_URL global.pmtiles --maxzoom=6
-pmtiles extract BUILD_URL bay-area.pmtiles \
+curl --fail --location --output source.pmtiles BUILD_URL
+printf '%s  %s\n' BUILD_BLAKE3 source.pmtiles | b3sum --check
+pmtiles verify source.pmtiles
+pmtiles extract source.pmtiles global.pmtiles --maxzoom=6
+pmtiles extract source.pmtiles bay-area.pmtiles \
   --bbox=111.5,21.5,115.5,24.0 --minzoom=7 --maxzoom=15
 pmtiles merge global.pmtiles bay-area.pmtiles basemap.pmtiles
 pmtiles verify basemap.pmtiles

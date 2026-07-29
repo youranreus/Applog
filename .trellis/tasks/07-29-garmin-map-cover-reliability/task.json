@@ -18,7 +18,9 @@
   "commit": null,
   "pr_url": null,
   "subtasks": [],
-  "children": [],
+  "children": [
+    "07-29-garmin-self-contained-map-image"
+  ],
   "parent": null,
   "relatedFiles": [],
   "notes": "",

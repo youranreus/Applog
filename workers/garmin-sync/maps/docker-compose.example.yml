@@ -1,0 +1,23 @@
+services:
+  renderer:
+    image: registry.example/applog-map-renderer@sha256:replace-with-built-image-digest
+    container_name: applog-map-renderer
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 1.0
+    networks:
+      - renderer-internal
+
+networks:
+  renderer-internal:
+    internal: true

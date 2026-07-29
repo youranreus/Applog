@@ -107,6 +107,95 @@ cover = render_activity_cover(activity_type, evidence)
 - NestJS serves whitelist snapshots only.
 - `TYPE_LABELS` in worker is the authority for Chinese activity names (upsert refreshes display labels).
 
+## Scenario: Self-contained Garmin map renderer image
+
+### 1. Scope / Trigger
+
+- Trigger: changes to `workers/garmin-sync/maps/Dockerfile`, its build scripts,
+  renderer container config, baked release, manifest export, or Docker deployment.
+- This is AppLog-only infrastructure for Garmin covers, not a general map service.
+
+### 2. Signatures
+
+- Build: `docker build -f workers/garmin-sync/maps/Dockerfile .` with
+  `BUILD_MODE=fixture|production`.
+- Production inputs: explicit `PROTOMAPS_BUILD_DATE`, HTTPS build URL, official
+  BLAKE3, release id, source revision, and digest-qualified PMTiles/Node/Go/Martin
+  image references.
+- Runtime: host `127.0.0.1:3000` → container Martin `0.0.0.0:3000`;
+  no runtime map volume.
+- Worker manifest: `/opt/applog/maps/current/manifest.json`, exported from the
+  exact running image digest.
+
+### 3. Contracts
+
+- The final OCI image bakes `basemap.pmtiles`, `style.json`, Noto fonts,
+  `manifest.json`, NOTICE and font licenses under `/opt/applog/maps/current`.
+- Runtime is non-root, read-only-root compatible, capability-free, on an
+  egress-disabled Docker network, and exposes only the Martin contract needed
+  by `LocalMapRenderer`.
+- Production builds use no floating image tags as trust boundaries. All four
+  base/tool images must be `name@sha256:...`; Martin's native binary hash and
+  OCI digest are recorded separately in the release manifest.
+- Builds may use the network. Runtime style/tile/glyph resolution is loopback
+  only and must continue to work with outbound traffic denied.
+- A release switch is one operational transaction: disable Garmin timer, stage
+  the target image's manifest, replace and health-check renderer, atomically
+  rename the staged manifest, then re-enable the timer. Keep the old image and
+  manifest until one bounded sync succeeds.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|-----------|-------------------|
+| Production base image is tag-only or digest malformed | Fail the image build |
+| Protomaps date/URL/BLAKE3 absent, placeholder, or mismatched | Fail before extracting the release |
+| PMTiles invalid, font/license absent, asset hash wrong, or style has public URL | Fail before final image creation |
+| Container health fails after image replacement | Keep timer disabled; restore prior image/manifest |
+| Manifest is from a different image digest | Do not run sync or publish the manifest |
+| Host port would bind non-loopback or Docker network allows egress | Reject the deployment configuration |
+
+### 5. Good / Base / Bad Cases
+
+- Good: production image is built from explicit hashes, runs without volumes or
+  egress, passes the 100-image prototype, then switches with its matching manifest.
+- Base: the checked-in Victoria Park fixture image exercises the identical
+  runtime and release verification path without downloading production coverage.
+- Bad: mounting `/opt/applog/maps`, using `latest`, publishing `0.0.0.0:3000`,
+  or overwriting live manifest before the new renderer is healthy.
+
+### 6. Tests Required
+
+- Fast tests assert version/digest gates, baked paths, non-root healthcheck,
+  internal Compose network, secret-excluding Docker build context and config URLs.
+- Linux Docker integration builds fixture mode, starts with read-only root,
+  dropped capabilities and an internal network, exports the baked manifest, and
+  runs `map_prototype --fixture-profile victoria-park --iterations 100`.
+- Production release validation separately builds real coverage, scans image
+  history/config for secrets, deploys by digest, performs one bounded sync, and
+  proves rollback to the previous image plus manifest.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```bash
+docker run -p 3000:3000 -v /opt/maps:/opt/applog/maps martin:latest
+cp new-manifest.json /opt/applog/maps/current/manifest.json
+```
+
+#### Correct
+
+```bash
+manage-timer disable
+docker run --network applog-map-internal -p 127.0.0.1:3000:3000 \
+  registry.example/applog-map-renderer@sha256:IMAGE_DIGEST
+curl --fail http://127.0.0.1:3000/health
+mv /opt/applog/maps/current/.manifest.json.next \
+  /opt/applog/maps/current/manifest.json
+manage-timer enable
+```
+
 ## Verification
 
 Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.service.spec.ts`, `packages/frontend/test/garmin-utils.spec.mjs`, `@applog/common` build, frontend type-check on touched files.

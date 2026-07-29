@@ -1,0 +1,20 @@
+listen_addresses: 0.0.0.0:3000
+on_invalid: abort
+cache:
+  size_mb: 256
+pmtiles:
+  directory_cache:
+    size_mb: 64
+  sources:
+    basemap: /opt/applog/maps/current/basemap.pmtiles
+fonts:
+  cache:
+    size_mb: 32
+  paths:
+    - /opt/applog/maps/current/fonts
+styles:
+  rendering:
+    enabled: true
+    workers: 1
+  sources:
+    applog-light: /opt/applog/maps/current/style.json

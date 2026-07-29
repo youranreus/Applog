@@ -23,6 +23,24 @@ PUBLIC_FIXTURES = {
     "long-route": [(22.24, 113.95), (22.32, 114.25)],
 }
 
+PUBLIC_VICTORIA_PARK_FIXTURES = {
+    "point": [(22.2835, 114.1880)],
+    "short-route": [(22.2828, 114.1875), (22.2832, 114.1882)],
+    "track-loop": [
+        (22.2825, 114.1870),
+        (22.2825, 114.1890),
+        (22.2840, 114.1890),
+        (22.2840, 114.1870),
+        (22.2825, 114.1870),
+    ],
+    "long-route": [(22.2790, 114.1810), (22.2880, 114.1940)],
+}
+
+FIXTURE_PROFILES = {
+    "production": PUBLIC_FIXTURES,
+    "victoria-park": PUBLIC_VICTORIA_PARK_FIXTURES,
+}
+
 
 def _process_metrics(pid: int) -> tuple[int, int]:
     status = Path(f"/proc/{pid}/status").read_text()
@@ -40,6 +58,11 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--iterations", type=int, default=100)
     parser.add_argument("--renderer-pid", type=int)
+    parser.add_argument(
+        "--fixture-profile",
+        choices=tuple(FIXTURE_PROFILES),
+        default="production",
+    )
     args = parser.parse_args()
     if args.iterations < 1:
         raise ValueError("iterations must be positive")
@@ -53,7 +76,7 @@ def main() -> None:
     if args.renderer_pid is not None:
         _, starting_cpu_ticks = _process_metrics(args.renderer_pid)
     covers = []
-    fixture_items = list(PUBLIC_FIXTURES.items())
+    fixture_items = list(FIXTURE_PROFILES[args.fixture_profile].items())
     for index in range(args.iterations):
         name, points = fixture_items[index % len(fixture_items)]
         started = time.monotonic()

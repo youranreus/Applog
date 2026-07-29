@@ -68,6 +68,28 @@ GARMIN_MAP_RENDER_TIMEOUT_SECONDS=8
 
 生产地图包不进入 Git。仓库中的 `workers/garmin-sync/maps/` 保存固定版本、样式生成器、Martin 配置、manifest 模板和许可说明。每个生产 release 必须包含 `basemap.pmtiles`、`style.json`、本地字体、`manifest.json` 和许可证；详细构建与验证命令见该目录 README。
 
+推荐部署方式是构建项目专用的自包含 Docker 镜像。镜像把 Martin、完整
+PMTiles release、样式、字体、manifest 和许可证作为同一不可变 OCI 制品，
+运行时不挂载地图数据目录，也不访问公网。构建命令、公共 fixture 模式、
+manifest 导出、loopback 启动和 digest 回滚流程见
+[`workers/garmin-sync/maps/README.md`](../workers/garmin-sync/maps/README.md)。
+
+容器内部监听 `0.0.0.0:3000` 仅用于 Docker 网络转发；宿主机必须显式绑定
+`127.0.0.1:3000:3000`，禁止发布为 `0.0.0.0:3000`。worker 仍使用：
+
+```ini
+GARMIN_MAP_COVERS_ENABLED=true
+GARMIN_MAP_RENDERER_URL=http://127.0.0.1:3000
+GARMIN_MAP_RELEASE_MANIFEST=/opt/applog/maps/current/manifest.json
+GARMIN_MAP_RENDER_TIMEOUT_SECONDS=8
+```
+
+manifest 必须从将要运行的同一镜像 digest 导出到临时目录；它只含 release
+元数据，不是地图数据 volume。更新或回滚期间先停用 Garmin timer，再替换
+renderer；健康检查通过后用同目录临时文件和原子 `mv` 发布 manifest，最后
+恢复 timer。禁止在 timer 运行时先覆盖 live manifest，以免 worker 观察到
+“新 manifest + 旧 renderer”。
+
 当前固定工具链为 Martin `1.11.0`、`@protomaps/basemaps` `5.7.2` 与 PMTiles CLI `1.31.2`。地图包按月从明确的 Protomaps daily build 生成，不使用 `latest`。初始覆盖为大湾区高精度（z7–15，可在 renderer 内 overzoom）与全球 z0–6；区域外需要街区级细节时返回 `region_missing`，不会拉伸低精度数据冒充细节。
 
 Martin 静态渲染只在 Linux 上运行。激活前必须在部署机执行：

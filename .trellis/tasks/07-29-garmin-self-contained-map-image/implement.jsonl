@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/backend/garmin-guidelines.md", "reason": "Garmin renderer loopback, release fingerprint, cover monotonicity and privacy contracts"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "Required worker tests, pinned dependencies and production validation"}
+{"file": ".trellis/tasks/07-29-garmin-map-cover-reliability/design.md", "reason": "Parent Protomaps architecture, release lifecycle and Martin boundaries"}
+{"file": ".trellis/tasks/07-29-garmin-map-cover-reliability/research/protomaps-implementation-brief.md", "reason": "Curated official-source Martin, PMTiles, fonts and licensing constraints"}

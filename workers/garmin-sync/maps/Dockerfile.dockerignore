@@ -1,0 +1,10 @@
+**
+!workers/garmin-sync/maps/Dockerfile
+!workers/garmin-sync/maps/build-release.sh
+!workers/garmin-sync/maps/verify-release.mjs
+!workers/garmin-sync/maps/generate-style.mjs
+!workers/garmin-sync/maps/healthcheck.go
+!workers/garmin-sync/maps/martin.container.yaml
+!workers/garmin-sync/maps/NOTICE.md
+!workers/garmin-sync/maps/fixtures/
+!workers/garmin-sync/maps/fixtures/**
