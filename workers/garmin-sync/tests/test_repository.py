@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+from garmin_sync.cover import ActivityCover
 from garmin_sync.models import NormalizedHealthDaily
 from garmin_sync.repository import MySQLRepository, _mysql_datetime
 
@@ -40,6 +41,110 @@ def test_repository_uses_garmin_mysql_environment(monkeypatch):
         "charset": "utf8mb4",
         "autocommit": True,
     }
+
+
+def test_stream_cursor_sql_quotes_mysql_reserved_cursor_column():
+    statements = []
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, sql, params):
+            statements.append(sql)
+
+        def fetchone(self):
+            return ("page-2", False)
+
+    connection = SimpleNamespace(cursor=lambda: Cursor())
+    repository = MySQLRepository(connection, b"token-key")
+
+    assert repository.get_stream_cursor("activity-list") == ("page-2", False)
+    repository.advance_stream(
+        "activity-list",
+        "page-3",
+        complete=False,
+        succeeded_at=datetime(2026, 7, 29, tzinfo=UTC),
+    )
+
+    select_sql, upsert_sql = statements
+    assert "SELECT `cursor`, backfillComplete" in select_sql
+    assert "(streamKey, `cursor`, backfillComplete" in upsert_sql
+    assert "UPDATE `cursor` = VALUES(`cursor`)" in upsert_sql
+
+
+def test_activity_cover_skips_unchanged_immutable_content():
+    statements = []
+    rows = iter([(7,), ("existing-cover", "local-route", "same-etag")])
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, sql, params):
+            statements.append((sql, params))
+
+        def fetchone(self):
+            return next(rows)
+
+    connection = SimpleNamespace(cursor=lambda: Cursor(), begin=lambda: None)
+    repository = MySQLRepository(connection, b"token-key")
+    cover = ActivityCover(b"same", 480, 480, "same-etag", "local-route", None)
+
+    assert (
+        repository.store_activity_cover(
+            "activity-1", cover, generated_at=datetime(2026, 7, 29, tzinfo=UTC)
+        )
+        == "existing-cover"
+    )
+    assert len(statements) == 2
+
+
+def test_activity_cover_rotates_id_and_snapshot_reference_for_changed_content():
+    statements = []
+    rows = iter([(7,), ("existing-cover", "local-route", "old-etag")])
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, sql, params):
+            statements.append((sql, params))
+
+        def fetchone(self):
+            return next(rows)
+
+    transaction_calls = []
+    connection = SimpleNamespace(
+        cursor=lambda: Cursor(),
+        begin=lambda: transaction_calls.append("begin"),
+        commit=lambda: transaction_calls.append("commit"),
+        rollback=lambda: transaction_calls.append("rollback"),
+    )
+    repository = MySQLRepository(connection, b"token-key")
+    cover = ActivityCover(b"changed", 480, 480, "new-etag", "remote", "Map data")
+
+    cover_id = repository.store_activity_cover(
+        "activity-1", cover, generated_at=datetime(2026, 7, 29, tzinfo=UTC)
+    )
+
+    assert cover_id != "existing-cover"
+    assert transaction_calls == ["begin", "commit"]
+    update_cover_sql, update_cover_params = statements[2]
+    update_snapshot_sql, update_snapshot_params = statements[3]
+    assert "UPDATE garmin_activity_cover SET coverId = %s" in update_cover_sql
+    assert update_cover_params[0] == cover_id
+    assert "UPDATE garmin_activity_snapshot SET coverId = %s" in update_snapshot_sql
+    assert update_snapshot_params == (cover_id, "activity-1")
 
 
 def test_health_upsert_writes_summary_and_source_boundaries_with_entity_parity():

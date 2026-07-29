@@ -68,7 +68,7 @@ class MySQLRepository:
         """Return a resumable stream cursor and completion marker."""
         with self._connection.cursor() as cursor:
             cursor.execute(
-                "SELECT cursor, backfillComplete FROM garmin_sync_stream_state "
+                "SELECT `cursor`, backfillComplete FROM garmin_sync_stream_state "
                 "WHERE streamKey = %s",
                 (stream_key,),
             )
@@ -91,10 +91,10 @@ class MySQLRepository:
             cursor.execute(
                 """
                 INSERT INTO garmin_sync_stream_state
-                  (streamKey, cursor, backfillComplete, lastAttemptedAt,
+                  (streamKey, `cursor`, backfillComplete, lastAttemptedAt,
                    lastSuccessfulAt, status, consecutiveFailureCount, updatedAt)
                 VALUES (%s, %s, %s, %s, %s, 'healthy', 0, CURRENT_TIMESTAMP(3))
-                ON DUPLICATE KEY UPDATE cursor = VALUES(cursor),
+                ON DUPLICATE KEY UPDATE `cursor` = VALUES(`cursor`),
                   backfillComplete = VALUES(backfillComplete),
                   lastAttemptedAt = VALUES(lastAttemptedAt),
                   lastSuccessfulAt = VALUES(lastSuccessfulAt), status = 'healthy',
@@ -352,7 +352,7 @@ class MySQLRepository:
     def store_activity_cover(
         self, source_activity_id: str, cover: ActivityCover, *, generated_at: datetime
     ) -> str | None:
-        """Atomically replace public cover bytes while keeping a stable random ID."""
+        """Store immutable cover bytes, rotating the public ID when content changes."""
         with self._connection.cursor() as cursor:
             cursor.execute(
                 "SELECT id FROM garmin_private_activity WHERE sourceActivityId = %s",
@@ -363,47 +363,82 @@ class MySQLRepository:
                 return None
             private_id = int(private_row[0])
             cursor.execute(
-                "SELECT coverId, provider FROM garmin_activity_cover "
+                "SELECT coverId, provider, etag FROM garmin_activity_cover "
                 "WHERE privateActivityId = %s LIMIT 1",
                 (private_id,),
             )
             existing = cursor.fetchone()
-            cover_id = str(existing[0]) if existing else str(uuid.uuid4())
             if existing:
+                existing_cover_id = str(existing[0])
                 existing_provider = str(existing[1])
                 provider_rank = {"local": 0, "local-route": 1}
                 existing_rank = provider_rank.get(existing_provider, 2)
                 new_rank = provider_rank.get(cover.provider, 2)
                 if new_rank < existing_rank:
-                    return cover_id
-            cursor.execute(
-                """
-                INSERT INTO garmin_activity_cover
-                  (coverId, privateActivityId, imageData, contentType, width, height,
-                   byteSize, etag, provider, attribution, renderVersion, generatedAt)
-                VALUES (%s, %s, %s, 'image/webp', %s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE imageData = VALUES(imageData),
-                  width = VALUES(width), height = VALUES(height),
-                  byteSize = VALUES(byteSize), etag = VALUES(etag),
-                  provider = VALUES(provider), attribution = VALUES(attribution),
-                  renderVersion = VALUES(renderVersion),
-                  generatedAt = VALUES(generatedAt)
-                """,
-                (
-                    cover_id,
-                    private_id,
-                    cover.image_data,
-                    cover.width,
-                    cover.height,
-                    len(cover.image_data),
-                    cover.etag,
-                    cover.provider,
-                    cover.attribution,
-                    cover.render_version,
-                    _mysql_datetime(generated_at),
-                ),
-            )
-            return cover_id
+                    return existing_cover_id
+                if str(existing[2]) == cover.etag:
+                    return existing_cover_id
+
+            cover_id = str(uuid.uuid4())
+            self._connection.begin()
+            try:
+                if existing:
+                    cursor.execute(
+                        """
+                        UPDATE garmin_activity_cover SET coverId = %s,
+                          imageData = %s, width = %s, height = %s, byteSize = %s,
+                          etag = %s, provider = %s, attribution = %s,
+                          renderVersion = %s, generatedAt = %s
+                        WHERE privateActivityId = %s
+                        """,
+                        (
+                            cover_id,
+                            cover.image_data,
+                            cover.width,
+                            cover.height,
+                            len(cover.image_data),
+                            cover.etag,
+                            cover.provider,
+                            cover.attribution,
+                            cover.render_version,
+                            _mysql_datetime(generated_at),
+                            private_id,
+                        ),
+                    )
+                else:
+                    cursor.execute(
+                        """
+                        INSERT INTO garmin_activity_cover
+                          (coverId, privateActivityId, imageData, contentType,
+                           width, height, byteSize, etag, provider, attribution,
+                           renderVersion, generatedAt)
+                        VALUES (%s, %s, %s, 'image/webp', %s, %s, %s, %s, %s,
+                                %s, %s, %s)
+                        """,
+                        (
+                            cover_id,
+                            private_id,
+                            cover.image_data,
+                            cover.width,
+                            cover.height,
+                            len(cover.image_data),
+                            cover.etag,
+                            cover.provider,
+                            cover.attribution,
+                            cover.render_version,
+                            _mysql_datetime(generated_at),
+                        ),
+                    )
+                cursor.execute(
+                    "UPDATE garmin_activity_snapshot SET coverId = %s, "
+                    "updatedAt = CURRENT_TIMESTAMP(3) WHERE sourceActivityId = %s",
+                    (cover_id, source_activity_id),
+                )
+                self._connection.commit()
+                return cover_id
+            except Exception:
+                self._connection.rollback()
+                raise
 
     def acquire_lease(self) -> bool:
         """Acquire a connection-scoped non-blocking singleton lease."""

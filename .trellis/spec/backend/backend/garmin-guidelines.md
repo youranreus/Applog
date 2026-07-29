@@ -129,6 +129,10 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   `GARMIN_MAP_TILE_URL`, `GARMIN_MAP_ATTRIBUTION`, and an identifiable
   `GARMIN_MAP_USER_AGENT`.
 - Activity-list pages are durably indexed before their list cursor advances.
+- `garmin_sync_stream_state.cursor` is a MySQL 5.7 reserved identifier. Every
+  Python SQL reference must use `` `cursor` `` in `SELECT`, `INSERT`, update
+  targets, and `VALUES()` expressions; TypeORM decorator quoting does not protect
+  the worker's handwritten SQL.
 - Health summary columns normalize only explicit observed fields: numeric zero is
   retained, missing/explicit null are not coerced, and local/GMT boundaries are
   stored only when upstream supplies timestamps. Historical health backfill finds
@@ -144,6 +148,9 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   visibility, encryption metadata, or private media ownership.
 - Cover quality is monotonic: remote route map > local route fallback > pin.
   A lower-quality retry must not overwrite a higher-quality existing cover.
+- Cover URLs are content-immutable: identical ETags skip writes; changed bytes
+  receive a fresh random `coverId`, and the media row plus any existing snapshot
+  reference are updated in one transaction before the new URL is returned.
 
 ### 4. Validation & Error Matrix
 
@@ -173,8 +180,9 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 
 - Worker: canonical JSON/FIT codec round-trip, wrong key/AAD/tamper/hash failure,
   size-cap partial handling, whole-page indexing, persistent detail queue, budget
-  exhaustion, health cursor non-advancement, cover monotonicity, and metadata-free
-  deterministic WebP dimensions.
+  exhaustion, MySQL-safe quoting for every stream cursor read/write, health cursor
+  non-advancement, cover monotonicity, immutable cover-ID rotation, and
+  metadata-free deterministic WebP dimensions.
 - Backend: public stats exclude null ids; detail and cover require `published`;
   public JSON omits forbidden private fields; cover response has WebP content type,
   ETag, and immutable caching.
