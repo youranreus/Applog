@@ -103,8 +103,10 @@ def test_map_image_build_script_has_safe_fixture_and_production_modes() -> None:
     assert 'BUILD_MODE=fixture' in script
     assert 'BUILD_MODE=production' in script
     assert 'SOURCE_REVISION="$(git -C "${repo_root}" rev-parse HEAD)"' in script
-    assert "for name in MARTIN_IMAGE PMTILES_IMAGE NODE_IMAGE GO_IMAGE" in script
-    assert 'require_digest_ref "${name}"' in script
+    assert "https://build-metadata.protomaps.dev/builds.json" in script
+    assert 'resolve_protomaps_build' in script
+    assert 'resolve_image MARTIN_IMAGE "${martin_tag}"' in script
+    assert 'docker pull "${tag}"' in script
     assert 'MARTIN_IMAGE_DIGEST="${MARTIN_IMAGE##*@}"' in script
     assert 'exec docker build "${build_args[@]}" "${repo_root}"' in script
 
@@ -145,3 +147,45 @@ def test_map_image_build_script_assembles_fixture_command(tmp_path: Path) -> Non
         "RELEASE_ID=fixture-public-victoria-park-20260728",
     ]
     assert Path(args[-1]) == MAPS_DIR.parents[2]
+
+
+def test_map_image_build_script_resolves_production_inputs(tmp_path: Path) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    capture = tmp_path / "docker-args"
+    docker = bin_dir / "docker"
+    docker.write_text(
+        "#!/bin/sh\n"
+        "if [ \"$1\" = pull ]; then exit 0; fi\n"
+        "if [ \"$1 $2\" = \"image inspect\" ]; then\n"
+        "  printf '%s@sha256:%064d\\n' \"$3\" 0\n"
+        "  exit 0\n"
+        "fi\n"
+        'printf "%s\\n" "$@" > "$CAPTURE"\n'
+    )
+    docker.chmod(0o755)
+    curl = bin_dir / "curl"
+    curl.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' "
+        "'[{\"key\":\"20260728.pmtiles\",\"b3sum\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},"
+        "{\"key\":\"20260729.pmtiles\",\"b3sum\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}]'\n"
+    )
+    curl.chmod(0o755)
+    env = {
+        **os.environ,
+        "PATH": f"{bin_dir}:{os.environ['PATH']}",
+        "CAPTURE": str(capture),
+    }
+
+    subprocess.run(
+        [MAPS_DIR / "build-map-image.sh", "production", "example:production"],
+        check=True,
+        env=env,
+    )
+
+    args = capture.read_text().splitlines()
+    assert "PROTOMAPS_BUILD_DATE=20260729" in args
+    assert "PROTOMAPS_BUILD_URL=https://build.protomaps.com/20260729.pmtiles" in args
+    assert f"PROTOMAPS_BUILD_BLAKE3={'b' * 64}" in args
+    assert "example:production" in args

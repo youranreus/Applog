@@ -25,8 +25,24 @@ NO_CACHE=1 ./workers/garmin-sync/maps/build-map-image.sh \
   fixture applog-map-renderer:fixture
 ```
 
-Production builds require one explicit Protomaps daily build and the Martin
-OCI digest. Never use `latest`, infer a bbox from private activities, or pass
+Production builds are also one command. The script selects the newest official
+Protomaps build that publishes a BLAKE3, pulls the four pinned base-image tags,
+resolves their immutable OCI digests, and tags the result with the build date:
+
+```bash
+./workers/garmin-sync/maps/build-map-image.sh production
+```
+
+Pass a second argument to choose the output tag. To reproduce a specific daily
+build, set only its date; the script resolves its official URL and BLAKE3:
+
+```bash
+PROTOMAPS_BUILD_DATE=20260728 \
+  ./workers/garmin-sync/maps/build-map-image.sh production applog-map-renderer:v1
+```
+
+The following expanded form documents the values resolved by the script.
+Never use `latest`, infer a bbox from private activities, or pass
 Garmin/database secrets as build arguments:
 
 ```bash
@@ -54,20 +70,6 @@ docker build \
   --build-arg MARTIN_IMAGE="ghcr.io/maplibre/martin@${MARTIN_DIGEST}" \
   --build-arg MARTIN_IMAGE_DIGEST="${MARTIN_DIGEST}" \
   .
-```
-
-The equivalent scripted production build is below. It uses the
-`MARTIN_DIGEST`, `PMTILES_IMAGE`, `NODE_IMAGE`, and `GO_IMAGE` values resolved
-in the preceding block:
-
-```bash
-PROTOMAPS_BUILD_DATE=20260728 \
-PROTOMAPS_BUILD_URL=https://build.protomaps.com/20260728.pmtiles \
-PROTOMAPS_BUILD_BLAKE3=REPLACE_WITH_OFFICIAL_BUILD_HASH \
-MARTIN_IMAGE="ghcr.io/maplibre/martin@${MARTIN_DIGEST}" \
-PMTILES_IMAGE="${PMTILES_IMAGE}" NODE_IMAGE="${NODE_IMAGE}" GO_IMAGE="${GO_IMAGE}" \
-  ./workers/garmin-sync/maps/build-map-image.sh production \
-  registry.example/applog-map-renderer:20260728
 ```
 
 For production, also pass digest-pinned `PMTILES_IMAGE`, `NODE_IMAGE`, and

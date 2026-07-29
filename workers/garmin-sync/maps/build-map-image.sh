@@ -5,6 +5,11 @@ set -euo pipefail
 readonly script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly repo_root="$(cd -- "${script_dir}/../../.." && pwd)"
 readonly dockerfile="workers/garmin-sync/maps/Dockerfile"
+readonly builds_url="https://build-metadata.protomaps.dev/builds.json"
+readonly martin_tag="ghcr.io/maplibre/martin:1.12.0"
+readonly pmtiles_tag="protomaps/go-pmtiles:v1.31.2"
+readonly node_tag="node:24.14.1-bookworm"
+readonly go_tag="golang:1.25.6-bookworm"
 
 mode="${1:-fixture}"
 
@@ -17,16 +22,47 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "$1 is required"
 }
 
-require_value() {
-  local name="$1"
-  [[ -n "${!name:-}" ]] || fail "${name} is required for production"
-}
-
 require_digest_ref() {
   local name="$1"
   local value="${!name:-}"
   [[ "${value}" =~ @sha256:[0-9a-f]{64}$ ]] || \
     fail "${name} must end with @sha256:<64 lowercase hex characters>"
+}
+
+resolve_image() {
+  local name="$1"
+  local tag="$2"
+  local value="${!name:-}"
+  if [[ -z "${value}" ]]; then
+    echo "AppLog map image: resolving ${tag}" >&2
+    docker pull "${tag}" >/dev/null
+    value="$(docker image inspect "${tag}" \
+      --format '{{index .RepoDigests 0}}')"
+    printf -v "${name}" '%s' "${value}"
+  fi
+  require_digest_ref "${name}"
+}
+
+resolve_protomaps_build() {
+  local requested_date="${PROTOMAPS_BUILD_DATE:-}"
+  local selected
+  echo "AppLog map image: resolving Protomaps build metadata" >&2
+  selected="$({ curl --fail --silent --show-error --location "${builds_url}"; } | \
+    python3 -c '
+import json
+import sys
+
+requested = sys.argv[1]
+builds = [item for item in json.load(sys.stdin) if item.get("b3sum")]
+if requested:
+    builds = [item for item in builds if item["key"] == f"{requested}.pmtiles"]
+if not builds:
+    raise SystemExit("requested Protomaps build was not found or has no BLAKE3")
+selected = max(builds, key=lambda item: item["key"])
+print(selected["key"].removesuffix(".pmtiles"), selected["b3sum"])
+' "${requested_date}")" || fail "unable to resolve Protomaps build metadata"
+  read -r PROTOMAPS_BUILD_DATE PROTOMAPS_BUILD_BLAKE3 <<<"${selected}"
+  PROTOMAPS_BUILD_URL="https://build.protomaps.com/${PROTOMAPS_BUILD_DATE}.pmtiles"
 }
 
 require_command docker
@@ -48,12 +84,13 @@ case "${mode}" in
     ;;
   production)
     require_command git
-    for name in PROTOMAPS_BUILD_DATE PROTOMAPS_BUILD_URL PROTOMAPS_BUILD_BLAKE3; do
-      require_value "${name}"
-    done
-    for name in MARTIN_IMAGE PMTILES_IMAGE NODE_IMAGE GO_IMAGE; do
-      require_digest_ref "${name}"
-    done
+    require_command curl
+    require_command python3
+    resolve_protomaps_build
+    resolve_image MARTIN_IMAGE "${martin_tag}"
+    resolve_image PMTILES_IMAGE "${pmtiles_tag}"
+    resolve_image NODE_IMAGE "${node_tag}"
+    resolve_image GO_IMAGE "${go_tag}"
     [[ "${PROTOMAPS_BUILD_DATE}" =~ ^[0-9]{8}$ ]] || \
       fail "PROTOMAPS_BUILD_DATE must use YYYYMMDD"
     [[ "${PROTOMAPS_BUILD_URL}" == https://* ]] || \
