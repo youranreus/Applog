@@ -9,6 +9,12 @@ import { AnalyticsViewHitEntity } from './AnalyticsViewHit';
 import { GarminCredentialEntity } from './GarminCredential';
 import { GarminActivitySnapshotEntity } from './GarminActivitySnapshot';
 import { GarminSyncStateEntity } from './GarminSyncState';
+import { GarminPrivateActivityEntity } from './GarminPrivateActivity';
+import { GarminPrivatePayloadEntity } from './GarminPrivatePayload';
+import { GarminActivityDetailEntity } from './GarminActivityDetail';
+import { GarminHealthDailyEntity } from './GarminHealthDaily';
+import { GarminSyncStreamStateEntity } from './GarminSyncStreamState';
+import { GarminActivityCoverEntity } from './GarminActivityCover';
 
 export * from './User';
 export * from './Post';
@@ -21,6 +27,12 @@ export * from './AnalyticsViewHit';
 export * from './GarminCredential';
 export * from './GarminActivitySnapshot';
 export * from './GarminSyncState';
+export * from './GarminPrivateActivity';
+export * from './GarminPrivatePayload';
+export * from './GarminActivityDetail';
+export * from './GarminHealthDaily';
+export * from './GarminSyncStreamState';
+export * from './GarminActivityCover';
 
 export const ENTITY_LIST = [
   UserEntity,
@@ -34,4 +46,10 @@ export const ENTITY_LIST = [
   GarminCredentialEntity,
   GarminActivitySnapshotEntity,
   GarminSyncStateEntity,
+  GarminPrivateActivityEntity,
+  GarminPrivatePayloadEntity,
+  GarminActivityDetailEntity,
+  GarminHealthDailyEntity,
+  GarminSyncStreamStateEntity,
+  GarminActivityCoverEntity,
 ];

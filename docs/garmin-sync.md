@@ -10,11 +10,16 @@ Garmin 接入由独立 Python worker 完成。生产环境默认在 Linux 服务
 - 与 NestJS 使用同一 MySQL 数据库
 - 专用的低权限系统用户，例如 `applog`
 
-worker 默认从 NestJS 的 `packages/backend` 目录加载环境配置文件，但使用独立的 Garmin MySQL 连接变量。在当前生效的高优先级文件（例如 `.env.development.local`）中追加：
+worker 默认从 NestJS 的 `packages/backend` 目录加载环境配置文件。MySQL 优先读取 `GARMIN_MYSQL_*`，缺失时回退到 NestJS/FC 使用的 `MYSQL_*`。在当前生效的高优先级文件（例如 `.env.development.local`）中追加：
 
 - `GARMIN_MYSQL_SERVER`、`GARMIN_MYSQL_PORT`、`GARMIN_MYSQL_USER`、`GARMIN_MYSQL_PASSWORD`、`GARMIN_MYSQL_DATABASE`
 - `GARMIN_TOKEN_ENCRYPTION_KEY`：32 字节随机密钥的 Base64 文本
+- `GARMIN_DATA_ENCRYPTION_KEY`：另一把独立的 32 字节 Base64 数据密钥，不得与 token 密钥复用
 - `GARMIN_IS_CN`：Garmin 中国区账号设为 `true`，国际区设为 `false`
+- `GARMIN_REQUEST_BUDGET`：单轮 Garmin 请求上限，默认 `80`
+- `GARMIN_HEALTH_EMPTY_DAY_LIMIT`：连续多少个无任何观测值的历史自然日后判定已到上游边界，默认 `30`
+- `GARMIN_PRIVATE_ARCHIVE_ENABLED`、`GARMIN_HEALTH_BACKFILL_ENABLED`、`GARMIN_MAP_COVERS_ENABLED`：三个独立回滚开关
+- 地图流启用 provider 时配置 `GARMIN_MAP_PROVIDER`、`GARMIN_MAP_TILE_URL`、`GARMIN_MAP_ATTRIBUTION` 和可识别的 `GARMIN_MAP_USER_AGENT`
 
 生成加密密钥：
 
@@ -43,12 +48,18 @@ GARMIN_MYSQL_USER=applog_garmin
 GARMIN_MYSQL_PASSWORD=replace-with-database-password
 GARMIN_MYSQL_DATABASE=applog
 GARMIN_TOKEN_ENCRYPTION_KEY=replace-with-base64-key
+GARMIN_DATA_ENCRYPTION_KEY=replace-with-a-different-base64-key
 GARMIN_IS_CN=true
+GARMIN_REQUEST_BUDGET=80
+GARMIN_HEALTH_EMPTY_DAY_LIMIT=30
+GARMIN_PRIVATE_ARCHIVE_ENABLED=true
+GARMIN_HEALTH_BACKFILL_ENABLED=true
+GARMIN_MAP_COVERS_ENABLED=true
 ```
 
 ## 首次部署
 
-1. 先部署并启动 NestJS，确认 TypeORM 已创建 `garmin_credential`、`garmin_activity_snapshot`、`garmin_sync_state` 三张表。
+1. 先备份 Garmin 表、在 staging 检查 `synchronize` diff，再部署 NestJS schema。确认公开快照表之外已创建 private activity/payload/detail、daily health、stream state 与 cover media 表，再启用新 worker。
 
 2. 确保低权限运行用户和 `packages/backend` 下当前生效的环境配置已经存在。下面假设运行用户为 `applog`、项目发布目录为 `/opt/applog/current`。
 
@@ -95,11 +106,12 @@ cd /opt/applog/current/workers/garmin-sync
 sudo journalctl -u applog-garmin-sync.service --since today
 ```
 
-- worker 每次读取账号全历史活动累计数，并完整读取最近 365 天活动列表。
+- worker 每次优先刷新近期公开投影和今天/昨天健康数据，再推进一个有界历史页。
 - 只有 Garmin payload 明确标记为 `public` 或 `everyone` 的活动才会发布；未知隐私状态一律拒绝。
-- 每次最多为 12 条尚未处理路线的跑步活动补充 detail/GPX 路线，后续定时调用继续补齐。
-- GPS 坐标和 GPX 字节只短暂存在内存；数据库仅保存归一化的 SVG `M/L` path 和 viewBox。
-- 成功同步会对取消公开、删除或移出 12 个月窗口的活动做对账。重复执行为幂等 upsert。
+- 活动所有可用端点和 FIT、全天健康 payload 使用独立数据密钥压缩加密；精确坐标和逐点数据不会进入公开快照。
+- 公开候选最多六条生成 WebP 封面；tile provider 故障时保留旧图或回退本地深色路线/图钉，不使同步失败。
+- 私有活动历史不再因年龄删除；取消公开或上游删除只撤销公开投影。重复执行通过 source id、自然日、payload hash 和 stream cursor 幂等。
+- 健康回填不使用固定年数截断，而在连续 `GARMIN_HEALTH_EMPTY_DAY_LIMIT` 个自然日无观测值后确认上游边界；归一化摘要保留真实 `0`，local/GMT 边界只在 Garmin 实际返回时间戳时写入。
 - 认证错误把状态标记为 `reauth_required`；网络、限流或存储错误标记为 `degraded`。旧快照仍可读取并在超过 6 小时后显示 stale。
 
 ## 重新认证

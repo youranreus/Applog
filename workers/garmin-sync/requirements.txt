@@ -2,3 +2,5 @@ cryptography==45.0.7
 garminconnect==0.3.7
 PyMySQL==1.1.2
 python-dotenv==1.2.2
+Pillow==11.3.0
+py-staticmaps==0.5.0

@@ -2,11 +2,16 @@
 
 import math
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from xml.etree import ElementTree
 
-from .models import ActivitySnapshot
+from .models import (
+    ActivitySnapshot,
+    NormalizedActivityDetail,
+    NormalizedHealthDaily,
+    PrivateActivity,
+)
 
 TYPE_LABELS = {
     "running": "跑步",
@@ -28,6 +33,8 @@ TYPE_LABELS = {
     "soccer": "足球",
     "strength_training": "力量训练",
     "cardio": "有氧训练",
+    "indoor_cardio": "有氧运动",
+    "stair_climbing": "爬山机",
     "yoga": "瑜伽",
 }
 
@@ -137,6 +144,226 @@ def normalize_activity(activity: object) -> ActivitySnapshot | None:
         device_source=device,
         source_updated_at=_parse_datetime(activity.get("lastUpdatedDate")),
     )
+
+
+def normalize_private_activity(activity: object) -> PrivateActivity | None:
+    """Index any valid activity without applying public visibility rules."""
+    if not isinstance(activity, dict):
+        return None
+    source_id = activity.get("activityId")
+    activity_type = activity.get("activityType")
+    type_key = activity_type.get("typeKey") if isinstance(activity_type, dict) else None
+    if source_id is None or not isinstance(type_key, str) or not type_key.strip():
+        return None
+    privacy = activity.get("privacy")
+    privacy_type = privacy.get("typeKey") if isinstance(privacy, dict) else None
+    activity_uuid = activity.get("activityUUID") or activity.get("activityUuid")
+    return PrivateActivity(
+        source_activity_id=str(source_id),
+        activity_uuid=str(activity_uuid) if activity_uuid is not None else None,
+        activity_type=type_key.strip().casefold(),
+        privacy_type=privacy_type.casefold() if isinstance(privacy_type, str) else None,
+        started_at_gmt=_parse_datetime(activity.get("startTimeGMT")),
+        started_at_local=_parse_datetime(activity.get("startTimeLocal")),
+        source_updated_at=_parse_datetime(activity.get("lastUpdatedDate")),
+    )
+
+
+def _metric(source: dict[str, Any], *keys: str) -> float | None:
+    return next(
+        (
+            value
+            for key in keys
+            if (value := _finite_number(source.get(key))) is not None
+        ),
+        None,
+    )
+
+
+def normalize_activity_detail(
+    summary: object, splits: object = None
+) -> NormalizedActivityDetail:
+    """Extract stable nullable metrics from synthetic-compatible source shapes."""
+    source = summary if isinstance(summary, dict) else {}
+    split_rows: list[object] = []
+    if isinstance(splits, list):
+        split_rows = splits
+    elif isinstance(splits, dict):
+        for key in ("lapDTOs", "splitDTOs", "splits"):
+            candidate = splits.get(key)
+            if isinstance(candidate, list):
+                split_rows = candidate
+                break
+    compact_splits: list[dict[str, Any]] = []
+    for index, row in enumerate(split_rows[:12], start=1):
+        if not isinstance(row, dict):
+            continue
+        distance = _metric(row, "distance", "distanceMeters")
+        duration = _metric(row, "duration", "durationSeconds")
+        speed = _metric(row, "averageSpeed", "avgSpeed")
+        compact_splits.append(
+            {
+                "index": index,
+                "type": row.get("type") if isinstance(row.get("type"), str) else None,
+                "distanceMeters": distance,
+                "durationSeconds": duration,
+                "averagePaceSecondsPerKm": (
+                    1000 / speed if speed is not None and speed > 0 else None
+                ),
+                "averageHeartRateBpm": _metric(
+                    row, "averageHR", "averageHeartRate", "avgHr"
+                ),
+            }
+        )
+    lap_count = _metric(source, "lapCount", "numberOfLaps")
+    return NormalizedActivityDetail(
+        moving_duration_seconds=_metric(source, "movingDuration"),
+        average_speed_meters_per_second=_metric(source, "averageSpeed"),
+        max_speed_meters_per_second=_metric(source, "maxSpeed"),
+        average_heart_rate_bpm=_metric(source, "averageHR", "averageHeartRate"),
+        max_heart_rate_bpm=_metric(source, "maxHR", "maxHeartRate"),
+        elevation_gain_meters=_metric(source, "elevationGain", "totalAscent"),
+        average_cadence_per_minute=_metric(
+            source, "averageRunningCadenceInStepsPerMinute", "averageBikingCadence"
+        ),
+        average_power_watts=_metric(source, "avgPower", "averagePower"),
+        training_effect=_metric(source, "aerobicTrainingEffect", "trainingEffect"),
+        body_battery_delta=_metric(source, "differenceBodyBattery"),
+        lap_count=(
+            round(lap_count) if lap_count is not None and lap_count >= 0 else None
+        ),
+        splits=compact_splits,
+    )
+
+
+_HEALTH_METRICS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "bodyBatteryCharged": (
+        "body_battery",
+        ("bodyBatteryChargedValue", "chargedValue", "charged"),
+    ),
+    "bodyBatteryDrained": (
+        "body_battery",
+        ("bodyBatteryDrainedValue", "drainedValue", "drained"),
+    ),
+    "averageStressLevel": (
+        "stress",
+        ("avgStressLevel", "averageStressLevel"),
+    ),
+    "maxStressLevel": ("stress", ("maxStressLevel",)),
+    "averageHeartRateBpm": (
+        "heart_rate",
+        ("averageHeartRate", "avgHeartRate"),
+    ),
+    "maxHeartRateBpm": ("heart_rate", ("maxHeartRate",)),
+    "restingHeartRateBpm": (
+        "resting_heart_rate",
+        ("restingHeartRate", "restingHeartRateValue"),
+    ),
+    "steps": ("steps", ("totalSteps",)),
+    "stepGoal": ("steps", ("dailyStepGoal", "stepGoal")),
+    "sleepSeconds": (
+        "sleep",
+        ("sleepTimeSeconds", "sleepTimeInSeconds", "totalSleepSeconds"),
+    ),
+    "sleepScore": ("sleep", ("overallSleepScore",)),
+    "hrvLastNightAverageMs": ("hrv", ("lastNightAvg", "lastNightAverage")),
+    "hrvWeeklyAverageMs": ("hrv", ("weeklyAvg", "weeklyAverage")),
+    "averageSpO2Percent": ("spo2", ("averageSpO2", "avgSpO2")),
+    "lowestSpO2Percent": ("spo2", ("lowestSpO2", "minSpO2")),
+    "averageWakingRespirationPerMinute": (
+        "respiration",
+        ("avgWakingRespirationValue", "averageWakingRespirationValue"),
+    ),
+    "averageSleepRespirationPerMinute": (
+        "respiration",
+        ("avgSleepRespirationValue", "averageSleepRespirationValue"),
+    ),
+    "hydrationConsumedMl": (
+        "hydration",
+        ("valueInML", "consumedInML", "hydrationConsumedInML"),
+    ),
+    "hydrationGoalMl": ("hydration", ("goalInML", "hydrationGoalInML")),
+    "moderateIntensityMinutes": (
+        "intensity_minutes",
+        ("moderateIntensityMinutes",),
+    ),
+    "vigorousIntensityMinutes": (
+        "intensity_minutes",
+        ("vigorousIntensityMinutes",),
+    ),
+    "weightGrams": ("body_composition", ("weightInGrams",)),
+    "bodyFatPercent": ("body_composition", ("bodyFat", "bodyFatPercentage")),
+    "bmi": ("body_composition", ("bmi",)),
+}
+
+_LOCAL_BOUNDARY_KEYS = (
+    "startTimestampLocal",
+    "startTimeLocal",
+    "calendarStartTimeLocal",
+)
+_GMT_BOUNDARY_KEYS = (
+    "startTimestampGMT",
+    "startTimeGMT",
+    "calendarStartTimeGMT",
+)
+
+
+def _find_field(value: object, keys: tuple[str, ...]) -> tuple[bool, object]:
+    """Breadth-first exact-key lookup, preferring shallower summary objects."""
+    queue = [value]
+    while queue:
+        current = queue.pop(0)
+        if isinstance(current, dict):
+            for key in keys:
+                if key in current:
+                    return True, current[key]
+            queue.extend(current.values())
+        elif isinstance(current, list):
+            queue.extend(current)
+    return False, None
+
+
+def _parse_boundary_datetime(
+    value: object, *, allow_numeric: bool
+) -> datetime | None:
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        if not allow_numeric:
+            return None
+        timestamp = float(value)
+        if not math.isfinite(timestamp):
+            return None
+        if timestamp >= 1_000_000_000_000:
+            timestamp /= 1000
+        if not 946_684_800 <= timestamp <= 4_102_444_800:
+            return None
+        return datetime.fromtimestamp(timestamp, UTC)
+    if not isinstance(value, str) or not re.search(r"[T ]\d{1,2}:\d{2}", value):
+        return None
+    return _parse_datetime(value)
+
+
+def normalize_health_daily(payloads: dict[str, Any]) -> NormalizedHealthDaily:
+    """Extract conservative health summaries while retaining raw payloads elsewhere."""
+    summary: dict[str, float | None] = {}
+    for target, (domain, aliases) in _HEALTH_METRICS.items():
+        found, raw = _find_field(payloads.get(domain), aliases)
+        if found:
+            summary[target] = _finite_number(raw)
+
+    local_boundary = None
+    gmt_boundary = None
+    for payload in payloads.values():
+        if local_boundary is None:
+            found, raw = _find_field(payload, _LOCAL_BOUNDARY_KEYS)
+            if found:
+                local_boundary = _parse_boundary_datetime(raw, allow_numeric=False)
+        if gmt_boundary is None:
+            found, raw = _find_field(payload, _GMT_BOUNDARY_KEYS)
+            if found:
+                gmt_boundary = _parse_boundary_datetime(raw, allow_numeric=True)
+        if local_boundary is not None and gmt_boundary is not None:
+            break
+    return NormalizedHealthDaily(summary, local_boundary, gmt_boundary)
 
 
 def extract_detail_points(details: object) -> list[tuple[float, float]]:

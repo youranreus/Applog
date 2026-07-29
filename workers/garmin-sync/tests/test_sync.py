@@ -1,5 +1,6 @@
 import unittest
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 from garmin_sync.sync import SyncService
 
@@ -90,3 +91,89 @@ class SyncServiceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_activity_backfill_indexes_whole_page_before_bounded_detail_queue():
+    class ArchiveAdapter:
+        def get_activities_page(self, start, limit):
+            return [activity(index) for index in range(10, 15)]
+
+        def get_activity_payloads(self, activity_id):
+            return {"summary": {"averageHR": int(activity_id)}}
+
+    class ArchiveRepository:
+        def __init__(self):
+            self.indexed = []
+            self.details = []
+            self.advanced = None
+
+        def get_stream_cursor(self, stream_key):
+            return "0", False
+
+        def upsert_private_activity(self, item, *, seen_at):
+            private_id = int(item.source_activity_id)
+            self.indexed.append(private_id)
+            return private_id
+
+        def store_private_payload(self, **payload):
+            return payload["payload_kind"] == "list"
+
+        def activity_needs_detail(self, private_activity_id):
+            return True
+
+        def mark_activity_detail_pending(self, private_activity_id):
+            pass
+
+        def pending_activity_details(self, limit):
+            return [(14, "14"), (13, "13")][:limit]
+
+        def upsert_activity_detail(self, private_id, detail, *, status):
+            self.details.append((private_id, status))
+
+        def advance_stream(self, *args, **kwargs):
+            self.advanced = (args, kwargs)
+
+    repository = ArchiveRepository()
+    service = SyncService(
+        ArchiveAdapter(), repository, now=lambda: datetime(2026, 7, 28, tzinfo=UTC)
+    )
+    with patch.dict("os.environ", {"GARMIN_PRIVATE_ARCHIVE_ENABLED": "true"}):
+        service._archive_private_activity_slice([], datetime(2026, 7, 28, tzinfo=UTC))
+
+    assert repository.indexed == [10, 11, 12, 13, 14]
+    assert repository.details == [(14, "partial"), (13, "partial")]
+    assert repository.advanced is not None
+
+
+def test_health_backfill_cursor_does_not_advance_on_partial_domain_failure():
+    class HealthAdapter:
+        def get_health_payloads(self, calendar_date):
+            return ({"steps": {"totalSteps": 0}}, {"sleep"})
+
+    class HealthRepository:
+        def __init__(self):
+            self.advanced = []
+            self.statuses = []
+
+        def get_stream_cursor(self, stream_key):
+            return "2026-07-25", False
+
+        def store_private_payload(self, **payload):
+            return True
+
+        def upsert_health_day(self, calendar_date, health, status):
+            self.statuses.append(status)
+
+        def advance_stream(self, *args, **kwargs):
+            self.advanced.append((args, kwargs))
+
+    repository = HealthRepository()
+    service = SyncService(
+        HealthAdapter(), repository, now=lambda: datetime(2026, 7, 28, tzinfo=UTC)
+    )
+    with patch.dict("os.environ", {"GARMIN_HEALTH_BACKFILL_ENABLED": "true"}):
+        service._archive_health_days(datetime(2026, 7, 28, tzinfo=UTC))
+
+    assert repository.advanced == []
+    assert any(status.get("sleep") == "failed" for status in repository.statuses)
+    assert all(status.get("steps") == "available" for status in repository.statuses)

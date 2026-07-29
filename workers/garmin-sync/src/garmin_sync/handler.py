@@ -7,7 +7,7 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
-from .adapter import GarminReadAdapter
+from .adapter import GarminReadAdapter, GarminRequestBudgetExhausted
 from .credential import decode_key
 from .repository import MySQLRepository
 from .sync import SyncService
@@ -26,6 +26,8 @@ def _category(error: Exception) -> str:
         return "authentication"
     if isinstance(error, GarminConnectTooManyRequestsError):
         return "rate_limit"
+    if isinstance(error, GarminRequestBudgetExhausted):
+        return "request_budget"
     if isinstance(error, KeyError | ValueError):
         return "configuration"
     if str(error) == "garmin_credential_missing":
@@ -39,8 +41,21 @@ def handler(event: Any, context: Any) -> str:
     started_at = time.monotonic()
     request_id = str(getattr(context, "request_id", "unknown"))[:128]
     attempted_at = datetime.now(UTC)
+    private_enabled = any(
+        os.getenv(name, "true").casefold() == "true"
+        for name in (
+            "GARMIN_PRIVATE_ARCHIVE_ENABLED",
+            "GARMIN_HEALTH_BACKFILL_ENABLED",
+        )
+    )
+    data_key = (
+        decode_key(os.environ["GARMIN_DATA_ENCRYPTION_KEY"])
+        if private_enabled
+        else None
+    )
     repository = MySQLRepository.from_environment(
-        decode_key(os.environ["GARMIN_TOKEN_ENCRYPTION_KEY"])
+        decode_key(os.environ["GARMIN_TOKEN_ENCRYPTION_KEY"]),
+        data_key,
     )
     if not repository.acquire_lease():
         repository.close()

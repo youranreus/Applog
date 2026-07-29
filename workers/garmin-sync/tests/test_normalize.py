@@ -1,6 +1,12 @@
 import unittest
 
-from garmin_sync.normalize import extract_detail_points, normalize_activity
+from garmin_sync.normalize import (
+    extract_detail_points,
+    normalize_activity,
+    normalize_activity_detail,
+    normalize_health_daily,
+    normalize_private_activity,
+)
 
 PUBLIC_ACTIVITY = {
     "activityId": 42,
@@ -109,6 +115,84 @@ class NormalizeActivityTests(unittest.TestCase):
             extract_detail_points(details),
             [(10.0, 20.0), (10.1, 20.1), (10.2, 20.2)],
         )
+
+    def test_private_index_keeps_non_public_and_unknown_types(self) -> None:
+        private = normalize_private_activity(
+            {
+                **PUBLIC_ACTIVITY,
+                "privacy": {"typeKey": "private"},
+                "activityType": {"typeKey": "future_activity"},
+            }
+        )
+        self.assertIsNotNone(private)
+        assert private is not None
+        self.assertEqual(private.source_activity_id, "42")
+        self.assertEqual(private.privacy_type, "private")
+        self.assertEqual(private.activity_type, "future_activity")
+
+    def test_normalizes_nullable_detail_and_compact_splits(self) -> None:
+        detail = normalize_activity_detail(
+            {
+                "movingDuration": 1_700,
+                "averageSpeed": 2.5,
+                "averageHR": 0,
+                "maxHR": None,
+                "lapCount": 2,
+            },
+            {
+                "lapDTOs": [
+                    {
+                        "distance": 1_000,
+                        "duration": 400,
+                        "averageSpeed": 2.5,
+                        "averageHR": 150,
+                    }
+                ]
+            },
+        )
+        self.assertEqual(detail.average_heart_rate_bpm, 0)
+        self.assertIsNone(detail.max_heart_rate_bpm)
+        self.assertEqual(detail.lap_count, 2)
+        self.assertEqual(detail.splits[0]["averagePaceSecondsPerKm"], 400)
+
+    def test_normalizes_health_summary_zero_null_and_real_boundaries(self) -> None:
+        health = normalize_health_daily(
+            {
+                "body_battery": {
+                    "calendarDate": "2026-07-28",
+                    "startTimestampLocal": "2026-07-28T00:00:00+08:00",
+                    "startTimestampGMT": "2026-07-27T16:00:00Z",
+                    "bodyBatteryChargedValue": 0,
+                    "bodyBatteryDrainedValue": None,
+                },
+                "stress": {"summary": {"avgStressLevel": 24}},
+                "steps": {"totalSteps": 0, "dailyStepGoal": 8_000},
+                "sleep": {"dailySleepDTO": {"sleepTimeSeconds": 25_200}},
+                "hydration": {"valueInML": 0, "goalInML": 2_500},
+                "body_composition": {"date": "2026-07-28", "weightInGrams": 0},
+            }
+        )
+
+        self.assertEqual(health.summary_data["bodyBatteryCharged"], 0)
+        self.assertIsNone(health.summary_data["bodyBatteryDrained"])
+        self.assertEqual(health.summary_data["averageStressLevel"], 24)
+        self.assertEqual(health.summary_data["steps"], 0)
+        self.assertEqual(health.summary_data["sleepSeconds"], 25_200)
+        self.assertEqual(health.summary_data["hydrationConsumedMl"], 0)
+        self.assertEqual(health.summary_data["weightGrams"], 0)
+        self.assertEqual(
+            health.local_boundary_start.isoformat(), "2026-07-28T00:00:00+08:00"
+        )
+        self.assertEqual(
+            health.gmt_boundary_start.isoformat(), "2026-07-27T16:00:00+00:00"
+        )
+
+    def test_health_boundary_does_not_invent_midnight_from_calendar_date(self) -> None:
+        health = normalize_health_daily(
+            {"steps": {"calendarDate": "2026-07-28", "totalSteps": 0}}
+        )
+        self.assertIsNone(health.local_boundary_start)
+        self.assertIsNone(health.gmt_boundary_start)
 
 
 if __name__ == "__main__":
