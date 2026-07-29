@@ -56,7 +56,9 @@ docker build \
   .
 ```
 
-The equivalent scripted production build is:
+The equivalent scripted production build is below. It uses the
+`MARTIN_DIGEST`, `PMTILES_IMAGE`, `NODE_IMAGE`, and `GO_IMAGE` values resolved
+in the preceding block:
 
 ```bash
 PROTOMAPS_BUILD_DATE=20260728 \

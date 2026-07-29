@@ -1,3 +1,5 @@
+import os
+import subprocess
 from pathlib import Path
 
 MAPS_DIR = Path(__file__).parents[1] / "maps"
@@ -98,7 +100,6 @@ def test_map_image_build_script_has_safe_fixture_and_production_modes() -> None:
     script = (MAPS_DIR / "build-map-image.sh").read_text()
 
     assert 'mode="${1:-fixture}"' in script
-    assert 'image_tag="${2:-applog-map-renderer:fixture}"' in script
     assert 'BUILD_MODE=fixture' in script
     assert 'BUILD_MODE=production' in script
     assert 'SOURCE_REVISION="$(git -C "${repo_root}" rev-parse HEAD)"' in script
@@ -106,3 +107,41 @@ def test_map_image_build_script_has_safe_fixture_and_production_modes() -> None:
     assert 'require_digest_ref "${name}"' in script
     assert 'MARTIN_IMAGE_DIGEST="${MARTIN_IMAGE##*@}"' in script
     assert 'exec docker build "${build_args[@]}" "${repo_root}"' in script
+
+
+def test_map_image_build_script_assembles_fixture_command(tmp_path: Path) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    capture = tmp_path / "docker-args"
+    docker = bin_dir / "docker"
+    docker.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$CAPTURE"\n')
+    docker.chmod(0o755)
+    env = {
+        **os.environ,
+        "PATH": f"{bin_dir}:{os.environ['PATH']}",
+        "CAPTURE": str(capture),
+        "NO_CACHE": "1",
+    }
+
+    subprocess.run(
+        [MAPS_DIR / "build-map-image.sh", "fixture", "example:test"],
+        check=True,
+        env=env,
+    )
+
+    args = capture.read_text().splitlines()
+    assert args[:5] == [
+        "build",
+        "--file",
+        "workers/garmin-sync/maps/Dockerfile",
+        "--no-cache",
+        "--tag",
+    ]
+    assert args[5:10] == [
+        "example:test",
+        "--build-arg",
+        "BUILD_MODE=fixture",
+        "--build-arg",
+        "RELEASE_ID=fixture-public-victoria-park-20260728",
+    ]
+    assert Path(args[-1]) == MAPS_DIR.parents[2]

@@ -7,7 +7,6 @@ readonly repo_root="$(cd -- "${script_dir}/../../.." && pwd)"
 readonly dockerfile="workers/garmin-sync/maps/Dockerfile"
 
 mode="${1:-fixture}"
-image_tag="${2:-applog-map-renderer:fixture}"
 
 fail() {
   echo "AppLog map image: $*" >&2
@@ -32,10 +31,7 @@ require_digest_ref() {
 
 require_command docker
 
-build_args=(
-  --file "${dockerfile}"
-  --tag "${image_tag}"
-)
+build_args=(--file "${dockerfile}")
 
 if [[ "${NO_CACHE:-0}" == "1" ]]; then
   build_args+=(--no-cache)
@@ -43,7 +39,9 @@ fi
 
 case "${mode}" in
   fixture)
+    image_tag="${2:-applog-map-renderer:fixture}"
     build_args+=(
+      --tag "${image_tag}"
       --build-arg BUILD_MODE=fixture
       --build-arg RELEASE_ID="${RELEASE_ID:-fixture-public-victoria-park-20260728}"
     )
@@ -66,8 +64,8 @@ case "${mode}" in
     SOURCE_REVISION="$(git -C "${repo_root}" rev-parse HEAD)"
     MARTIN_IMAGE_DIGEST="${MARTIN_IMAGE##*@}"
     image_tag="${2:-applog-map-renderer:${PROTOMAPS_BUILD_DATE}}"
-    build_args[3]="${image_tag}"
     build_args+=(
+      --tag "${image_tag}"
       --build-arg BUILD_MODE=production
       --build-arg PROTOMAPS_BUILD_DATE="${PROTOMAPS_BUILD_DATE}"
       --build-arg PROTOMAPS_BUILD_URL="${PROTOMAPS_BUILD_URL}"
