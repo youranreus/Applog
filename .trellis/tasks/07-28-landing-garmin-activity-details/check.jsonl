@@ -1,1 +1,16 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/backend/garmin-guidelines.md","reason":"Verify backward compatibility, public whitelist, privacy boundaries, stale behavior, and required Garmin tests."}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"Verify entity registration, schema/index correctness, TypeORM/Python SQL parity, and transactional cursors."}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"Verify BusinessException usage and preservation of last-good snapshots on failures."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Audit logs for secrets, identifiers, dates, coordinates, payloads, and health values."}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Run backend standards and API-surface review."}
+{"file":".trellis/spec/common/shared/quality-guidelines.md","reason":"Verify common exports, build cleanliness, and contract quality."}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Verify consistent environment naming across deployment surfaces."}
+{"file":".trellis/spec/common/shared/type-safety.md","reason":"Audit nullable metrics, valid zero handling, and forbidden unsafe types."}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Run frontend test, lint, accessibility, and structure review."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Verify card/dialog boundaries, keyboard behavior, responsive layout, and reduced motion."}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"Verify lifecycle cleanup for tilt, scroll, resize, animation cancellation, and lazy loading."}
+{"file":".trellis/spec/frontend/frontend/type-safety.md","reason":"Verify shared contracts and typed Alova calls."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Review end-to-end data flow and spatial-coordinate correctness for FLIP transitions."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Detect duplicated normalization, formatting, state, and payload parsing."}
+{"file":".trellis/tasks/07-28-landing-garmin-activity-details/research/field-capability.md","reason":"Check fixtures and metric presets against observed capability without exposing real data."}
+{"file":".trellis/tasks/07-28-landing-garmin-activity-details/research/map-rendering.md","reason":"Check provider policy, attribution, WebP metadata, padding, caching, and fallback behavior."}

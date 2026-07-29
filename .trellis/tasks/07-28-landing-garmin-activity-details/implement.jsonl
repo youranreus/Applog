@@ -1,1 +1,18 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/backend/index.md","reason":"NestJS/Fastify module, entity registration, public endpoint, logger, and DTO conventions."}
+{"file":".trellis/spec/backend/backend/garmin-guidelines.md","reason":"Existing worker-to-MySQL-to-NestJS-to-Landing Garmin privacy and public snapshot contract."}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"TypeORM entity, MySQL schema, transaction, index, and synchronize conventions."}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"BusinessException and soft-degradation behavior for Garmin detail and cover endpoints."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Structured logging rules, including the stricter requirement not to log Garmin private identifiers or values."}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Backend API, DTO, naming, and test conventions."}
+{"file":".trellis/spec/common/shared/index.md","reason":"Shared package ownership and export conventions for cross-layer Garmin contracts."}
+{"file":".trellis/spec/common/shared/package-boundaries.md","reason":"Keep public Garmin DTOs in common without leaking backend entities or worker-private shapes."}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Align worker, backend, local, systemd, and FC environment contracts."}
+{"file":".trellis/spec/common/shared/type-safety.md","reason":"Nullable metric, discriminated state, and public contract typing rules."}
+{"file":".trellis/spec/frontend/frontend/index.md","reason":"Vue Landing architecture, API, accessibility, and verification entry point."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Activity card, cover, and dialog component structure and accessibility conventions."}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"Lazy detail cache, pointer tilt, and shared-element transition hook conventions."}
+{"file":".trellis/spec/frontend/frontend/type-safety.md","reason":"Typed API calls and shared Garmin contract usage."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Trace private archive, normalized data, public projection, API, and UI boundaries without privacy leaks."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Reuse existing Garmin normalization, card, dialog, formatting, and API patterns before adding abstractions."}
+{"file":".trellis/tasks/07-28-landing-garmin-activity-details/research/field-capability.md","reason":"Synthetic-fixture field capability, activity type, health domain, endpoint stability, and nullability evidence."}
+{"file":".trellis/tasks/07-28-landing-garmin-activity-details/research/map-rendering.md","reason":"Static renderer choice, tile policy, provider configuration, attribution, and fallback evidence."}

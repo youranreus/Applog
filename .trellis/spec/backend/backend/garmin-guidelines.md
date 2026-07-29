@@ -95,3 +95,120 @@ return {
 ## Verification
 
 Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.service.spec.ts`, `packages/frontend/test/garmin-utils.spec.mjs`, `@applog/common` build, frontend type-check on touched files.
+
+## Scenario: Private archive, public detail, and generated covers
+
+### 1. Scope / Trigger
+
+- Trigger: changes to private Garmin activity/health storage, stream cursors,
+  encrypted payloads, generated cover media, public activity details, or cover
+  authorization.
+- Applies across the Python worker, MySQL/TypeORM schema, NestJS Garmin module,
+  `@applog/common`, and Landing Garmin components.
+
+### 2. Signatures
+
+- APIs:
+  - `GET /garmin/stats` → newest six published summaries whose `publicId` is non-null.
+  - `GET /garmin/activities/:publicId` → `IGarminLandingActivityDetail` for a
+    currently published projection row.
+  - `GET /garmin/covers/:coverId.webp` → immutable `image/webp` only while a
+    currently published projection row references that cover.
+- Private tables: `garmin_private_activity`, `garmin_private_payload`,
+  `garmin_activity_detail`, `garmin_health_daily`, `garmin_sync_stream_state`,
+  and `garmin_activity_cover`.
+- Public table: `garmin_activity_snapshot` remains the only Landing read model.
+
+### 3. Contracts
+
+- `GARMIN_DATA_ENCRYPTION_KEY` is a separate Base64-encoded 32-byte AES-256-GCM
+  key; it must not reuse the token key.
+- Worker MySQL configuration prefers `GARMIN_MYSQL_*` and falls back to the
+  matching `MYSQL_*` keys used by NestJS/FC.
+- Cover configuration uses `GARMIN_MAP_COVERS_ENABLED`, `GARMIN_MAP_PROVIDER`,
+  `GARMIN_MAP_TILE_URL`, `GARMIN_MAP_ATTRIBUTION`, and an identifiable
+  `GARMIN_MAP_USER_AGENT`.
+- Activity-list pages are durably indexed before their list cursor advances.
+- Health summary columns normalize only explicit observed fields: numeric zero is
+  retained, missing/explicit null are not coerced, and local/GMT boundaries are
+  stored only when upstream supplies timestamps. Historical health backfill finds
+  the available-history boundary through consecutive measurement-empty dates,
+  never through a fixed-year cutoff.
+  Bounded detail work is selected from the persistent `pending`/`failed` queue,
+  never only from an in-memory prefix of the current page.
+- Payload AAD binds domain, owner, payload kind, and encryption version. JSON is
+  canonicalized and gzipped before encryption; FIT remains binary and is hash
+  verified after decryption.
+- Public responses are rebuilt from explicit allowlists. They never expose source
+  activity ids, raw coordinates, raw `detailData`, FIT, health payloads, private
+  visibility, encryption metadata, or private media ownership.
+- Cover quality is monotonic: remote route map > local route fallback > pin.
+  A lower-quality retry must not overwrite a higher-quality existing cover.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|-----------|-------------------|
+| Request budget exhausted, authentication failure, or rate limit | Treat as fatal stream control; do not swallow it as a conditional endpoint failure or advance the affected cursor |
+| Conditional detail endpoint unavailable | Preserve successful payload kinds and mark the activity `partial` |
+| FIT exceeds the configured cap | Record partial status; do not fail unrelated activities or streams |
+| Required health domain fails for a historical date | Record `failed`; do not advance that date cursor |
+| Map provider/rendering fails | Preserve the last good cover; otherwise use the coordinate-free fallback without failing data sync |
+| Activity becomes private/unpublished | Remove it from public projection; private history remains; detail and old cover URLs become unreadable |
+| Snapshot has migration-window null `publicId` | Omit it from public stats until a random public id exists |
+| Ciphertext, AAD, key, or content hash is wrong | Decryption fails closed; never return or normalize the payload |
+
+### 5. Good / Base / Bad Cases
+
+- Good: a public outdoor activity is privately archived, normalized, assigned a
+  random `publicId`, rendered once as a route WebP, and served through summary,
+  detail, and authorized cover endpoints.
+- Base: an indoor activity or provider outage keeps the activity available with a
+  local pin/route fallback; later retries may improve but never downgrade cover quality.
+- Bad: advancing a history cursor after indexing only the first detail candidates,
+  returning a cover because its random id exists without checking publication, or
+  logging Garmin ids/dates/coordinates/health values.
+
+### 6. Tests Required
+
+- Worker: canonical JSON/FIT codec round-trip, wrong key/AAD/tamper/hash failure,
+  size-cap partial handling, whole-page indexing, persistent detail queue, budget
+  exhaustion, health cursor non-advancement, cover monotonicity, and metadata-free
+  deterministic WebP dimensions.
+- Backend: public stats exclude null ids; detail and cover require `published`;
+  public JSON omits forbidden private fields; cover response has WebP content type,
+  ETag, and immutable caching.
+- Frontend: all eight metric presets, null omission/valid-zero retention, lazy
+  request race handling, retry, tilt cleanup, keyboard/Escape/focus return,
+  reduced motion, and shared-element cancellation cleanup.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```python
+# The page cursor now skips every activity after the bounded in-memory prefix.
+for item in page[:detail_budget]:
+    fetch_details(item)
+advance_list_cursor(next_page)
+```
+
+```ts
+// A random id is discoverability resistance, not publication authorization.
+return coverRepository.findOneBy({ coverId })
+```
+
+#### Correct
+
+```python
+index_entire_page(page)
+advance_list_cursor(next_page)
+process_persistent_detail_queue(detail_budget)
+```
+
+```ts
+const snapshot = await snapshotRepository.findOne({
+  where: { coverId, published: true },
+})
+if (!snapshot) throw new BusinessException('活动封面不存在')
+```
