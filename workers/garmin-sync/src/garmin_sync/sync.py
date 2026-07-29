@@ -7,9 +7,11 @@ from typing import Protocol
 
 from .cover import (
     RENDER_VERSION,
+    SOCCER_ACTIVITY_TYPE,
     configured_route_provider,
     render_pin_cover,
     render_route_cover,
+    render_soccer_heatmap_cover,
 )
 from .models import ActivitySnapshot, NormalizedActivityDetail, SyncResult
 from .normalize import (
@@ -165,7 +167,10 @@ class SyncService:
         for snapshot in candidates:
             try:
                 points = route_points_by_id.get(snapshot.source_activity_id, [])
-                cover = render_route_cover(points) if points else render_pin_cover()
+                if snapshot.activity_type == SOCCER_ACTIVITY_TYPE and points:
+                    cover = render_soccer_heatmap_cover(points)
+                else:
+                    cover = render_route_cover(points) if points else render_pin_cover()
                 snapshot.cover_id = self._repository.store_activity_cover(
                     snapshot.source_activity_id, cover, generated_at=synced_at
                 )

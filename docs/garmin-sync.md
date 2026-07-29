@@ -20,7 +20,9 @@ worker 默认从 NestJS 的 `packages/backend` 目录加载环境配置文件。
 - `GARMIN_HEALTH_EMPTY_DAY_LIMIT`：连续多少个无任何观测值的历史自然日后判定已到上游边界，默认 `30`
 - `GARMIN_PRIVATE_ARCHIVE_ENABLED`、`GARMIN_HEALTH_BACKFILL_ENABLED`、`GARMIN_MAP_COVERS_ENABLED`：三个独立回滚开关
 - 地图流启用 provider 时配置 `GARMIN_MAP_PROVIDER`、`GARMIN_MAP_TILE_URL`、`GARMIN_MAP_ATTRIBUTION` 和可识别的 `GARMIN_MAP_USER_AGENT`
-- `GARMIN_MAP_ROUTE_PADDING_PIXELS`：路线到封面四边的最终像素留白，默认 `72`
+- `GARMIN_MAP_ROUTE_PADDING_PIXELS`：路线到封面四边的最终像素留白，默认 `28`
+
+普通户外活动会把 GPS 路线放大到封面主轴约 88% 的范围；足球活动仅在拿到真实 GPS 采样点时生成本地球场热力图。椭圆机等无 GPS 活动继续使用无坐标封面，不会伪造地图或热力分布。
 
 生成加密密钥：
 
@@ -56,7 +58,7 @@ GARMIN_HEALTH_EMPTY_DAY_LIMIT=30
 GARMIN_PRIVATE_ARCHIVE_ENABLED=true
 GARMIN_HEALTH_BACKFILL_ENABLED=true
 GARMIN_MAP_COVERS_ENABLED=true
-GARMIN_MAP_ROUTE_PADDING_PIXELS=72
+GARMIN_MAP_ROUTE_PADDING_PIXELS=28
 ```
 
 ## 首次部署

@@ -96,13 +96,21 @@ def test_covered_activity_ids_require_current_renderer_and_provider():
     connection = SimpleNamespace(cursor=lambda: Cursor())
     repository = MySQLRepository(connection, b"token-key")
 
-    assert repository.covered_activity_ids("garmin-cover-v2", "carto-dark") == {
+    assert repository.covered_activity_ids("garmin-cover-v3", "carto-dark") == {
         "activity-1"
     }
     assert "cover.renderVersion = %s" in captured["sql"]
     assert "cover.provider = %s" in captured["sql"]
+    assert "activity.activityType = %s" in captured["sql"]
+    assert "cover.provider IN (%s, %s)" in captured["sql"]
+    assert "cover.provider <> %s" in captured["sql"]
     assert captured["params"] == (
-        "garmin-cover-v2",
+        "garmin-cover-v3",
+        "soccer",
+        "local-heatmap",
+        "local",
+        "soccer",
+        "local-heatmap",
         "carto-dark",
         "carto-dark",
     )
@@ -111,7 +119,10 @@ def test_covered_activity_ids_require_current_renderer_and_provider():
 def test_activity_cover_skips_unchanged_immutable_content():
     statements = []
     rows = iter(
-        [(7,), ("existing-cover", "local-route", "same-etag", "garmin-cover-v2")]
+        [
+            (7, "running"),
+            ("existing-cover", "local-route", "same-etag", "garmin-cover-v3"),
+        ]
     )
 
     class Cursor:
@@ -143,7 +154,10 @@ def test_activity_cover_skips_unchanged_immutable_content():
 def test_activity_cover_refreshes_currentness_metadata_without_rotating_id():
     statements = []
     rows = iter(
-        [(7,), ("existing-cover", "old-provider", "same-etag", "garmin-cover-v1")]
+        [
+            (7, "running"),
+            ("existing-cover", "old-provider", "same-etag", "garmin-cover-v1"),
+        ]
     )
 
     class Cursor:
@@ -177,14 +191,17 @@ def test_activity_cover_refreshes_currentness_metadata_without_rotating_id():
     assert metadata_params[:3] == (
         "new-provider",
         "New attribution",
-        "garmin-cover-v2",
+        "garmin-cover-v3",
     )
 
 
 def test_activity_cover_rotates_id_and_snapshot_reference_for_changed_content():
     statements = []
     rows = iter(
-        [(7,), ("existing-cover", "local-route", "old-etag", "garmin-cover-v1")]
+        [
+            (7, "running"),
+            ("existing-cover", "local-route", "old-etag", "garmin-cover-v1"),
+        ]
     )
 
     class Cursor:
@@ -222,6 +239,53 @@ def test_activity_cover_rotates_id_and_snapshot_reference_for_changed_content():
     assert update_cover_params[0] == cover_id
     assert "UPDATE garmin_activity_snapshot SET coverId = %s" in update_snapshot_sql
     assert update_snapshot_params == (cover_id, "activity-1")
+
+
+def test_activity_type_correction_replaces_stale_soccer_heatmap():
+    statements = []
+    rows = iter(
+        [
+            (7, "running"),
+            (
+                "existing-cover",
+                "local-heatmap",
+                "old-etag",
+                "garmin-cover-v3",
+            ),
+        ]
+    )
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, sql, params):
+            statements.append((sql, params))
+
+        def fetchone(self):
+            return next(rows)
+
+    transaction_calls = []
+    connection = SimpleNamespace(
+        cursor=lambda: Cursor(),
+        begin=lambda: transaction_calls.append("begin"),
+        commit=lambda: transaction_calls.append("commit"),
+        rollback=lambda: transaction_calls.append("rollback"),
+    )
+    repository = MySQLRepository(connection, b"token-key")
+    cover = ActivityCover(b"route", 480, 480, "route-etag", "local-route", None)
+
+    cover_id = repository.store_activity_cover(
+        "activity-1", cover, generated_at=datetime(2026, 7, 29, tzinfo=UTC)
+    )
+
+    assert cover_id != "existing-cover"
+    assert transaction_calls == ["begin", "commit"]
+    assert "SELECT id, activityType" in statements[0][0]
+    assert statements[2][1][6] == "local-route"
 
 
 def test_health_upsert_writes_summary_and_source_boundaries_with_entity_parity():

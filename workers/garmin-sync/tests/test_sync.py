@@ -2,6 +2,7 @@ import unittest
 from datetime import UTC, datetime
 from unittest.mock import patch
 
+from garmin_sync.cover import ActivityCover
 from garmin_sync.sync import SyncService
 
 
@@ -112,7 +113,7 @@ class SyncServiceTests(unittest.TestCase):
         ):
             SyncService(adapter, repository).run()
 
-        self.assertEqual(repository.cover_query, ("garmin-cover-v2", "carto-dark"))
+        self.assertEqual(repository.cover_query, ("garmin-cover-v3", "carto-dark"))
         self.assertEqual(adapter.route_id, "1")
 
     def test_incomplete_provider_configuration_does_not_require_remote_provider(
@@ -138,8 +139,40 @@ class SyncServiceTests(unittest.TestCase):
         ):
             SyncService(adapter, repository).run()
 
-        self.assertEqual(repository.cover_query, ("garmin-cover-v2", None))
+        self.assertEqual(repository.cover_query, ("garmin-cover-v3", None))
         self.assertFalse(hasattr(adapter, "route_id"))
+
+    def test_soccer_with_gps_uses_heatmap_cover_instead_of_route_cover(self) -> None:
+        adapter = FakeAdapter()
+        adapter.get_activities_by_date = lambda start, end: [
+            {
+                **activity(1),
+                "activityType": {"typeKey": "soccer"},
+            }
+        ]
+
+        class CoverRepository(FakeRepository):
+            def store_activity_cover(self, source_activity_id, cover, *, generated_at):
+                self.stored_cover = cover
+                return "soccer-cover"
+
+        repository = CoverRepository()
+        heatmap = ActivityCover(
+            b"heatmap", 480, 480, "heatmap-etag", "local-heatmap", None
+        )
+
+        with (
+            patch(
+                "garmin_sync.sync.render_soccer_heatmap_cover", return_value=heatmap
+            ) as render_heatmap,
+            patch("garmin_sync.sync.render_route_cover") as render_route,
+        ):
+            SyncService(adapter, repository).run()
+
+        render_heatmap.assert_called_once_with([(10.0, 20.0), (10.1, 20.1)])
+        render_route.assert_not_called()
+        self.assertEqual(repository.stored_cover.provider, "local-heatmap")
+        self.assertEqual(repository.snapshots[0].cover_id, "soccer-cover")
 
 
 if __name__ == "__main__":

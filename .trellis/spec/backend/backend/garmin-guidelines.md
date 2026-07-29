@@ -38,7 +38,11 @@
 **Landing presentation**
 
 - Horizontal scroll; edge fades only when overflow can scroll.
-- Cover: route present → GPS SVG; else → type-specific static SVG (`ActivityTypeCover`). No soccer heatmap without real pitch data.
+- Cover: generated WebP first; regular GPS activities use a route map, while
+  `soccer` with real GPS samples uses a local pitch heatmap derived from sample
+  density. Without usable GPS samples, use the coordinate-free fallback and never
+  fabricate a heatmap. The public SVG route / `ActivityTypeCover` remain migration
+  fallbacks when no generated cover is available.
 - Metrics with small icons: time, location?, distance?, calories?, duration. Omit null optionals (no「距离暂无」).
 - Compact square-cover cards; distance (when present) is a bottom-left cover tag, not a body metric.
 - Body is always 3 rows: title · time(+location) · calories/duration packed on one line.
@@ -60,7 +64,7 @@
 ### 5. Good / Base / Bad Cases
 
 - Good: public running with route + calories + city name → GPS cover, full metrics.
-- Base: elliptical / soccer, no route → static SVG cover; omit distance/location if null.
+- Base: elliptical / soccer, no route → coordinate-free cover; omit distance/location if null.
 - Bad: private activity, or location `"31.2, 121.5"` → not published / location null.
 
 ### 6. Tests Required
@@ -73,7 +77,7 @@
 
 #### Wrong
 ```ts
-// Expose start coordinates or fake soccer heatmap from missing data
+// Expose start coordinates or fake soccer heatmap from missing GPS samples
 return { ...activity, startLat, startLon, heatmap: fabricateGrid() }
 ```
 
@@ -84,6 +88,11 @@ return {
   calories, locationName, deviceSource,
   route: pathData && viewBox ? { pathData, viewBox } : null,
 }
+```
+
+```python
+# Soccer cover generation stays private and receives only worker-side GPS points.
+cover = render_soccer_heatmap_cover(points) if points else render_pin_cover()
 ```
 
 ## Boundaries
@@ -128,8 +137,9 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 - Cover configuration uses `GARMIN_MAP_COVERS_ENABLED`, `GARMIN_MAP_PROVIDER`,
   `GARMIN_MAP_TILE_URL`, `GARMIN_MAP_ATTRIBUTION`, and an identifiable
   `GARMIN_MAP_USER_AGENT`. `GARMIN_MAP_ROUTE_PADDING_PIXELS` controls the
-  per-edge route margin in final cover pixels (default `72`); the renderer
-  applies it at 2x before downsampling. Provider, tile URL, and attribution
+  per-edge route margin in final cover pixels (default `28`); the renderer
+  applies it at 2x before downsampling and crops the integer-zoom tile result to
+  the requested visual margin. Provider, tile URL, and attribution
   remain deployment-controlled and have no production defaults in source. A
   remote provider is active only when all three values are present; partial
   configuration uses the local fallback and must not invalidate an otherwise
@@ -153,6 +163,8 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   activity ids, raw coordinates, raw `detailData`, FIT, health payloads, private
   visibility, encryption metadata, or private media ownership.
 - Cover quality is monotonic: remote route map > local route fallback > pin.
+  The GPS-derived `local-heatmap` is the intentional terminal cover for soccer,
+  not a route-provider downgrade.
   A lower-quality retry must not overwrite a higher-quality existing cover.
 - Cover URLs are content-immutable: identical ETags skip writes; changed bytes
   receive a fresh random `coverId`, and the media row plus any existing snapshot
@@ -161,7 +173,10 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   the existing `coverId` and bytes but refresh that currentness metadata; otherwise
   the route stays permanently stale and consumes the route budget every invocation.
 - A route cover counts as current only when both `renderVersion` and the configured
-  provider match. Renderer or provider changes must requeue route-point loading for
+  provider match. For `soccer`, only `local-heatmap` or the coordinate-free `local`
+  fallback counts as current; a heatmap must never remain current after an upstream
+  activity-type correction. GPS-derived heatmaps do not depend on the configured map
+  tile provider. Renderer or provider changes must requeue route-point loading for
   the newest public candidates instead of treating any historical cover as final.
 
 ### 4. Validation & Error Matrix
@@ -173,6 +188,7 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 | FIT exceeds the configured cap | Record partial status; do not fail unrelated activities or streams |
 | Required health domain fails for a historical date | Record `failed`; do not advance that date cursor |
 | Map provider/rendering fails | Preserve the last good cover; otherwise use the coordinate-free fallback without failing data sync |
+| Soccer has fewer than two distinct valid GPS samples | Do not create a heatmap; use the coordinate-free fallback |
 | Provider name, tile URL, or attribution is missing | Treat remote maps as disabled, render locally, and compare currentness without a preferred remote provider |
 | Activity becomes private/unpublished | Remove it from public projection; private history remains; detail and old cover URLs become unreadable |
 | Snapshot has migration-window null `publicId` | Omit it from public stats until a random public id exists |
@@ -183,11 +199,14 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 - Good: a public outdoor activity is privately archived, normalized, assigned a
   random `publicId`, rendered once as a route WebP, and served through summary,
   detail, and authorized cover endpoints.
+- Good: public soccer with real GPS samples renders a deterministic pitch heatmap
+  from sample density without persisting or exposing coordinates.
 - Base: an indoor activity or provider outage keeps the activity available with a
   local pin/route fallback; later retries may improve but never downgrade cover quality.
 - Bad: advancing a history cursor after indexing only the first detail candidates,
-  returning a cover because its random id exists without checking publication, or
-  logging Garmin ids/dates/coordinates/health values.
+  fabricating a soccer heatmap without GPS samples, returning a cover because its
+  random id exists without checking publication, or logging Garmin
+  ids/dates/coordinates/health values.
 
 ### 6. Tests Required
 
@@ -195,7 +214,9 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   size-cap partial handling, whole-page indexing, persistent detail queue, budget
   exhaustion, MySQL-safe quoting for every stream cursor read/write, health cursor
   non-advancement, cover monotonicity, immutable cover-ID rotation, and
-  metadata-free deterministic WebP dimensions.
+  metadata-free deterministic WebP dimensions, route cover visual occupancy, soccer
+  GPS-density heatmap determinism, soccer-vs-route renderer selection, and
+  soccer-to-non-soccer cover replacement after an activity-type correction.
 - Backend: public stats exclude null ids; detail and cover require `published`;
   public JSON omits forbidden private fields; cover response has WebP content type,
   ETag, and immutable caching.

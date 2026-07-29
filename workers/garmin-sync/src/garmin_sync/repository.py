@@ -6,7 +6,13 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from .cover import ActivityCover
+from .cover import (
+    LOCAL_COVER_PROVIDER,
+    LOCAL_HEATMAP_PROVIDER,
+    SOCCER_ACTIVITY_TYPE,
+    ActivityCover,
+    cover_provider_rank,
+)
 from .credential import EncryptedToken, decrypt_token, encrypt_token
 from .models import (
     ActivitySnapshot,
@@ -263,8 +269,21 @@ class MySQLRepository:
                 "INNER JOIN garmin_private_activity activity "
                 "ON activity.id = cover.privateActivityId "
                 "WHERE cover.renderVersion = %s "
-                "AND (%s IS NULL OR cover.provider = %s)",
-                (render_version, preferred_provider, preferred_provider),
+                "AND ((activity.activityType = %s "
+                "AND cover.provider IN (%s, %s)) "
+                "OR (activity.activityType <> %s "
+                "AND cover.provider <> %s "
+                "AND (%s IS NULL OR cover.provider = %s)))",
+                (
+                    render_version,
+                    SOCCER_ACTIVITY_TYPE,
+                    LOCAL_HEATMAP_PROVIDER,
+                    LOCAL_COVER_PROVIDER,
+                    SOCCER_ACTIVITY_TYPE,
+                    LOCAL_HEATMAP_PROVIDER,
+                    preferred_provider,
+                    preferred_provider,
+                ),
             )
             return {str(row[0]) for row in cursor.fetchall()}
 
@@ -360,13 +379,15 @@ class MySQLRepository:
         """Store immutable cover bytes, rotating the public ID when content changes."""
         with self._connection.cursor() as cursor:
             cursor.execute(
-                "SELECT id FROM garmin_private_activity WHERE sourceActivityId = %s",
+                "SELECT id, activityType FROM garmin_private_activity "
+                "WHERE sourceActivityId = %s",
                 (source_activity_id,),
             )
             private_row = cursor.fetchone()
             if not private_row:
                 return None
             private_id = int(private_row[0])
+            activity_type = str(private_row[1])
             cursor.execute(
                 "SELECT coverId, provider, etag, renderVersion "
                 "FROM garmin_activity_cover "
@@ -377,9 +398,8 @@ class MySQLRepository:
             if existing:
                 existing_cover_id = str(existing[0])
                 existing_provider = str(existing[1])
-                provider_rank = {"local": 0, "local-route": 1}
-                existing_rank = provider_rank.get(existing_provider, 2)
-                new_rank = provider_rank.get(cover.provider, 2)
+                existing_rank = cover_provider_rank(existing_provider, activity_type)
+                new_rank = cover_provider_rank(cover.provider, activity_type)
                 if new_rank < existing_rank:
                     return existing_cover_id
                 if str(existing[2]) == cover.etag:
