@@ -120,8 +120,8 @@ cover = render_activity_cover(activity_type, evidence)
 - Build: `docker build -f workers/garmin-sync/maps/Dockerfile .` with
   `BUILD_MODE=fixture|production`.
 - Production inputs: explicit `PROTOMAPS_BUILD_DATE`, HTTPS build URL, official
-  BLAKE3, release id, source revision, and digest-qualified PMTiles/Node/Go/Martin
-  image references.
+  BLAKE3 provenance, release id, source revision, and digest-qualified
+  PMTiles/Node/Go/Martin image references.
 - Runtime: host `127.0.0.1:3000` → container Martin `0.0.0.0:3000`;
   no runtime map volume.
 - Worker manifest: `/opt/applog/maps/current/manifest.json`, exported from the
@@ -139,6 +139,11 @@ cover = render_activity_cover(activity_type, evidence)
   OCI digest are recorded separately in the release manifest.
 - Builds may use the network. Runtime style/tile/glyph resolution is loopback
   only and must continue to work with outbound traffic denied.
+- Production builds HTTP Range-extract global z0-6 and Greater Bay Area z7-15
+  directly from the explicit build URL; they must not materialize the complete
+  planet archive. The official BLAKE3 is validated for presence/format and
+  recorded as upstream provenance, not claimed as locally reverified. Local
+  gates remain merged-output `pmtiles verify` and release asset SHA-256 checks.
 - A release switch is one operational transaction: disable Garmin timer, stage
   the target image's manifest, replace and health-check renderer, atomically
   rename the staged manifest, then re-enable the timer. Keep the old image and
@@ -149,7 +154,8 @@ cover = render_activity_cover(activity_type, evidence)
 | Condition | Required behavior |
 |-----------|-------------------|
 | Production base image is tag-only or digest malformed | Fail the image build |
-| Protomaps date/URL/BLAKE3 absent, placeholder, or mismatched | Fail before extracting the release |
+| Protomaps date/URL/BLAKE3 provenance absent, placeholder, or malformed | Fail before extracting the release |
+| HTTP Range extraction, merge, final PMTiles verify, or asset SHA-256 fails | Fail before final image creation |
 | PMTiles invalid, font/license absent, asset hash wrong, or style has public URL | Fail before final image creation |
 | Container health fails after image replacement | Keep timer disabled; restore prior image/manifest |
 | Manifest is from a different image digest | Do not run sync or publish the manifest |

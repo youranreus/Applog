@@ -73,6 +73,10 @@ PMTiles release、样式、字体、manifest 和许可证作为同一不可变 O
 运行时不挂载地图数据目录，也不访问公网。构建命令、公共 fixture 模式、
 manifest 导出、loopback 启动和 digest 回滚流程见
 [`workers/garmin-sync/maps/README.md`](../workers/garmin-sync/maps/README.md)。
+生产构建通过 PMTiles CLI 对固定 daily build URL 发起 HTTP Range 请求，只
+提取 global z0-6 与大湾区 z7-15，不下载约 150 GiB 的完整 planet。官方
+BLAKE3 仅作为 provenance 写入 manifest；本地门禁是合并产物的
+`pmtiles verify` 和 release 资产 SHA-256 校验。
 
 容器内部监听 `0.0.0.0:3000` 仅用于 Docker 网络转发；宿主机必须显式绑定
 `127.0.0.1:3000:3000`，禁止发布为 `0.0.0.0:3000`。worker 仍使用：

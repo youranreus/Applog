@@ -25,8 +25,6 @@ ARG GO_IMAGE=golang:1.25.6-bookworm
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
       ca-certificates \
-      b3sum \
-      curl \
       fonts-noto-cjk \
       fonts-noto-core \
       jq \

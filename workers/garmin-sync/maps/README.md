@@ -58,10 +58,13 @@ For production, also pass digest-pinned `PMTILES_IMAGE`, `NODE_IMAGE`, and
 fixture builds; digest-qualified image references are the production trust
 boundary. The build rejects a Martin digest that does not match `MARTIN_IMAGE`.
 
-Production source verification downloads the complete planet archive before
-extracting the two baked coverage ranges, because a BLAKE3 claim cannot be
-verified from partial HTTP ranges. Budget at least 150 GiB of temporary build
-space for current archives. Builder scratch data does not enter the final image.
+Production never downloads the complete planet archive. PMTiles CLI reads the
+global z0-6 and Greater Bay Area z7-15 extracts directly from
+`PROTOMAPS_BUILD_URL` with HTTP Range requests, then merges and verifies the
+resulting baked archive. `PROTOMAPS_BUILD_BLAKE3` must be copied from the
+official build listing and is recorded as upstream provenance only; the build
+does not claim to reverify that whole-archive hash from partial responses. The
+baked asset SHA-256 values and `pmtiles verify` remain local build gates.
 
 Stage the baked manifest before replacing the renderer. This is metadata only;
 the renderer still runs without volumes. Disable the Garmin timer for the
@@ -156,21 +159,20 @@ The generator removes POI sprite dependencies and retains roads, land, water,
 buildings and Chinese labels. Put locally licensed Noto Sans and Noto Sans CJK
 font files in `fonts/`; Martin generates glyph ranges on loopback.
 
-Build one disjoint archive from an explicit Protomaps daily build:
+Build one disjoint archive from an explicit Protomaps daily build without
+materializing the planet archive:
 
 ```bash
-curl --fail --location --output source.pmtiles BUILD_URL
-printf '%s  %s\n' BUILD_BLAKE3 source.pmtiles | b3sum --check
-pmtiles verify source.pmtiles
-pmtiles extract source.pmtiles global.pmtiles --maxzoom=6
-pmtiles extract source.pmtiles bay-area.pmtiles \
+pmtiles extract BUILD_URL global.pmtiles --maxzoom=6
+pmtiles extract BUILD_URL bay-area.pmtiles \
   --bbox=111.5,21.5,115.5,24.0 --minzoom=7 --maxzoom=15
 pmtiles merge global.pmtiles bay-area.pmtiles basemap.pmtiles
 pmtiles verify basemap.pmtiles
 ```
 
-Copy `manifest.example.json`, replace every placeholder, record SHA-256 hashes,
-and preserve `NOTICE.md` plus the font licenses. Validate before activation:
+Copy `manifest.example.json`, replace every placeholder, record the official
+BLAKE3 as `upstream-provenance-only`, record local asset SHA-256 hashes, and
+preserve `NOTICE.md` plus the font licenses. Validate before activation:
 
 ```bash
 python -m garmin_sync.map_release verify /opt/applog/maps/releases/RELEASE_ID \

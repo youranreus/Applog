@@ -30,7 +30,11 @@
 ### R3. Reproducible build
 
 - Docker build 使用显式 Protomaps build 日期/URL和锁定工具版本，不使用 `latest`。
-- 多阶段构建可访问公网下载构建依赖和明确的 Protomaps daily build，但最终镜像不得包含构建工具或下载入口。
+- 多阶段构建可访问公网；生产构建必须从明确的 Protomaps daily build URL
+  直接 HTTP Range 提取 global z0-6 与大湾区 z7-15，不得下载或落盘完整
+  planet，最终镜像不得包含构建工具或下载入口。
+- 官方 BLAKE3 必须非空且格式正确，并仅作为上游 provenance 写入 manifest；
+  部分 Range 响应不能被描述为已在本地验证完整源归档。
 - 构建阶段验证 PMTiles、资源 SHA-256、manifest、离线 URL 与字体存在性；任一失败则镜像构建失败。
 - 生成的 OCI 镜像携带 release id、数据日期、style、renderer 和 attribution 标签。
 
@@ -53,7 +57,9 @@
 - [ ] AC2：断开容器外网后 `/health` 正常，路线与单点静态请求返回有效 960×960 `image/webp`。
 - [ ] AC3：镜像只监听容器端口；部署示例仅绑定宿主机 `127.0.0.1:3000`。
 - [ ] AC4：构建使用固定 Martin、Protomaps style、PMTiles CLI 与明确 build URL；不存在 `latest` 或运行时下载。
-- [ ] AC5：构建时校验 PMTiles、manifest hashes、本地字体和 style 无公网 URL，错误 release 无法产出镜像。
+- [ ] AC5：构建时校验合并 PMTiles、manifest 资产 SHA-256、本地字体和 style
+  无公网 URL，并验证官方 BLAKE3 provenance 的存在与格式；错误 release
+  无法产出镜像。
 - [ ] AC6：项目 `map_prototype` 对容器连续渲染 100 张通过，无空白图，且容器运行时无公网请求。
 - [ ] AC7：镜像和文档不包含 Garmin token、数据加密密钥、活动坐标、私人派生 bbox 或数据库配置。
 - [ ] AC8：新旧两个镜像 tag 能完成前进部署与整镜像回滚，worker 配置无需改变。

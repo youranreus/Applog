@@ -10,7 +10,9 @@
 
 - [x] Add `workers/garmin-sync/maps/Dockerfile` with exact PMTiles, asset-builder and Martin runtime stages.
 - [x] Add a container-specific Martin config that listens inside the container while keeping every style/font/tile URL loopback-only.
-- [x] Generate and verify global z0-6 plus Greater Bay Area z7-15 `basemap.pmtiles` from an explicit build URL/hash.
+- [x] HTTP Range-extract global z0-6 plus Greater Bay Area z7-15 directly from
+  an explicit build URL, merge and verify `basemap.pmtiles`; keep the official
+  BLAKE3 as format-validated upstream provenance without downloading the planet.
 - [x] Generate `applog-light` with `@protomaps/basemaps@5.7.2`, install/copy the two required Noto font families, and bake NOTICE/licenses.
 - [x] Generate the immutable manifest and OCI labels from the same release metadata; ensure no secret/private inputs enter the build context.
 - [x] Add `.dockerignore` coverage if needed so local env files, virtualenvs, task data and private artifacts cannot enter layers.
@@ -37,7 +39,9 @@
 
 ## 5. Production release verification
 
-- [ ] Build one real release for the production architecture with explicit upstream BLAKE3.
+- [ ] Build one real release for the production architecture with explicit
+  upstream BLAKE3 provenance and confirm network transfer is limited to the two
+  requested coverage ranges.
 - [ ] Inspect OCI history/config and scan for secrets, private paths and high-severity vulnerabilities.
 - [ ] Deploy by digest, export its manifest, verify health, perform one bounded Garmin sync and confirm mapped covers are not downgraded.
 - [ ] Repeat with a second image digest, then roll back to prove the atomic image+manifest procedure.

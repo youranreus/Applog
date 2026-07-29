@@ -22,12 +22,23 @@ def test_dockerfile_is_pinned_and_bakes_the_release() -> None:
     assert "node /build/verify-release.mjs" in release_script
 
 
-def test_production_build_verifies_source_and_complete_release() -> None:
+def test_production_build_range_extracts_and_verifies_complete_release() -> None:
     script = (MAPS_DIR / "build-release.sh").read_text()
 
-    assert "b3sum --check --status" in script
-    assert 'pmtiles verify "${work_dir}/source.pmtiles"' in script
+    assert "curl " not in script
+    assert "b3sum" not in script
+    assert (
+        'pmtiles extract "${PROTOMAPS_BUILD_URL}" "${work_dir}/global.pmtiles"'
+        in script
+    )
+    assert (
+        'pmtiles extract "${PROTOMAPS_BUILD_URL}" "${work_dir}/bay-area.pmtiles"'
+        in script
+    )
+    assert '"${work_dir}/source.pmtiles"' not in script
     assert 'pmtiles verify "${release_dir}/basemap.pmtiles"' in script
+    assert 'sourceBuildHashVerification: $source_hash_verification' in script
+    assert 'source_hash_verification="upstream-provenance-only"' in script
     assert "NotoSans-Regular.ttf" in script
     assert "NotoSansCJK-Regular.ttc" in script
     assert "Noto-Sans-OFL.txt" in script
@@ -37,6 +48,10 @@ def test_production_build_verifies_source_and_complete_release() -> None:
     assert "require_digest_reference PMTILES_IMAGE_REF" in script
     assert "require_digest_reference NODE_IMAGE_REF" in script
     assert "require_digest_reference GO_IMAGE_REF" in script
+
+    dockerfile = (MAPS_DIR / "Dockerfile").read_text()
+    assert "b3sum" not in dockerfile
+    assert "curl" not in dockerfile
 
 
 def test_container_config_only_reads_baked_assets() -> None:

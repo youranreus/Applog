@@ -58,27 +58,27 @@ case "${build_mode}" in
       fail "MARTIN_IMAGE must be pinned to MARTIN_IMAGE_DIGEST"
     work_dir="$(mktemp -d)"
     trap 'rm -rf "${work_dir}"' EXIT
-    curl --fail --location --retry 3 --output "${work_dir}/source.pmtiles" \
-      "${PROTOMAPS_BUILD_URL}"
-    printf '%s  %s\n' "${PROTOMAPS_BUILD_BLAKE3}" \
-      "${work_dir}/source.pmtiles" | b3sum --check --status || \
-      fail "Protomaps source BLAKE3 mismatch"
-    pmtiles verify "${work_dir}/source.pmtiles"
-    pmtiles extract "${work_dir}/source.pmtiles" "${work_dir}/global.pmtiles" \
+    # The PMTiles CLI reads only the required byte ranges from the immutable
+    # remote archive. The official whole-archive BLAKE3 is provenance metadata;
+    # it cannot be reverified from these partial HTTP Range responses.
+    pmtiles extract "${PROTOMAPS_BUILD_URL}" "${work_dir}/global.pmtiles" \
       --maxzoom=6
-    pmtiles extract "${work_dir}/source.pmtiles" "${work_dir}/bay-area.pmtiles" \
+    pmtiles extract "${PROTOMAPS_BUILD_URL}" "${work_dir}/bay-area.pmtiles" \
       --bbox=111.5,21.5,115.5,24.0 --minzoom=7 --maxzoom=15
     pmtiles merge "${work_dir}/global.pmtiles" \
       "${work_dir}/bay-area.pmtiles" "${release_dir}/basemap.pmtiles"
     release_id="${RELEASE_ID:-${PROTOMAPS_BUILD_DATE}-protomaps}"
     source_url="${PROTOMAPS_BUILD_URL}"
     source_hash="${PROTOMAPS_BUILD_BLAKE3}"
-    regions='[{"id":"greater-bay-area","bounds":[111.5,21.5,115.5,24.0],"maxZoom":15},{"id":"global-low","bounds":[-180,-85,180,85],"maxZoom":6}]'
+    source_hash_verification="upstream-provenance-only"
+    regions='[{"id":"greater-bay-area","bounds":[111.5,21.5,115.5,24.0],"maxZoom":24},{"id":"global-low","bounds":[-180,-85,180,85],"maxZoom":6}]'
     ;;
   *)
     fail "BUILD_MODE must be fixture or production"
     ;;
 esac
+
+source_hash_verification="${source_hash_verification:-fixture-asset-sha256}"
 
 pmtiles verify "${release_dir}/basemap.pmtiles"
 
@@ -119,6 +119,7 @@ jq -n \
   --arg source_build_date "${PROTOMAPS_BUILD_DATE:-20260728}" \
   --arg source_url "${source_url}" \
   --arg source_hash "${source_hash}" \
+  --arg source_hash_verification "${source_hash_verification}" \
   --argjson regions "${regions}" \
   --argjson assets "${assets}" \
   '{
@@ -132,6 +133,7 @@ jq -n \
     sourceBuildDate: $source_build_date,
     sourceBuildUrl: $source_url,
     sourceBuildHash: $source_hash,
+    sourceBuildHashVerification: $source_hash_verification,
     attribution: "© OpenStreetMap contributors",
     regions: $regions,
     assets: $assets

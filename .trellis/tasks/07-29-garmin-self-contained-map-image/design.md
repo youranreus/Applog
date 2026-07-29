@@ -4,9 +4,9 @@
 
 ```text
 Docker build (network allowed)
-  ├─ pinned PMTiles CLI 1.31.2
-  │    ├─ extract global z0-6
-  │    ├─ extract Greater Bay Area z7-15
+  ├─ pinned PMTiles CLI 1.31.2 + explicit remote build URL
+  │    ├─ HTTP Range extract global z0-6
+  │    ├─ HTTP Range extract Greater Bay Area z7-15
   │    └─ merge + verify basemap.pmtiles
   ├─ Node + @protomaps/basemaps 5.7.2
   │    └─ generate AppLog loopback-only style.json
@@ -35,7 +35,7 @@ Add one project-owned Dockerfile under `workers/garmin-sync/maps/` plus the mini
 Use multi-stage builds:
 
 1. `pmtiles` stage uses the exact official `protomaps/go-pmtiles:v1.31.2` image and copies its CLI into the asset builder.
-2. `assets` stage starts from a pinned Node/Debian base, installs only build-time CA/font/hash/JSON tooling, runs the checked-in style generator, extracts and merges one explicit Protomaps daily build, writes checksums/manifest/NOTICE, then verifies the release.
+2. `assets` stage starts from a pinned Node/Debian base, installs only build-time CA/font/JSON tooling, runs the checked-in style generator, Range-extracts and merges the two required coverages directly from one explicit Protomaps daily build URL, writes checksums/manifest/NOTICE, then verifies the release. It never downloads the complete planet archive.
 3. `runtime` stage starts from exact `ghcr.io/maplibre/martin:1.11.0`, copies only the immutable release and a container-specific Martin config, switches to the image's non-root execution user, exposes 3000, and defines a localhost healthcheck.
 
 Base image tags must also be captured as OCI digests in the implemented Dockerfile or build documentation before production use. Human-friendly version tags remain as labels, not the trust boundary.
@@ -46,7 +46,9 @@ Required build arguments:
 
 - `PROTOMAPS_BUILD_DATE`: explicit `YYYYMMDD`; no latest/default discovery.
 - `PROTOMAPS_BUILD_URL`: defaults only by deterministic interpolation from the date and may be overridden for a controlled mirror.
-- `PROTOMAPS_BUILD_BLAKE3`: required upstream hash from the official build listing.
+- `PROTOMAPS_BUILD_BLAKE3`: required upstream hash from the official build listing;
+  validate only that it is non-empty and 64-hex, then record it as provenance.
+  Partial HTTP Range responses do not locally verify the whole-archive hash.
 - `RELEASE_ID`: derived from the explicit date unless supplied.
 
 Fixed project inputs:
@@ -58,7 +60,10 @@ Fixed project inputs:
 - Noto Sans Regular and Noto Sans CJK SC Regular;
 - attribution `© OpenStreetMap contributors`.
 
-BuildKit cache mounts may retain remote PMTiles ranges and npm metadata between builds, but cached files are never runtime inputs without the same verification gates.
+PMTiles CLI fetches only remote byte ranges needed for global z0-6 and Greater
+Bay Area z7-15. BuildKit cache mounts may retain remote PMTiles ranges and npm
+metadata between builds, but cached files are never runtime inputs without the
+same merged-output verification gates.
 
 ## Runtime Contract
 
@@ -84,7 +89,8 @@ Because the worker reads the manifest from the host filesystem today, deployment
 
 Build fails when:
 
-- upstream BLAKE3 or final asset SHA-256 mismatches;
+- official BLAKE3 provenance is missing or malformed;
+- HTTP Range extraction/merge, final `pmtiles verify`, or asset SHA-256 fails;
 - `pmtiles verify` fails;
 - required Noto fonts are absent;
 - manifest assets do not match the baked files;

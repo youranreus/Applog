@@ -6,6 +6,7 @@
   "rendererSha256": "replace-with-sha256",
   "sourceBuildUrl": "https://build.protomaps.com/YYYYMMDD.pmtiles",
   "sourceBuildHash": "replace-with-upstream-blake3",
+  "sourceBuildHashVerification": "upstream-provenance-only",
   "regions": [
     {
       "id": "greater-bay-area",
