@@ -62,6 +62,7 @@ def test_container_config_only_reads_baked_assets() -> None:
     assert "on_invalid: abort" in config
     assert "basemap: /opt/applog/maps/current/basemap.pmtiles" in config
     assert "- /opt/applog/maps/current/fonts" in config
+    assert "rendering: true" in config
     assert "applog-light: /opt/applog/maps/current/style.json" in config
     assert "http://" not in config
     assert "https://" not in config

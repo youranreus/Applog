@@ -77,7 +77,17 @@ def test_fixture_image_runs_offline_prototype(tmp_path: Path) -> None:
             except OSError:
                 time.sleep(1)
         else:
-            raise AssertionError("fixture renderer did not become healthy")
+            logs = subprocess.run(
+                ["docker", "logs", container],
+                cwd=PROJECT_DIR,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            raise AssertionError(
+                "fixture renderer did not become healthy\n"
+                f"stdout:\n{logs.stdout}\nstderr:\n{logs.stderr}"
+            )
         manifest = tmp_path / "manifest.json"
         _run(
             "docker",

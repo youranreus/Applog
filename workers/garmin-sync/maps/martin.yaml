@@ -13,8 +13,6 @@ fonts:
   paths:
     - ${APPLOG_MAP_RELEASE_DIR}/fonts
 styles:
-  rendering:
-    enabled: true
-    workers: 1
+  rendering: true
   sources:
     applog-light: ${APPLOG_MAP_RELEASE_DIR}/style.json
