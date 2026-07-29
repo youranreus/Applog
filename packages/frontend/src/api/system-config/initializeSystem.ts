@@ -1,4 +1,3 @@
-import type { Method } from 'alova';
 import { alovaInstance } from '@/utils/alova';
 import type { IInitResponseDto } from '@/types/system-config';
 

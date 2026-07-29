@@ -204,8 +204,6 @@ export function usePageEdit(options: IUsePageEditOptions) {
     onError?: (message: string) => void,
   ): Promise<void> {
     try {
-      let result: IPageDetail;
-      
       if (isEditMode.value) {
         // 编辑模式：更新页面
         if (!pageId.value) {
@@ -213,11 +211,11 @@ export function usePageEdit(options: IUsePageEditOptions) {
           onError?.(errorMsg);
           throw new Error(errorMsg);
         }
-        result = await updatePageRequest();
+        await updatePageRequest();
         onSuccess?.('页面更新成功');
       } else {
         // 创建模式：创建页面
-        result = await createPageRequest();
+        await createPageRequest();
         onSuccess?.('页面创建成功');
       }
       

@@ -205,17 +205,21 @@ describe('comment navigation and pending tree', () => {
       'utf8',
     )
 
-    const headers = ['评论者', '邮箱', '审核信息', 'IP', '操作'].map((label) =>
-      table.indexOf(`<th>${label}</th>`),
+    const headers = [...table.matchAll(/<th(?:\s[^>]*)?>([\s\S]*?)<\/th>/g)].map((match) =>
+      match[1].trim(),
     )
-    assert.deepEqual(headers, [...headers].sort((left, right) => left - right))
+    assert.deepEqual(headers, ['时间', '评论', '目标', '评论者', '邮箱', '状态', 'IP', '操作'])
     assert.match(table, /v-if="item\.guestSite"[\s\S]*:href="item\.guestSite"/)
     assert.match(table, /item\.guestEmail \|\| '—'/)
     assert.match(table, /item\.ip \|\| '—'/)
     assert.equal(table.includes('item.agent'), false)
-    assert.match(table, /pending: ''/)
-    assert.match(table, /approved: 'bg-green-100 text-green-700/)
-    assert.match(table, /rejected: 'bg-red-100 text-red-700/)
+    assert.match(table, /pending: '待审核'/)
+    assert.match(table, /approved: '已通过'/)
+    assert.match(table, /rejected: '已拒绝'/)
+    assert.match(table, /:data-status="item\.status"/)
+    for (const status of ['pending', 'approved', 'rejected']) {
+      assert.match(table, new RegExp(`data-status='${status}'\\]::before`))
+    }
     assert.match(table, /MoreHorizontalIcon/)
     assert.match(table, /@mouseenter="openActions\(item\.id\)"/)
     for (const action of ['通过', '拒绝', '删除']) assert.match(table, new RegExp(`<span>${action}</span>`))

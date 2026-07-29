@@ -1,4 +1,3 @@
-import type { Method } from 'alova';
 import { alovaInstance } from '@/utils/alova';
 import type { IConfigResponseDto } from '@/types/system-config';
 import { getSystemConfigKey, SYSTEM_CONFIG_KEYS } from '@applog/common';
@@ -56,4 +55,3 @@ export const setConfig = (params: ISetConfigParams) => {
     extra: params.extra,
   });
 };
-

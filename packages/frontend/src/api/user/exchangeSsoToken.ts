@@ -1,4 +1,3 @@
-import type { Method } from 'alova';
 import { alovaInstance } from '@/utils/alova';
 import type { ILoginResponseDto } from '@/types/user';
 
@@ -19,4 +18,3 @@ export const exchangeSsoToken = (ticket: string) => {
     },
   });
 };
-

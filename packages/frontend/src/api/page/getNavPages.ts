@@ -1,7 +1,5 @@
-import type { Method } from 'alova';
 import { alovaInstance } from '@/utils/alova';
 import type { IPageNavItem } from '@/types/layout';
-import type { IRestfulResponse } from '@/types/api';
 
 /**
  * 获取导航和 Footer 页面列表
@@ -22,4 +20,3 @@ export const getNavPages = ()=> {
     }
   );
 };
-

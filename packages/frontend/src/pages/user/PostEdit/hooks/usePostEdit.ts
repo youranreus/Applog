@@ -202,8 +202,6 @@ export function usePostEdit(options: IUsePostEditOptions) {
     onError?: (message: string) => void,
   ): Promise<void> {
     try {
-      let result: IPostDetail;
-      
       if (isEditMode.value) {
         // 编辑模式：更新文章
         if (!currentPostSlug.value) {
@@ -211,11 +209,11 @@ export function usePostEdit(options: IUsePostEditOptions) {
           onError?.(errorMsg);
           throw new Error(errorMsg);
         }
-        result = await updatePostRequest();
+        await updatePostRequest();
         onSuccess?.('文章更新成功');
       } else {
         // 创建模式：创建文章
-        result = await createPostRequest();
+        await createPostRequest();
         onSuccess?.('文章创建成功');
       }
       

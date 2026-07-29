@@ -11,18 +11,6 @@ const TOKEN_KEY = 'user_token';
 let cachedToken: string | null = null;
 
 /**
- * 初始化：尝试从 storage 读取 token 到缓存
- * 注意：这个过程是异步的，通常不需要显式调用，getToken 会自动处理
- */
-async function initTokenCache(): Promise<void> {
-  try {
-    cachedToken = await localforage.getItem<string>(TOKEN_KEY);
-  } catch (error) {
-    console.error('初始化 token 缓存失败:', error);
-  }
-}
-
-/**
  * 获取存储的 token
  * 优先从内存缓存获取，如果没有则从 storage 获取
  * @returns Promise<string | null> token 字符串或 null
@@ -69,4 +57,3 @@ export async function clearToken(): Promise<void> {
     console.error('清除 token 失败:', error);
   }
 }
-

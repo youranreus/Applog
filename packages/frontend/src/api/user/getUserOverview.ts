@@ -1,4 +1,3 @@
-import type { Method } from 'alova';
 import { alovaInstance } from '@/utils/alova';
 import type { IUserOverviewDto } from '@/types/user';
 
@@ -16,4 +15,3 @@ import type { IUserOverviewDto } from '@/types/user';
 export const getUserOverview = () => {
   return alovaInstance.Get<IUserOverviewDto>('/user/overview');
 };
-

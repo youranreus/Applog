@@ -1,4 +1,3 @@
-import type { Method } from 'alova';
 import { alovaInstance } from '@/utils/alova';
 import type { IConfigResponseDto } from '@/types/system-config';
 import { getSystemConfigKey, isSystemConfigKeySuffix } from '@applog/common';

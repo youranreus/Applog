@@ -42,13 +42,13 @@ registerBBCodeHandler('tag', ({ content, attrs }) => {
   }, content);
 });
 
-registerBBCodeHandler('warn', ({ content, attrs }) => {
+registerBBCodeHandler('warn', ({ content }) => {
   return h('div', { 
     class: 'applog-warn',
   }, content);
 });
 
-registerBBCodeHandler('notice', ({ content, attrs }) => {
+registerBBCodeHandler('notice', ({ content }) => {
   return h('div', { 
     class: 'applog-notice',
   }, content);
