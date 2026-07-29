@@ -1,4 +1,8 @@
-import type { IGarminLandingStats } from '@applog/common'
+import type {
+  IGarminActivityCover,
+  IGarminLandingActivity,
+  IGarminLandingStats,
+} from '@applog/common'
 
 export interface IProps {
   stats?: IGarminLandingStats | null
@@ -17,6 +21,7 @@ export interface IRouteEndpoints {
 
 export interface IGarminActivityView {
   key: string
+  publicId: string | null
   type: string
   typeDisplay: string
   dateText: string
@@ -24,9 +29,22 @@ export interface IGarminActivityView {
   distanceText: string | null
   caloriesText: string | null
   durationText: string
+  cover: IGarminActivityCover | null
+  summary: IGarminLandingActivity
   route: {
     pathData: string
     viewBox: string
     endpoints: IRouteEndpoints
   } | null
+}
+
+export interface IGarminMetricView {
+  key: string
+  label: string
+  value: string
+}
+
+export interface IGarminMetricGroups {
+  core: IGarminMetricView[]
+  secondary: IGarminMetricView[]
 }

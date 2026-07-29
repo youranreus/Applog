@@ -1,4 +1,5 @@
-import type { IRouteEndpoints } from './types'
+import type { IGarminLandingActivity, IGarminLandingActivityDetail } from '@applog/common'
+import type { IGarminMetricGroups, IGarminMetricView, IRouteEndpoints } from './types'
 
 const SAFE_ROUTE_PATTERN = /^M \d+(?:\.\d+)? \d+(?:\.\d+)?(?: L \d+(?:\.\d+)? \d+(?:\.\d+)?)+$/
 
@@ -42,6 +43,129 @@ export function formatDuration(seconds: number): string {
   const minuteText = hours ? String(minutes).padStart(2, '0') : String(minutes)
   const core = `${minuteText}:${String(remainder).padStart(2, '0')}`
   return hours ? `${hours}:${core}` : core
+}
+
+export function formatPace(seconds: number | null): string | null {
+  if (seconds === null || !Number.isFinite(seconds) || seconds <= 0) return null
+  return `${formatDuration(seconds)} /km`
+}
+
+export function formatSpeed(metersPerSecond: number | null): string | null {
+  if (metersPerSecond === null || !Number.isFinite(metersPerSecond) || metersPerSecond < 0) {
+    return null
+  }
+  return `${(metersPerSecond * 3.6).toFixed(1)} km/h`
+}
+
+type MetricKey =
+  | 'distance'
+  | 'duration'
+  | 'calories'
+  | 'pace'
+  | 'averageSpeed'
+  | 'maxSpeed'
+  | 'averageHeartRate'
+  | 'maxHeartRate'
+  | 'elevation'
+  | 'cadence'
+  | 'power'
+  | 'trainingEffect'
+  | 'bodyBattery'
+  | 'laps'
+
+const PRESETS: Record<string, { core: MetricKey[]; secondary: MetricKey[] }> = {
+  generic: {
+    core: ['duration', 'distance', 'calories'],
+    secondary: ['averageHeartRate', 'maxHeartRate'],
+  },
+  soccer: {
+    core: ['duration', 'distance', 'calories'],
+    secondary: ['averageHeartRate', 'maxHeartRate', 'maxSpeed', 'trainingEffect'],
+  },
+  running: {
+    core: ['distance', 'duration', 'pace'],
+    secondary: [
+      'averageHeartRate',
+      'maxHeartRate',
+      'elevation',
+      'cadence',
+      'power',
+      'trainingEffect',
+    ],
+  },
+  track_running: {
+    core: ['distance', 'duration', 'pace', 'laps'],
+    secondary: ['averageHeartRate', 'maxHeartRate', 'cadence', 'power'],
+  },
+  treadmill_running: {
+    core: ['distance', 'duration', 'pace'],
+    secondary: ['averageHeartRate', 'maxHeartRate', 'cadence', 'power', 'trainingEffect'],
+  },
+  cycling: {
+    core: ['distance', 'duration', 'averageSpeed'],
+    secondary: ['maxSpeed', 'averageHeartRate', 'maxHeartRate', 'elevation', 'power', 'cadence'],
+  },
+  elliptical: {
+    core: ['duration', 'calories', 'averageHeartRate'],
+    secondary: ['maxHeartRate', 'cadence', 'trainingEffect'],
+  },
+  indoor_cardio: {
+    core: ['duration', 'calories', 'averageHeartRate'],
+    secondary: ['maxHeartRate', 'trainingEffect', 'bodyBattery'],
+  },
+  stair_climbing: {
+    core: ['duration', 'calories', 'averageHeartRate'],
+    secondary: ['maxHeartRate', 'cadence', 'trainingEffect'],
+  },
+}
+
+export function getGarminMetricGroups(
+  summary: IGarminLandingActivity,
+  detail: IGarminLandingActivityDetail | null,
+): IGarminMetricGroups {
+  const preset = PRESETS[summary.type] ?? PRESETS.generic!
+  const values: Record<MetricKey, IGarminMetricView | null> = {
+    distance: metric('distance', '距离', formatDistance(summary.distanceMeters)),
+    duration: metric('duration', '用时', formatDuration(summary.durationSeconds)),
+    calories: metric('calories', '消耗', formatCalories(summary.calories)),
+    pace: metric('pace', '平均配速', formatPace(detail?.averagePaceSecondsPerKm ?? null)),
+    averageSpeed: metric(
+      'averageSpeed',
+      '平均速度',
+      formatSpeed(detail?.averageSpeedMetersPerSecond ?? null),
+    ),
+    maxSpeed: metric('maxSpeed', '最高速度', formatSpeed(detail?.maxSpeedMetersPerSecond ?? null)),
+    averageHeartRate: numericMetric(
+      'averageHeartRate',
+      '平均心率',
+      detail?.averageHeartRateBpm,
+      ' bpm',
+    ),
+    maxHeartRate: numericMetric('maxHeartRate', '最高心率', detail?.maxHeartRateBpm, ' bpm'),
+    elevation: numericMetric('elevation', '累计爬升', detail?.elevationGainMeters, ' m'),
+    cadence: numericMetric('cadence', '平均步频', detail?.averageCadencePerMinute, ' /min'),
+    power: numericMetric('power', '平均功率', detail?.averagePowerWatts, ' W'),
+    trainingEffect: numericMetric('trainingEffect', '训练效果', detail?.trainingEffect, ''),
+    bodyBattery: numericMetric('bodyBattery', '身体电量变化', detail?.bodyBatteryDelta, ''),
+    laps: numericMetric('laps', '圈数', detail?.lapCount, ''),
+  }
+  const select = (keys: MetricKey[]) =>
+    keys.flatMap((key) => (values[key] ? [values[key]] : [])) as IGarminMetricView[]
+  return { core: select(preset.core), secondary: select(preset.secondary) }
+}
+
+function metric(key: string, label: string, value: string | null): IGarminMetricView | null {
+  return value === null ? null : { key, label, value }
+}
+
+function numericMetric(
+  key: string,
+  label: string,
+  value: number | null | undefined,
+  suffix: string,
+): IGarminMetricView | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null
+  return { key, label, value: `${Math.round(value)}${suffix}` }
 }
 
 /** 从 worker 限定的 M/L path 中提取完整路线首尾点。 */

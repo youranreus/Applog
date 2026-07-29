@@ -34,16 +34,17 @@ export function useLandingGarminStatsPresentation(props: IProps) {
           : null
       const hideDistance = activity.type === 'elliptical'
       return {
-        key: `${activity.date}-${activity.type}-${index}`,
+        key: activity.publicId || `${activity.date}-${activity.type}-${index}`,
+        publicId: activity.publicId,
         type: activity.type,
         typeDisplay: activity.typeDisplay,
         dateText: formatActivityDate(activity.date),
         locationText,
-        distanceText: hideDistance
-          ? null
-          : formatDistance(activity.distanceMeters ?? null),
+        distanceText: hideDistance ? null : formatDistance(activity.distanceMeters ?? null),
         caloriesText: formatCalories(activity.calories ?? null),
         durationText: formatDuration(activity.durationSeconds),
+        cover: activity.cover,
+        summary: activity,
         route: activity.route && endpoints ? { ...activity.route, endpoints } : null,
       }
     }),

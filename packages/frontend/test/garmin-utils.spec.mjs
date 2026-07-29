@@ -9,6 +9,7 @@ const {
   formatDistance,
   formatDuration,
   getRouteEndpoints,
+  getGarminMetricGroups,
 } = await jiti.import('../src/pages/Landing/components/LandingGarminStats/utils.ts')
 
 describe('Landing Garmin view utils', () => {
@@ -37,5 +38,48 @@ describe('Landing Garmin view utils', () => {
       end: { x: 96, y: 4 },
     })
     assert.equal(getRouteEndpoints('M 4 96 C 20 20 30 30 96 4'), null)
+  })
+
+  it('按活动预设组织指标、保留有效 0 并隐藏椭圆机距离', () => {
+    const summary = {
+      publicId: 'public',
+      type: 'elliptical',
+      typeDisplay: '椭圆机',
+      date: '2026-07-28T00:00:00Z',
+      distanceMeters: 5000,
+      durationSeconds: 1800,
+      calories: 0,
+      locationName: null,
+      deviceSource: null,
+      route: null,
+      cover: null,
+    }
+    const detail = {
+      ...summary,
+      movingDurationSeconds: null,
+      averagePaceSecondsPerKm: null,
+      averageSpeedMetersPerSecond: null,
+      maxSpeedMetersPerSecond: null,
+      averageHeartRateBpm: 0,
+      maxHeartRateBpm: 170,
+      elevationGainMeters: null,
+      averageCadencePerMinute: null,
+      averagePowerWatts: null,
+      trainingEffect: null,
+      bodyBatteryDelta: null,
+      lapCount: null,
+      splits: [],
+    }
+    const groups = getGarminMetricGroups(summary, detail)
+    assert.deepEqual(
+      groups.core.map((metric) => metric.key),
+      ['duration', 'calories', 'averageHeartRate'],
+    )
+    assert.equal(
+      groups.core.some((metric) => metric.key === 'distance'),
+      false,
+    )
+    assert.equal(groups.core.find((metric) => metric.key === 'calories')?.value, '0 kcal')
+    assert.equal(groups.core.find((metric) => metric.key === 'averageHeartRate')?.value, '0 bpm')
   })
 })
