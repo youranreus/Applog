@@ -8,6 +8,7 @@ def test_dockerfile_is_pinned_and_bakes_the_release() -> None:
 
     assert "latest" not in dockerfile.casefold()
     assert "protomaps/go-pmtiles:v1.31.2" in dockerfile
+    assert "COPY --from=pmtiles /go-pmtiles /usr/local/bin/pmtiles" in dockerfile
     assert "node:24.14.1-bookworm" in dockerfile
     assert "ghcr.io/maplibre/martin:1.11.0" in dockerfile
     assert "@protomaps/basemaps@5.7.2" in dockerfile

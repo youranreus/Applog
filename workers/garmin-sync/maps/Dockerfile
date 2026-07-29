@@ -30,7 +30,7 @@ RUN apt-get update \
       jq \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=pmtiles /usr/local/bin/pmtiles /usr/local/bin/pmtiles
+COPY --from=pmtiles /go-pmtiles /usr/local/bin/pmtiles
 COPY --from=martin /usr/local/bin/martin /build/martin
 COPY workers/garmin-sync/maps/generate-style.mjs /build/generate-style.mjs
 COPY workers/garmin-sync/maps/build-release.sh /build/build-release.sh
