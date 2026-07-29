@@ -49,6 +49,11 @@ def test_production_build_range_extracts_and_verifies_complete_release() -> None
     assert "require_digest_reference PMTILES_IMAGE_REF" in script
     assert "require_digest_reference NODE_IMAGE_REF" in script
     assert "require_digest_reference GO_IMAGE_REF" in script
+    assert (
+        "regions='["
+        '{"id":"public-victoria-park","bounds":[114.18,22.278,114.195,22.289],'
+        '"maxZoom":24}]\''
+    ) in script
 
     dockerfile = (MAPS_DIR / "Dockerfile").read_text()
     assert "b3sum" not in dockerfile

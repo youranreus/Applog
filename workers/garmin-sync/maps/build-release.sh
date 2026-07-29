@@ -35,7 +35,8 @@ case "${build_mode}" in
     release_id="${RELEASE_ID:-fixture-${fixture_id}}"
     source_url="fixture://${fixture_id}"
     source_hash="$(jq -r '.assetSha256' "/build/fixtures/${fixture_id}.json")"
-    regions='[{"id":"public-victoria-park","bounds":[114.18,22.278,114.195,22.289],"maxZoom":14}]'
+    # Martin can overzoom the z14 fixture tiles for the z15+ cover cameras.
+    regions='[{"id":"public-victoria-park","bounds":[114.18,22.278,114.195,22.289],"maxZoom":24}]'
     ;;
   production)
     require_non_placeholder PROTOMAPS_BUILD_DATE
