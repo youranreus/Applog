@@ -77,7 +77,7 @@ def test_compose_example_is_loopback_only_and_mount_free() -> None:
     assert "read_only: true" in compose
     assert "- ALL" in compose
     assert "- no-new-privileges:true" in compose
-    assert "internal: true" in compose
+    assert "internal: true" not in compose
 
 
 def test_build_context_excludes_secrets_and_private_data() -> None:

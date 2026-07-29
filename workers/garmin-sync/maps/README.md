@@ -86,7 +86,7 @@ unsupported:
 
 ```bash
 docker network inspect applog-map-internal >/dev/null 2>&1 || \
-  docker network create --internal applog-map-internal
+  docker network create applog-map-internal
 
 docker run --detach --name applog-map-renderer \
   --restart unless-stopped \
@@ -106,8 +106,9 @@ sudo mv /opt/applog/maps/current/.manifest.json.next \
 sudo /opt/applog/current/workers/garmin-sync/manage-timer enable
 ```
 
-The Compose example declares the same `internal: true` boundary. Keep a host
-firewall deny rule as defense in depth and verify static rendering while
+The Compose example uses a dedicated bridge because Docker's `internal` networks
+block the renderer's loopback-published port on Linux. The port remains bound to
+`127.0.0.1`; keep a host firewall deny rule as defense in depth and verify static rendering while
 outbound traffic is blocked.
 
 Run the established renderer gate from the host:

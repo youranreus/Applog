@@ -19,5 +19,4 @@ services:
       - renderer-internal
 
 networks:
-  renderer-internal:
-    internal: true
+  renderer-internal: {}

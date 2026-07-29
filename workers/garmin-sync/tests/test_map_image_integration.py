@@ -47,7 +47,7 @@ def test_fixture_image_runs_offline_prototype(tmp_path: Path) -> None:
             image,
             ".",
         )
-        _run("docker", "network", "create", "--internal", network)
+        _run("docker", "network", "create", network)
         _run(
             "docker",
             "run",
