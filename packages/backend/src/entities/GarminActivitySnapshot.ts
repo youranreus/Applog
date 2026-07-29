@@ -11,12 +11,17 @@ import {
 @Entity({ name: 'garmin_activity_snapshot' })
 @Index(['sourceActivityId'], { unique: true })
 @Index(['published', 'startedAt'])
+@Index(['coverId', 'published'])
 export class GarminActivitySnapshotEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ type: 'varchar', length: 64, nullable: false })
   sourceActivityId: string;
+
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  publicId: string | null;
 
   @Column({ type: 'varchar', length: 64, nullable: false })
   activityType: string;
@@ -50,6 +55,12 @@ export class GarminActivitySnapshotEntity {
 
   @Column({ type: 'boolean', default: false })
   routeProcessed: boolean;
+
+  @Column({ type: 'json', nullable: true })
+  detailData: Record<string, unknown> | null;
+
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  coverId: string | null;
 
   @Column({ type: 'boolean', default: false })
   published: boolean;

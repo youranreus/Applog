@@ -4,8 +4,52 @@ export interface IGarminRoutePreview {
   viewBox: string;
 }
 
+/** Public, coordinate-free activity cover descriptor. */
+export interface IGarminActivityCover {
+  url: string;
+  width: number;
+  height: number;
+  attribution: string | null;
+}
+
+/** Compact public split. Missing source metrics remain null. */
+export interface IGarminActivitySplit {
+  index: number;
+  type: string | null;
+  distanceMeters: number | null;
+  durationSeconds: number | null;
+  averagePaceSecondsPerKm: number | null;
+  averageHeartRateBpm: number | null;
+}
+
+/** Allowlisted public activity detail. */
+export interface IGarminLandingActivityDetail {
+  /** Nullable only during the schema-first migration window. */
+  publicId: string | null;
+  type: string;
+  typeDisplay: string;
+  date: string;
+  distanceMeters: number | null;
+  durationSeconds: number;
+  movingDurationSeconds: number | null;
+  calories: number | null;
+  averagePaceSecondsPerKm: number | null;
+  averageSpeedMetersPerSecond: number | null;
+  maxSpeedMetersPerSecond: number | null;
+  averageHeartRateBpm: number | null;
+  maxHeartRateBpm: number | null;
+  elevationGainMeters: number | null;
+  averageCadencePerMinute: number | null;
+  averagePowerWatts: number | null;
+  trainingEffect: number | null;
+  bodyBatteryDelta: number | null;
+  lapCount: number | null;
+  splits: IGarminActivitySplit[];
+}
+
 /** Landing 展示的一条 Garmin 活动。 */
 export interface IGarminLandingActivity {
+  publicId: string;
   type: string;
   typeDisplay: string;
   date: string;
@@ -15,6 +59,7 @@ export interface IGarminLandingActivity {
   locationName: string | null;
   deviceSource: string | null;
   route: IGarminRoutePreview | null;
+  cover: IGarminActivityCover | null;
 }
 
 /**
