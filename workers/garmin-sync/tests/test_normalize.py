@@ -242,6 +242,15 @@ class NormalizeActivityTests(unittest.TestCase):
                     "bodyBatteryChargedValue": 0,
                     "bodyBatteryDrainedValue": None,
                 },
+                "daily_summary": {
+                    "totalSteps": 9_500,
+                    "dailyStepGoal": 10_000,
+                    "restingHeartRate": 51,
+                    "moderateIntensityMinutes": 12,
+                    "vigorousIntensityMinutes": 4,
+                    "bodyBatteryMostRecentValue": 73,
+                    "averageStressLevel": 18,
+                },
                 "stress": {"summary": {"avgStressLevel": 24}},
                 "steps": {"totalSteps": 0, "dailyStepGoal": 8_000},
                 "sleep": {"dailySleepDTO": {"sleepTimeSeconds": 25_200}},
@@ -252,8 +261,13 @@ class NormalizeActivityTests(unittest.TestCase):
 
         self.assertEqual(health.summary_data["bodyBatteryCharged"], 0)
         self.assertIsNone(health.summary_data["bodyBatteryDrained"])
-        self.assertEqual(health.summary_data["averageStressLevel"], 24)
-        self.assertEqual(health.summary_data["steps"], 0)
+        self.assertEqual(health.summary_data["averageStressLevel"], 18)
+        self.assertEqual(health.summary_data["steps"], 9_500)
+        self.assertEqual(health.summary_data["stepGoal"], 10_000)
+        self.assertEqual(health.summary_data["restingHeartRateBpm"], 51)
+        self.assertEqual(health.summary_data["moderateIntensityMinutes"], 12)
+        self.assertEqual(health.summary_data["vigorousIntensityMinutes"], 4)
+        self.assertEqual(health.summary_data["bodyBattery"], 73)
         self.assertEqual(health.summary_data["sleepSeconds"], 25_200)
         self.assertEqual(health.summary_data["hydrationConsumedMl"], 0)
         self.assertEqual(health.summary_data["weightGrams"], 0)
@@ -270,6 +284,35 @@ class NormalizeActivityTests(unittest.TestCase):
         )
         self.assertIsNone(health.local_boundary_start)
         self.assertIsNone(health.gmt_boundary_start)
+
+    def test_health_intensity_falls_back_to_actual_domain_aliases(self) -> None:
+        health = normalize_health_daily(
+            {"intensity_minutes": {"moderateMinutes": 8, "vigorousMinutes": 3}}
+        )
+
+        self.assertEqual(health.summary_data["moderateIntensityMinutes"], 8)
+        self.assertEqual(health.summary_data["vigorousIntensityMinutes"], 3)
+
+    def test_health_body_battery_falls_back_to_dynamic_feedback(self) -> None:
+        health = normalize_health_daily(
+            {
+                "body_battery": [
+                    {"bodyBatteryDynamicFeedbackEvent": {"bodyBatteryLevel": 41}},
+                    {
+                        "bodyBatteryDynamicFeedbackEvent": {
+                            "bodyBatteryLevel": "invalid"
+                        }
+                    },
+                    {
+                        "endOfDayBodyBatteryDynamicFeedbackEvent": {
+                            "bodyBatteryLevel": 64
+                        }
+                    },
+                ]
+            }
+        )
+
+        self.assertEqual(health.summary_data["bodyBattery"], 64)
 
 
 if __name__ == "__main__":

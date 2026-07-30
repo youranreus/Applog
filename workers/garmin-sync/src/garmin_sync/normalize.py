@@ -314,15 +314,26 @@ _HEALTH_METRICS: dict[str, tuple[str, tuple[str, ...]]] = {
     "hydrationGoalMl": ("hydration", ("goalInML", "hydrationGoalInML")),
     "moderateIntensityMinutes": (
         "intensity_minutes",
-        ("moderateIntensityMinutes",),
+        ("moderateIntensityMinutes", "moderateMinutes"),
     ),
     "vigorousIntensityMinutes": (
         "intensity_minutes",
-        ("vigorousIntensityMinutes",),
+        ("vigorousIntensityMinutes", "vigorousMinutes"),
     ),
     "weightGrams": ("body_composition", ("weightInGrams",)),
     "bodyFatPercent": ("body_composition", ("bodyFat", "bodyFatPercentage")),
     "bmi": ("body_composition", ("bmi",)),
+}
+
+_DAILY_SUMMARY_METRICS: dict[str, tuple[str, ...]] = {
+    "steps": ("totalSteps",),
+    "stepGoal": ("dailyStepGoal",),
+    "restingHeartRateBpm": ("restingHeartRate",),
+    "moderateIntensityMinutes": ("moderateIntensityMinutes",),
+    "vigorousIntensityMinutes": ("vigorousIntensityMinutes",),
+    "bodyBattery": ("bodyBatteryMostRecentValue",),
+    "averageStressLevel": ("averageStressLevel",),
+    "sleepSeconds": ("sleepingSeconds",),
 }
 
 _LOCAL_BOUNDARY_KEYS = (
@@ -352,6 +363,34 @@ def _find_field(value: object, keys: tuple[str, ...]) -> tuple[bool, object]:
     return False, None
 
 
+def _latest_body_battery(value: object) -> float | None:
+    """Return the last valid 0..100 observation from chronological payload shapes."""
+    observations: list[float] = []
+
+    def visit(current: object, *, in_values: bool = False) -> None:
+        if isinstance(current, dict):
+            level = _finite_number(current.get("bodyBatteryLevel"))
+            if level is not None and 0 <= level <= 100:
+                observations.append(level)
+            for key, nested in current.items():
+                visit(
+                    nested,
+                    in_values=key
+                    in {"bodyBatteryValuesArray", "bodyBatteryValues"},
+                )
+        elif isinstance(current, list):
+            if in_values and len(current) >= 2:
+                candidate = _finite_number(current[-1])
+                if candidate is not None and 0 <= candidate <= 100:
+                    observations.append(candidate)
+                    return
+            for nested in current:
+                visit(nested, in_values=in_values)
+
+    visit(value)
+    return observations[-1] if observations else None
+
+
 def _parse_boundary_datetime(
     value: object, *, allow_numeric: bool
 ) -> datetime | None:
@@ -378,6 +417,16 @@ def normalize_health_daily(payloads: dict[str, Any]) -> NormalizedHealthDaily:
         found, raw = _find_field(payloads.get(domain), aliases)
         if found:
             summary[target] = _finite_number(raw)
+    daily_summary = payloads.get("daily_summary")
+    for target, aliases in _DAILY_SUMMARY_METRICS.items():
+        found, raw = _find_field(daily_summary, aliases)
+        primary = _finite_number(raw) if found else None
+        if primary is not None:
+            summary[target] = primary
+    if "bodyBattery" not in summary:
+        body_battery = _latest_body_battery(payloads.get("body_battery"))
+        if body_battery is not None:
+            summary["bodyBattery"] = body_battery
 
     local_boundary = None
     gmt_boundary = None

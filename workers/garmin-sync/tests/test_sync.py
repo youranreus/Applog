@@ -381,3 +381,36 @@ def test_health_backfill_cursor_does_not_advance_on_partial_domain_failure():
     assert repository.advanced == []
     assert any(status.get("sleep") == "failed" for status in repository.statuses)
     assert all(status.get("steps") == "available" for status in repository.statuses)
+
+
+def test_health_refresh_uses_configured_local_calendar_day():
+    class HealthAdapter:
+        def __init__(self):
+            self.dates = []
+
+        def get_health_payloads(self, calendar_date):
+            self.dates.append(calendar_date)
+            return ({"daily_summary": {"totalSteps": 1}}, set())
+
+    class HealthRepository:
+        def get_stream_cursor(self, stream_key):
+            return None, True
+
+        def store_private_payload(self, **payload):
+            return True
+
+        def upsert_health_day(self, calendar_date, health, status):
+            pass
+
+        def advance_stream(self, *args, **kwargs):
+            pass
+
+    adapter = HealthAdapter()
+    service = SyncService(adapter, HealthRepository())
+    with patch.dict(
+        "os.environ",
+        {"GARMIN_HEALTH_BACKFILL_ENABLED": "true", "GARMIN_TIME_ZONE": "Asia/Shanghai"},
+    ):
+        service._archive_health_days(datetime(2026, 7, 29, 17, tzinfo=UTC))
+
+    assert adapter.dates == ["2026-07-30", "2026-07-29"]

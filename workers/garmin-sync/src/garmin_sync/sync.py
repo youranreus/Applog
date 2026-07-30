@@ -6,6 +6,7 @@ import os
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
+from zoneinfo import ZoneInfo
 
 from .cover import (
     active_render_version,
@@ -41,6 +42,17 @@ ROUTE_ACTIVITY_TYPES = {
     "hiking",
 }
 LOGGER = logging.getLogger(__name__)
+LANDING_HEALTH_FIELDS = {
+    "steps",
+    "stepGoal",
+    "restingHeartRateBpm",
+    "moderateIntensityMinutes",
+    "vigorousIntensityMinutes",
+    "averageStressLevel",
+    "bodyBattery",
+    "sleepScore",
+    "sleepSeconds",
+}
 
 
 class ReadAdapter(Protocol):
@@ -365,9 +377,11 @@ class SyncService:
             return
         if not hasattr(self._adapter, "get_health_payloads"):
             return
+        health_time_zone = ZoneInfo(os.getenv("GARMIN_TIME_ZONE", "Asia/Shanghai"))
+        local_today = synced_at.astimezone(health_time_zone).date()
         for offset in (0, 1):
             self._archive_health_day(
-                (synced_at.date() - timedelta(days=offset)).isoformat(),
+                (local_today - timedelta(days=offset)).isoformat(),
                 synced_at,
             )
 
@@ -378,7 +392,7 @@ class SyncService:
         backfill_date = (
             datetime.fromisoformat(cursor_date).date()
             if cursor_date
-            else synced_at.date() - timedelta(days=2)
+            else local_today - timedelta(days=2)
         )
         empty_streak = int(streak_value) if separator and streak_value.isdigit() else 0
         succeeded, has_data = self._archive_health_day(
@@ -423,6 +437,20 @@ class SyncService:
         status.update({domain: "failed" for domain in failed_domains})
         health = normalize_health_daily(payloads)
         self._repository.upsert_health_day(calendar_date, health, status)
+        present_fields = sorted(
+            field
+            for field in LANDING_HEALTH_FIELDS
+            if health.summary_data.get(field) is not None
+        )
+        missing_fields = sorted(LANDING_HEALTH_FIELDS.difference(present_fields))
+        LOGGER.info(
+            "Garmin health fields_present=%s fields_missing=%s "
+            "domains_available=%d domains_failed=%d",
+            ",".join(present_fields) or "none",
+            ",".join(missing_fields) or "none",
+            sum(value == "available" for value in status.values()),
+            len(failed_domains),
+        )
         has_data = any(
             value is not None for value in health.summary_data.values()
         ) or self._has_health_measurement(payloads)

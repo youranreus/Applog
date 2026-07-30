@@ -2,6 +2,19 @@
 
 > Cross-layer contract for the systemd Python worker, public NestJS snapshot API, and Landing activity cards.
 
+## Scenario: Public Landing today status
+
+- Public API: `GET /garmin/today` reads only `garmin_health_daily`; it never calls Garmin upstream.
+- Worker restores tokens through the library profile initialization path and archives `daily_summary` as the primary source for steps, target, resting heart rate, intensity minutes, stress and current body battery.
+- Health calendar dates use `GARMIN_TIME_ZONE` (default `Asia/Shanghai`), never UTC `date()` as a local-day substitute.
+- Public JSON allowlists calendar/freshness, six display metrics and server evaluation. It never returns `summaryData`, account identifiers, raw payloads, locations or credentials.
+- Step goal resolution is system `landingStepGoal` (integer 1,000–100,000) → Garmin goal → 8,000.
+- Evaluation weights: sleep 25, body battery 25, inverse stress 20, time-adjusted steps 15, time-adjusted intensity 15. Before 08:00, progress dimensions are ineligible; after 22:00 full-day targets apply.
+- Missing dimensions are omitted and remaining weights re-normalized. Fewer than three dimensions or less than 50% eligible weight produces a null evaluation, not the lowest status.
+- Sleep uses a real Garmin score when present, duration fallback otherwise, and never fabricates a Garmin score.
+- Landing always reserves the section: loading, collecting, partial, stale (>6h) and error states are distinct. Yesterday's row is never shown as today.
+- The character is dependency-free CSS 3D, consumes only the status union, has four looped motions plus neutral idle, no pointer interaction, and a reduced-motion static pose.
+
 ## Scenario: Public Landing Garmin stats
 
 ### 1. Scope / Trigger

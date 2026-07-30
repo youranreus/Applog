@@ -142,6 +142,7 @@ const formData = ref<ISystemBaseConfig>({
   personalHomepageUrl: '/about.html',
   bilibiliUrl: '',
   githubUrl: '',
+  landingStepGoal: undefined,
 });
 
 /**
@@ -207,7 +208,14 @@ const permissionConfirmOpen = ref(false);
  */
 function buildSaveConfigParams() {
   const configKey = getSystemConfigKey(SYSTEM_CONFIG_KEYS.BASE_CONFIG);
-  const configValue = JSON.stringify(formData.value);
+  const config = { ...formData.value };
+  const goal = Number(config.landingStepGoal);
+  if (!Number.isInteger(goal) || goal < 1000 || goal > 100000) {
+    delete config.landingStepGoal;
+  } else {
+    config.landingStepGoal = goal;
+  }
+  const configValue = JSON.stringify(config);
 
   return {
     configKey,
@@ -313,6 +321,7 @@ function initializeFormData(): void {
       personalHomepageUrl: config.personalHomepageUrl ?? '/about.html',
       bilibiliUrl: config.bilibiliUrl || '',
       githubUrl: config.githubUrl,
+      landingStepGoal: config.landingStepGoal,
     };
   } else {
     formData.value = {
@@ -329,6 +338,7 @@ function initializeFormData(): void {
       personalHomepageUrl: '/about.html',
       bilibiliUrl: '',
       githubUrl: '',
+      landingStepGoal: undefined,
     };
   }
 }
@@ -686,6 +696,24 @@ async function handleSaveUmami(): Promise<void> {
         v-model:bilibili-url="formData.bilibiliUrl"
         v-model:github-url="formData.githubUrl"
       />
+
+      <FieldGroup class="gap-4">
+        <h3 class="text-sm font-semibold text-foreground">今日状态</h3>
+        <Field>
+          <FieldLabel>目标步数</FieldLabel>
+          <Input
+            v-model.number="formData.landingStepGoal"
+            type="number"
+            min="1000"
+            max="100000"
+            step="500"
+            placeholder="留空时使用 Garmin 目标"
+          />
+          <FieldDescription>
+            允许 1,000–100,000 步；留空时依次使用 Garmin 当日目标和 8,000 步默认值
+          </FieldDescription>
+        </Field>
+      </FieldGroup>
 
       <FieldGroup class="gap-4">
         <h3 class="text-sm font-semibold text-foreground">访问与互动</h3>

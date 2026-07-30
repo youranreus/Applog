@@ -123,6 +123,36 @@ export class SystemConfigService {
     );
   }
 
+  private isBaseConfigKey(configKey: string): boolean {
+    return (
+      configKey === this.getBaseConfigKey() ||
+      configKey === SYSTEM_CONFIG_KEYS.BASE_CONFIG ||
+      configKey === `${this.systemKeyPrefix}${SYSTEM_CONFIG_KEYS.BASE_CONFIG}`
+    );
+  }
+
+  private validateBaseConfigValue(raw: string): void {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new BusinessException('系统基础配置格式无效');
+    }
+    if (!parsed || typeof parsed !== 'object') {
+      throw new BusinessException('系统基础配置格式无效');
+    }
+    const goal = (parsed as Record<string, unknown>).landingStepGoal;
+    if (
+      goal !== undefined &&
+      (typeof goal !== 'number' ||
+        !Number.isInteger(goal) ||
+        goal < 1000 ||
+        goal > 100000)
+    ) {
+      throw new BusinessException('目标步数必须是 1,000–100,000 之间的整数');
+    }
+  }
+
   private ensureSystemKeyAccess(
     configKey: string,
     action: AccessAction,
@@ -224,6 +254,9 @@ export class SystemConfigService {
       this.isDuolingoConfigKey(payload.configKey)
     ) {
       throw new BusinessException('请使用对应的专用接口管理含凭证配置');
+    }
+    if (this.isBaseConfigKey(payload.configKey)) {
+      this.validateBaseConfigValue(payload.configValue);
     }
 
     try {
@@ -381,6 +414,7 @@ export class SystemConfigService {
         personalHomepageUrl: '/about.html',
         bilibiliUrl: '',
         githubUrl: '',
+        landingStepGoal: undefined,
       };
 
       // 创建配置实体

@@ -49,6 +49,8 @@ export interface ISystemBaseConfig {
   bilibiliUrl?: string;
   /** GitHub 主页链接；空字符串时隐藏，未设置时沿用兼容默认链接 */
   githubUrl?: string;
+  /** Landing 今日状态目标步数；未设置时回退 Garmin 目标 */
+  landingStepGoal?: number;
 }
 
 /**

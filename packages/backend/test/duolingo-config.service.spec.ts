@@ -56,6 +56,22 @@ function createService(entity: IEntity) {
 }
 
 describe('SystemConfigService Duolingo secret boundary', () => {
+  it('基础配置拒绝越界或非整数目标步数', async () => {
+    const service = createService(makeEntity('{}'));
+    const user = { role: 0 } as never;
+    for (const landingStepGoal of [999, 100001, 8000.5, '8000']) {
+      await assert.rejects(() =>
+        service.setConfig(
+          {
+            configKey: 'SYSTEM_BASE_CONFIG',
+            configValue: JSON.stringify({ landingStepGoal }),
+          },
+          user,
+        ),
+      );
+    }
+  });
+
   it('管理员读回脱敏，空 JWT 更新保留库中明文', async () => {
     const entity = makeEntity(
       JSON.stringify({

@@ -8,6 +8,8 @@ function createService(options?: {
   state?: Record<string, unknown> | null;
   activities?: Array<Record<string, unknown>>;
   covers?: Array<Record<string, unknown>>;
+  health?: Record<string, unknown> | null;
+  baseConfig?: Record<string, unknown> | null;
 }) {
   const state = options?.state ?? null;
   const activities = options?.activities ?? [];
@@ -40,6 +42,8 @@ function createService(options?: {
     activityRepository as never,
     stateRepository as never,
     coverRepository as never,
+    { findOne: async () => options?.health ?? null } as never,
+    { getBaseConfigRaw: async () => options?.baseConfig ?? null } as never,
   );
   Object.assign(service, {
     now: () => NOW,
@@ -191,6 +195,8 @@ describe('GarminService public landing snapshot', () => {
       activityRepository as never,
       {} as never,
       {} as never,
+      {} as never,
+      {} as never,
     );
     Object.assign(service, { logger: { error: () => undefined } });
 
@@ -226,5 +232,60 @@ describe('GarminService public landing snapshot', () => {
       covers: [{ coverId: 'cover-private' }],
     });
     await assert.rejects(() => withdrawnService.getCover('cover-private'));
+  });
+
+  it('今日状态只投影白名单字段并优先使用后台步数目标', async () => {
+    const service = createService({
+      state: {
+        lastSuccessfulAt: new Date('2026-07-28T10:00:00.000Z'),
+        status: 'healthy',
+      },
+      health: {
+        calendarDate: '2026-07-28',
+        updatedAt: new Date('2026-07-28T10:30:00.000Z'),
+        summaryData: {
+          steps: 6000,
+          stepGoal: 9000,
+          restingHeartRateBpm: 52,
+          moderateIntensityMinutes: 10,
+          vigorousIntensityMinutes: 5,
+          averageStressLevel: 20,
+          bodyBattery: 75,
+          sleepSeconds: 28800,
+          privatePayload: { secret: true },
+        },
+      },
+      baseConfig: { landingStepGoal: 10000 },
+    });
+
+    const result = await service.getTodayStatus();
+    assert.equal(result?.metrics.stepGoal, 10000);
+    assert.equal(result?.fetchedAt, '2026-07-28T10:30:00.000Z');
+    assert.equal(result?.metrics.intensityMinutes, 20);
+    assert.deepEqual(result?.metrics.sleep, { kind: 'duration', seconds: 28800 });
+    assert.ok(result?.evaluation.status);
+    assert.equal(JSON.stringify(result).includes('privatePayload'), false);
+  });
+
+  it('当日快照不存在时返回 null', async () => {
+    const service = createService({
+      state: { lastSuccessfulAt: NOW, status: 'healthy' },
+      health: null,
+    });
+    assert.equal(await service.getTodayStatus(), null);
+  });
+
+  it('今日状态按健康行更新时间判断陈旧，不被全局成功同步掩盖', async () => {
+    const service = createService({
+      state: { lastSuccessfulAt: NOW, status: 'healthy' },
+      health: {
+        calendarDate: '2026-07-28',
+        updatedAt: new Date('2026-07-28T05:00:00.000Z'),
+        summaryData: { averageStressLevel: 20 },
+      },
+    });
+    const result = await service.getTodayStatus();
+    assert.equal(result?.fetchedAt, '2026-07-28T05:00:00.000Z');
+    assert.equal(result?.stale, true);
   });
 });

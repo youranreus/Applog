@@ -16,6 +16,7 @@ worker 默认从 NestJS 的 `packages/backend` 目录加载环境配置文件。
 - `GARMIN_TOKEN_ENCRYPTION_KEY`：32 字节随机密钥的 Base64 文本
 - `GARMIN_DATA_ENCRYPTION_KEY`：另一把独立的 32 字节 Base64 数据密钥，不得与 token 密钥复用
 - `GARMIN_IS_CN`：Garmin 中国区账号设为 `true`，国际区设为 `false`
+- `GARMIN_TIME_ZONE`：Garmin 健康自然日使用的 IANA 时区，当前部署建议 `Asia/Shanghai`
 - `GARMIN_REQUEST_BUDGET`：单轮 Garmin 请求上限，默认 `80`
 - `GARMIN_HEALTH_EMPTY_DAY_LIMIT`：连续多少个无任何观测值的历史自然日后判定已到上游边界，默认 `30`
 - `GARMIN_PRIVATE_ARCHIVE_ENABLED`、`GARMIN_HEALTH_BACKFILL_ENABLED`、`GARMIN_MAP_COVERS_ENABLED`：三个独立回滚开关
@@ -84,6 +85,7 @@ GARMIN_MYSQL_DATABASE=applog
 GARMIN_TOKEN_ENCRYPTION_KEY=replace-with-base64-key
 GARMIN_DATA_ENCRYPTION_KEY=replace-with-a-different-base64-key
 GARMIN_IS_CN=true
+GARMIN_TIME_ZONE=Asia/Shanghai
 GARMIN_REQUEST_BUDGET=80
 GARMIN_HEALTH_EMPTY_DAY_LIMIT=30
 GARMIN_PRIVATE_ARCHIVE_ENABLED=true

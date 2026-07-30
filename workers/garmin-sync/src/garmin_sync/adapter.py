@@ -21,10 +21,12 @@ class GarminReadAdapter:
         from garminconnect import Garmin
 
         self._api = Garmin(is_cn=is_cn, retry_attempts=1)
-        self._api.client.loads(token_json)
         self._remaining_requests = max(
             1, int(os.getenv("GARMIN_REQUEST_BUDGET", "80"))
         )
+        # The public Garmin helpers need display_name populated. Loading the
+        # token client directly skips the library's profile initialization.
+        self._call(lambda: self._api.login(token_json))
 
     def _call(self, operation: Callable[[], T]) -> T:
         from garminconnect import GarminConnectTooManyRequestsError
@@ -106,6 +108,7 @@ class GarminReadAdapter:
         )
 
         reads: dict[str, Callable[[], Any]] = {
+            "daily_summary": lambda: self._api.get_stats(calendar_date),
             "body_battery": lambda: self._api.get_body_battery(
                 calendar_date, calendar_date
             ),
