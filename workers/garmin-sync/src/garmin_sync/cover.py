@@ -8,9 +8,11 @@ from typing import Any
 
 from .evidence import LocationEvidence
 from .map_renderer import (
-    PROTOMAPS_ATTRIBUTION,
+    COVER_RENDER_VERSION,
+    TENCENT_ATTRIBUTION,
+    BasemapRenderer,
     BasemapRenderError,
-    LocalMapRenderer,
+    RenderedBasemap,
     active_render_version,
     configured_renderer,
     configured_route_provider,
@@ -20,9 +22,9 @@ from .spatial import MapCamera, fit_camera, valid_points
 COVER_WIDTH = 480
 COVER_HEIGHT = 480
 RENDER_SCALE = 2
-DEFAULT_ROUTE_PADDING_PIXELS = 32
+DEFAULT_ROUTE_PADDING_PIXELS = 16
 MAX_ROUTE_PADDING_PIXELS = 200
-RENDER_VERSION = "garmin-cover-v4"
+RENDER_VERSION = COVER_RENDER_VERSION
 SOCCER_ACTIVITY_TYPE = "soccer"
 
 NO_MAP_PROVIDER = "no-map"
@@ -32,10 +34,13 @@ LOCAL_ROUTE_PROVIDER = "local-route"
 PROTOMAPS_POINT_PROVIDER = "protomaps-point"
 PROTOMAPS_ROUTE_PROVIDER = "protomaps-route"
 PROTOMAPS_HEATMAP_PROVIDER = "protomaps-heatmap"
+TENCENT_POINT_PROVIDER = "tencent-point"
+TENCENT_ROUTE_PROVIDER = "tencent-route"
+TENCENT_HEATMAP_PROVIDER = "tencent-heatmap"
 CURRENT_MAP_PROVIDERS = {
-    PROTOMAPS_POINT_PROVIDER,
-    PROTOMAPS_ROUTE_PROVIDER,
-    PROTOMAPS_HEATMAP_PROVIDER,
+    TENCENT_POINT_PROVIDER,
+    TENCENT_ROUTE_PROVIDER,
+    TENCENT_HEATMAP_PROVIDER,
     NO_MAP_PROVIDER,
 }
 
@@ -186,7 +191,7 @@ def _project_scaled(
     return x * RENDER_SCALE, y * RENDER_SCALE
 
 
-def _renderer_or_error(renderer: LocalMapRenderer | None) -> LocalMapRenderer:
+def _renderer_or_error(renderer: BasemapRenderer | None) -> BasemapRenderer:
     if renderer is not None:
         return renderer
     configured = configured_renderer()
@@ -195,11 +200,28 @@ def _renderer_or_error(renderer: LocalMapRenderer | None) -> LocalMapRenderer:
     return configured
 
 
+def _render_basemap(
+    renderer: BasemapRenderer | None,
+    camera: MapCamera,
+    points: list[tuple[float, float]],
+) -> tuple[Any, MapCamera, list[tuple[float, float]], str]:
+    selected = _renderer_or_error(renderer)
+    rendered = selected.render(camera, points)
+    if isinstance(rendered, RenderedBasemap):
+        return rendered.image, rendered.camera, list(rendered.points), "tencent"
+    return rendered, camera, points, "tencent"
+
+
+def _mapped_metadata(provider: str, kind: str) -> tuple[str, str]:
+    del provider
+    return f"tencent-{kind}", TENCENT_ATTRIBUTION
+
+
 def render_point_cover(
     point: tuple[float, float],
     *,
     provenance: str,
-    renderer: LocalMapRenderer | None = None,
+    renderer: BasemapRenderer | None = None,
 ) -> ActivityCover:
     """Render a mapped activity/weather point, with a typed local fallback."""
     valid = valid_points([point])
@@ -207,12 +229,15 @@ def render_point_cover(
         return render_no_map_cover()
     camera = fit_camera(valid, padding=DEFAULT_ROUTE_PADDING_PIXELS)
     try:
-        basemap = _renderer_or_error(renderer).render(camera, valid)
-        _draw_marker(basemap, _project_scaled(camera, valid[0]))
+        basemap, actual_camera, actual_points, provider = _render_basemap(
+            renderer, camera, valid
+        )
+        _draw_marker(basemap, _project_scaled(actual_camera, actual_points[0]))
+        provider_name, attribution = _mapped_metadata(provider, "point")
         return _finalize(
             basemap,
-            provider=PROTOMAPS_POINT_PROVIDER,
-            attribution=PROTOMAPS_ATTRIBUTION,
+            provider=provider_name,
+            attribution=attribution,
             outcome="map_success",
             provenance=provenance,
         )
@@ -238,29 +263,69 @@ def _draw_route(
     draw = ImageDraw.Draw(image)
     draw.line(
         coordinates,
-        fill="#203f3a",
-        width=8,
+        fill="#e5484d",
+        width=12,
         joint="curve",
     )
-    endpoint_radius = 8
-    for point, fill in ((coordinates[0], "#ffffff"), (coordinates[-1], "#d95f54")):
-        draw.ellipse(
-            (
-                point[0] - endpoint_radius,
-                point[1] - endpoint_radius,
-                point[0] + endpoint_radius,
-                point[1] + endpoint_radius,
-            ),
-            fill=fill,
-            outline="#203f3a",
-            width=3,
+    arrows = (
+        (
+            coordinates[0],
+            coordinates[1][0] - coordinates[0][0],
+            coordinates[1][1] - coordinates[0][1],
+            28,
+            2,
+            "#ffffff",
+            "#e5484d",
+        ),
+        (
+            coordinates[-1],
+            coordinates[-1][0] - coordinates[-2][0],
+            coordinates[-1][1] - coordinates[-2][1],
+            0,
+            -26,
+            "#e5484d",
+            "#ffffff",
+        ),
+    )
+    for (
+        point,
+        direction_x,
+        direction_y,
+        tip_offset,
+        base_offset,
+        fill,
+        outline,
+    ) in arrows:
+        length = math.hypot(direction_x, direction_y)
+        unit_x, unit_y = direction_x / length, direction_y / length
+        perpendicular_x, perpendicular_y = -unit_y, unit_x
+        tip = (
+            point[0] + unit_x * tip_offset,
+            point[1] + unit_y * tip_offset,
         )
+        base_center = (
+            point[0] + unit_x * base_offset,
+            point[1] + unit_y * base_offset,
+        )
+        polygon = (
+            tip,
+            (
+                base_center[0] + perpendicular_x * 10,
+                base_center[1] + perpendicular_y * 10,
+            ),
+            (
+                base_center[0] - perpendicular_x * 10,
+                base_center[1] - perpendicular_y * 10,
+            ),
+        )
+        draw.polygon(polygon, fill=fill)
+        draw.line((*polygon, polygon[0]), fill=outline, width=4, joint="curve")
 
 
 def render_route_cover(
     points: list[tuple[float, float]],
     *,
-    renderer: LocalMapRenderer | None = None,
+    renderer: BasemapRenderer | None = None,
 ) -> ActivityCover:
     """Render a route after fitting the final camera; never crop an overlay."""
     route = valid_points(points)
@@ -273,15 +338,18 @@ def render_route_cover(
     camera = fit_camera(
         route,
         padding=DEFAULT_ROUTE_PADDING_PIXELS,
-        overlay_radius=4,
+        overlay_radius=10,
     )
     try:
-        basemap = _renderer_or_error(renderer).render(camera, route)
-        _draw_route(basemap, camera, route)
+        basemap, actual_camera, actual_route, provider = _render_basemap(
+            renderer, camera, route
+        )
+        _draw_route(basemap, actual_camera, actual_route)
+        provider_name, attribution = _mapped_metadata(provider, "route")
         return _finalize(
             basemap,
-            provider=PROTOMAPS_ROUTE_PROVIDER,
-            attribution=PROTOMAPS_ATTRIBUTION,
+            provider=provider_name,
+            attribution=attribution,
             outcome="map_success",
         )
     except BasemapRenderError as error:
@@ -362,9 +430,9 @@ def _draw_heatmap(
 def render_soccer_heatmap_cover(
     points: list[tuple[float, float]],
     *,
-    renderer: LocalMapRenderer | None = None,
+    renderer: BasemapRenderer | None = None,
 ) -> ActivityCover:
-    """Render real GPS density over a camera-aligned Protomaps basemap."""
+    """Render real GPS density over a camera-aligned Tencent basemap."""
     samples = valid_points(points)
     if len(set(samples)) < 2:
         if samples:
@@ -378,12 +446,15 @@ def render_soccer_heatmap_cover(
         overlay_radius=20,
     )
     try:
-        basemap = _renderer_or_error(renderer).render(camera, samples)
-        image = _draw_heatmap(basemap, camera, samples)
+        basemap, actual_camera, actual_samples, provider = _render_basemap(
+            renderer, camera, samples
+        )
+        image = _draw_heatmap(basemap, actual_camera, actual_samples)
+        provider_name, attribution = _mapped_metadata(provider, "heatmap")
         return _finalize(
             image,
-            provider=PROTOMAPS_HEATMAP_PROVIDER,
-            attribution=PROTOMAPS_ATTRIBUTION,
+            provider=provider_name,
+            attribution=attribution,
             outcome="map_success",
         )
     except BasemapRenderError as error:
@@ -394,7 +465,7 @@ def render_activity_cover(
     activity_type: str,
     evidence: LocationEvidence,
     *,
-    renderer: LocalMapRenderer | None = None,
+    renderer: BasemapRenderer | None = None,
 ) -> ActivityCover:
     """Select the cover variant without exposing evidence outside the worker."""
     if evidence.kind == "none":
@@ -415,15 +486,17 @@ def cover_provider_rank(provider: str, activity_type: str) -> int:
     """Keep cover upgrades monotonic and reject stale soccer heatmaps."""
     if provider == PROTOMAPS_HEATMAP_PROVIDER:
         return 5 if activity_type == SOCCER_ACTIVITY_TYPE else -1
+    if provider == TENCENT_HEATMAP_PROVIDER:
+        return 5 if activity_type == SOCCER_ACTIVITY_TYPE else -1
     if provider == "local-heatmap":
         return 4 if activity_type == SOCCER_ACTIVITY_TYPE else -1
     if provider.startswith("carto"):
         return 4
-    if provider == PROTOMAPS_ROUTE_PROVIDER:
+    if provider in {PROTOMAPS_ROUTE_PROVIDER, TENCENT_ROUTE_PROVIDER}:
         return 4
     if provider == LOCAL_ROUTE_PROVIDER:
         return 3
-    if provider == PROTOMAPS_POINT_PROVIDER:
+    if provider in {PROTOMAPS_POINT_PROVIDER, TENCENT_POINT_PROVIDER}:
         return 2
     if provider == LOCAL_POINT_PROVIDER:
         return 1
@@ -438,6 +511,9 @@ __all__ = [
     "PROTOMAPS_HEATMAP_PROVIDER",
     "PROTOMAPS_POINT_PROVIDER",
     "PROTOMAPS_ROUTE_PROVIDER",
+    "TENCENT_HEATMAP_PROVIDER",
+    "TENCENT_POINT_PROVIDER",
+    "TENCENT_ROUTE_PROVIDER",
     "RENDER_VERSION",
     "SOCCER_ACTIVITY_TYPE",
     "active_render_version",

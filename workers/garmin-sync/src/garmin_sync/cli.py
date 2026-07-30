@@ -78,7 +78,7 @@ def main(argv: Sequence[str] | None = None) -> None:
 
         if not check_renderer_health():
             raise SystemExit(1)
-        print("Protomaps renderer healthy")
+        print("Tencent map renderer configured")
         return
 
     from .handler import handler

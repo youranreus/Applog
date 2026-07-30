@@ -8,10 +8,10 @@ from typing import Any
 
 from .cover import (
     NO_MAP_PROVIDER,
-    PROTOMAPS_HEATMAP_PROVIDER,
-    PROTOMAPS_POINT_PROVIDER,
-    PROTOMAPS_ROUTE_PROVIDER,
     SOCCER_ACTIVITY_TYPE,
+    TENCENT_HEATMAP_PROVIDER,
+    TENCENT_POINT_PROVIDER,
+    TENCENT_ROUTE_PROVIDER,
     ActivityCover,
     cover_provider_rank,
 )
@@ -302,6 +302,9 @@ class MySQLRepository:
     ) -> set[str]:
         """Return source IDs whose activity-aware covers are fully current."""
         del preferred_provider
+        heatmap_provider = TENCENT_HEATMAP_PROVIDER
+        point_provider = TENCENT_POINT_PROVIDER
+        route_provider = TENCENT_ROUTE_PROVIDER
         with self._connection.cursor() as cursor:
             cursor.execute(
                 "SELECT activity.sourceActivityId "
@@ -316,12 +319,12 @@ class MySQLRepository:
                 (
                     render_version,
                     SOCCER_ACTIVITY_TYPE,
-                    PROTOMAPS_HEATMAP_PROVIDER,
-                    PROTOMAPS_POINT_PROVIDER,
+                    heatmap_provider,
+                    point_provider,
                     NO_MAP_PROVIDER,
                     SOCCER_ACTIVITY_TYPE,
-                    PROTOMAPS_ROUTE_PROVIDER,
-                    PROTOMAPS_POINT_PROVIDER,
+                    route_provider,
+                    point_provider,
                     NO_MAP_PROVIDER,
                 ),
             )

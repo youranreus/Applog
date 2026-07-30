@@ -38,7 +38,7 @@
 **Landing presentation**
 
 - Horizontal scroll; edge fades only when overflow can scroll.
-- Cover: generated WebP first. Regular GPS activities use a Protomaps route map;
+- Cover: generated WebP first. Regular GPS activities use a Tencent route map;
   `soccer` uses GPS density over the same real basemap; a single activity or
   weather coordinate uses a mapped marker. Without any usable coordinate, use
   the explicit no-map cover and never fabricate a track, marker, or heatmap. The
@@ -107,7 +107,12 @@ cover = render_activity_cover(activity_type, evidence)
 - NestJS serves whitelist snapshots only.
 - `TYPE_LABELS` in worker is the authority for Chinese activity names (upsert refreshes display labels).
 
-## Scenario: Self-contained Garmin map renderer image
+## Retired scenario: Self-contained Garmin map renderer image
+
+This scenario is retained only as historical design context. The Martin/PMTiles
+renderer, release assets, deployment unit, and configuration were removed after
+the Tencent validation passed; none of the requirements below apply to current
+production deployments.
 
 ### 1. Scope / Trigger
 
@@ -122,8 +127,9 @@ cover = render_activity_cover(activity_type, evidence)
 - Production inputs: explicit `PROTOMAPS_BUILD_DATE`, HTTPS build URL, official
   BLAKE3 provenance, release id, source revision, and digest-qualified
   PMTiles/Node/Go/Martin image references.
-- Runtime: host `127.0.0.1:3000` → container Martin `0.0.0.0:3000`;
-  no runtime map volume.
+- Runtime: container Martin listens on `0.0.0.0:3000`; publish to host loopback
+  for same-host workers or to an explicit firewall-restricted private address
+  for remote workers. There is no runtime map volume.
 - Worker manifest: `/opt/applog/maps/current/manifest.json`, exported from the
   exact running image digest.
 
@@ -159,7 +165,7 @@ cover = render_activity_cover(activity_type, evidence)
 | PMTiles invalid, font/license absent, asset hash wrong, or style has public URL | Fail before final image creation |
 | Container health fails after image replacement | Keep timer disabled; restore prior image/manifest |
 | Manifest is from a different image digest | Do not run sync or publish the manifest |
-| Host port would bind non-loopback or Docker network allows egress | Reject the deployment configuration |
+| Remote host port is public or reachable by unapproved clients | Reject the deployment configuration; bind a private address and allowlist worker hosts |
 
 ### 5. Good / Base / Bad Cases
 
@@ -167,7 +173,7 @@ cover = render_activity_cover(activity_type, evidence)
   egress, passes the 100-image prototype, then switches with its matching manifest.
 - Base: the checked-in Victoria Park fixture image exercises the identical
   runtime and release verification path without downloading production coverage.
-- Bad: mounting `/opt/applog/maps`, using `latest`, publishing `0.0.0.0:3000`,
+- Bad: mounting `/opt/applog/maps`, using `latest`, exposing port 3000 publicly,
   or overwriting live manifest before the new renderer is healthy.
 
 ### 6. Tests Required
@@ -235,18 +241,15 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   key; it must not reuse the token key.
 - Worker MySQL configuration prefers `GARMIN_MYSQL_*` and falls back to the
   matching `MYSQL_*` keys used by NestJS/FC.
-- Cover configuration uses `GARMIN_MAP_COVERS_ENABLED`,
-  `GARMIN_MAP_RENDERER_URL`, `GARMIN_MAP_RELEASE_MANIFEST`, and
-  `GARMIN_MAP_RENDER_TIMEOUT_SECONDS`. The renderer URL must be plain HTTP on
-  loopback. The manifest supplies immutable release/style/renderer versions and
-  explicit coverage regions. Remote tile URLs, provider tokens, CARTO settings,
-  and runtime public font/sprite requests are forbidden.
+- Cover configuration uses `GARMIN_MAP_COVERS_ENABLED`, `TENCENT_MAP_KEY`, and
+  `GARMIN_MAP_RENDER_TIMEOUT_SECONDS`. The Key is server-side only and must not
+  appear in logs, stored cover metadata, or a render fingerprint.
 - Location evidence is private and has exactly three forms: `route` (two or more
   distinct valid Garmin points), `point` (activity coordinate, then archived
   weather coordinate), or `none`. Weather provenance means “activity-nearby
   location,” not GPS track data, and is never persisted in the public projection.
 - Every overlay and basemap uses one continuous Web Mercator camera. A 480×480
-  cover keeps a 32px target safety margin, renders at 960×960, then downsamples.
+  cover keeps a 16px target safety margin, renders at 960×960, then downsamples.
   Draw the fixed-pixel route/marker/heat field after the camera is final; never
   crop or magnify a rendered overlay to create padding.
 - Activity-list pages are durably indexed before their list cursor advances.
@@ -279,9 +282,9 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   the existing `coverId` and bytes but refresh that currentness metadata; otherwise
   the route stays permanently stale and consumes the route budget every invocation.
 - A cover counts as current only when its composite `renderVersion` matches the
-  code overlay version plus PMTiles release, Protomaps style, and Martin version.
-  Current providers are `protomaps-route`, `protomaps-point`,
-  `protomaps-heatmap`, and `no-map` for genuinely coordinate-free evidence.
+  code overlay and Tencent static-map projection versions. Current providers are
+  `tencent-route`, `tencent-point`, `tencent-heatmap`, and `no-map` for genuinely
+  coordinate-free evidence. Historical `protomaps-*` values are migration-only.
   `local-route`, `local-point`, and `fallback-no-map` remain retryable. A renderer
   or release change requeues bounded route-point loading for the newest public
   candidates rather than treating a historical cover as final.
@@ -295,10 +298,9 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 | FIT exceeds the configured cap | Record partial status; do not fail unrelated activities or streams |
 | Required health domain fails for a historical date | Record `failed`; do not advance that date cursor |
 | Renderer down / timeout / bad HTTP / invalid WebP | Preserve the last mapped cover; for a first cover create a typed local fallback without failing data sync |
-| Manifest/style/font/PMTiles missing or hash mismatch | Reject the release before activation; never raise the active render fingerprint |
-| Activity outside a high-detail manifest region | Return `region_missing`; do not stretch global z0–6 into fake street detail |
+| Activity outside Tencent's mainland envelope | Return `region_missing` before HTTP |
 | Soccer has fewer than two distinct valid GPS samples | Do not create a heatmap; use a valid point map or explicit no-map cover |
-| Renderer URL is absent or non-loopback | Treat Protomaps rendering as unavailable and keep fallback covers retryable |
+| Tencent Key is absent or invalid | Keep fallback covers retryable without exposing configuration |
 | Activity becomes private/unpublished | Remove it from public projection; private history remains; detail and old cover URLs become unreadable |
 | Snapshot has migration-window null `publicId` | Omit it from public stats until a random public id exists |
 | Ciphertext, AAD, key, or content hash is wrong | Decryption fails closed; never return or normalize the payload |
@@ -306,10 +308,10 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 ### 5. Good / Base / Bad Cases
 
 - Good: a public outdoor activity is privately archived, normalized, assigned a
-  random `publicId`, rendered once as a Protomaps route WebP with a 32px safety
+  random `publicId`, rendered once as a Tencent route WebP with a 16px safety
   area, and served through summary, detail, and authorized cover endpoints.
 - Good: public soccer with real GPS samples renders a deterministic density heat
-  layer aligned over the same real Protomaps camera without exposing coordinates.
+  layer aligned over the same Tencent camera without exposing the route.
 - Base: an indoor activity with an archived Garmin weather coordinate gets a
   mapped marker whose `weather` provenance remains ephemeral and private.
 - Base: an indoor activity without a point, or a renderer outage, keeps the
@@ -327,7 +329,7 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   exhaustion, MySQL-safe quoting for every stream cursor read/write, health cursor
   non-advancement, cover monotonicity, immutable cover-ID rotation, and
   metadata-free deterministic WebP dimensions; route dominant-axis occupancy and
-  32px safety bounds; point/weather/none evidence priority; antimeridian camera;
+  16px safety bounds; point/weather/none evidence priority; antimeridian camera;
   renderer status/content-type/dimension/blank/coverage failures; soccer basemap
   heat-density determinism and camera alignment; soccer-vs-route selection; and
   soccer-to-non-soccer cover replacement after an activity-type correction.
@@ -370,4 +372,95 @@ const snapshot = await snapshotRepository.findOne({
   where: { coverId, published: true },
 })
 if (!snapshot) throw new BusinessException('活动封面不存在')
+```
+
+## Scenario: Tencent static basemap provider
+
+### 1. Scope / Trigger
+
+- Trigger: changes to the Garmin worker's online basemap provider, Tencent Key,
+  coordinate conversion, provider currentness, static-map response handling, or
+  removal of the Martin/PMTiles production dependency.
+- Tencent is a mainland-only lightweight alternative. It supplies the raster;
+  AppLog continues to own every route, marker and heatmap overlay.
+
+### 2. Signatures
+
+- Environment: `TENCENT_MAP_KEY` and optional
+  `GARMIN_MAP_RENDER_TIMEOUT_SECONDS` (positive float, default `8`).
+- Request: `GET https://apis.map.qq.com/ws/staticmap/v2/` with only `center`,
+  integer `zoom`, `size=480*480`, `scale=2`, `maptype=roadmap`, and `key`.
+- Result: `RenderedBasemap(image, camera, points)` carries the exact GCJ-02
+  camera and converted points that local Pillow overlays must project against.
+- Current providers: `tencent-route`, `tencent-point`, and `tencent-heatmap`;
+  their render fingerprint includes `static-v2-gcj02-v1`, never the Key.
+
+### 3. Contracts
+
+- Garmin geometry stays WGS-84 until the renderer boundary. Convert the camera
+  center and every overlay point with the same `wgs84_to_gcj02` implementation.
+- Tencent static zoom is an integer in 4–17 on a 256px tile pyramid, while
+  `MapCamera` uses 512px tiles. Request `floor(camera.zoom) + 1`, then project
+  overlays with `requested_zoom - 1`; never use the same numeric zoom for both.
+- Never send `path`, `markers`, an activity ID, or a complete trace to Tencent.
+  Never log the Key, complete request URL, center, or coordinates.
+- Keep the Key only in the worker's server-side secret environment and enable
+  only WebService plus the narrowest available server restriction.
+- Accept only decodable 960×960 PNG/JPEG within the raster byte cap. Parse
+  `X-LIMIT` only into bounded numeric QPS/PV telemetry.
+- Persist final AppLog covers and retain monotonic cover replacement. Do not add
+  a raw Tencent basemap cache without a separate current-terms review.
+- Martin/PMTiles is not a runtime fallback. Failures preserve a successful
+  existing cover or use the typed local fallback.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|-----------|-------------------|
+| Missing/whitespace Key or invalid timeout | Treat renderer as unconfigured/unhealthy without exposing config |
+| Point outside Tencent's documented domestic envelope | `region_missing` before HTTP; do not call a second provider |
+| HTTP timeout / transport failure | `renderer_timeout` / `renderer_unhealthy` |
+| HTTP 200 JSON status 120 or 121 | `quota_exhausted` |
+| JSON authentication/authorization status 110–113, 160–161, 190 or 199 | `asset_missing` |
+| JSON parameter status 3xx/4xx | `region_missing` |
+| Wrong content type, dimensions, blank image, decode failure or oversize body | `invalid_raster` |
+| Any Tencent failure with an existing mapped cover | Preserve the existing cover; do not downgrade |
+
+### 5. Good / Base / Bad Cases
+
+- Good: a mainland route requests one clean 960×960 roadmap using only its
+  transformed camera, then draws the 6px red route and endpoint arrows locally
+  within the 16px target safety area.
+- Base: an overseas route returns `region_missing` before HTTP and keeps or
+  creates the typed fallback cover.
+- Bad: sending `path=<private trace>`, drawing WGS-84 points over a GCJ-02 map,
+  treating Tencent/MapCamera zooms as equal, or logging a request URL.
+
+### 6. Tests Required
+
+- Known mainland WGS-84→GCJ-02 control point and overseas rejection.
+- Outgoing query has exactly `center`, `zoom`, `size`, `scale`, `maptype`, `key`;
+  assert no path, marker, activity identifier or trace appears.
+- Tencent `RenderedBasemap` drives the local route/point/heatmap camera and
+  provider metadata; repository currentness selects the configured provider.
+- PNG/JPEG size/content/blank/byte validation; timeout, HTTP and documented JSON
+  status mapping; `X-LIMIT` JSON/key-value parsing; logs exclude Key/coordinates.
+- Real public/synthetic fixtures at zoom 12/15/17 must prove ≤2 final-pixel
+  overlay alignment and pass a human A/B review before Tencent becomes default.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```python
+url = f"{endpoint}?path={private_trace}&key={key}"
+basemap = fetch(url)
+draw_route(basemap, wgs84_camera, wgs84_points)
+```
+
+#### Correct
+
+```python
+basemap = renderer.render(camera, private_points)  # request sends camera only
+draw_route(basemap.image, basemap.camera, list(basemap.points))
 ```

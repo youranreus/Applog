@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
-from garmin_sync.cover import ActivityCover
+from garmin_sync.cover import RENDER_VERSION, ActivityCover
 from garmin_sync.models import NormalizedHealthDaily
 from garmin_sync.payload_codec import encrypt_payload
 from garmin_sync.repository import MySQLRepository, _mysql_datetime
@@ -140,31 +140,30 @@ def test_covered_activity_ids_require_current_renderer_and_provider():
     connection = SimpleNamespace(cursor=lambda: Cursor())
     repository = MySQLRepository(connection, b"token-key")
 
-    assert repository.covered_activity_ids("garmin-cover-v4-test", "protomaps") == {
+    assert repository.covered_activity_ids("garmin-cover-v5-test", "protomaps") == {
         "activity-1"
     }
     assert "cover.renderVersion = %s" in captured["sql"]
     assert "activity.activityType = %s" in captured["sql"]
     assert "cover.provider IN (%s, %s, %s)" in captured["sql"]
     assert captured["params"] == (
-        "garmin-cover-v4-test",
+        "garmin-cover-v5-test",
         "soccer",
-        "protomaps-heatmap",
-        "protomaps-point",
+        "tencent-heatmap",
+        "tencent-point",
         "no-map",
         "soccer",
-        "protomaps-route",
-        "protomaps-point",
+        "tencent-route",
+        "tencent-point",
         "no-map",
     )
-
 
 def test_activity_cover_skips_unchanged_immutable_content():
     statements = []
     rows = iter(
         [
             (7, "running"),
-            ("existing-cover", "local-route", "same-etag", "garmin-cover-v4"),
+            ("existing-cover", "local-route", "same-etag", RENDER_VERSION),
         ]
     )
 
@@ -234,7 +233,7 @@ def test_activity_cover_refreshes_currentness_metadata_without_rotating_id():
     assert metadata_params[:3] == (
         "new-provider",
         "New attribution",
-        "garmin-cover-v4",
+        RENDER_VERSION,
     )
 
 

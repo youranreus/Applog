@@ -107,12 +107,12 @@ class SyncServiceTests(unittest.TestCase):
             patch("garmin_sync.sync.active_render_version", return_value="v4-test"),
             patch(
                 "garmin_sync.sync.configured_route_provider",
-                return_value="protomaps",
+                return_value="tencent",
             ),
         ):
             SyncService(adapter, repository).run()
 
-        self.assertEqual(repository.cover_query, ("v4-test", "protomaps"))
+        self.assertEqual(repository.cover_query, ("v4-test", "tencent"))
         self.assertEqual(adapter.route_id, "1")
 
     def test_incomplete_provider_configuration_does_not_require_remote_provider(

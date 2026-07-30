@@ -1,0 +1,36 @@
+{
+  "finalPixelTolerance": 2,
+  "results": [
+    {
+      "apiZoom": 12,
+      "serverMaskPixels": 442,
+      "overlapWithinTolerance": 1.0,
+      "maxBoundsDeltaPhysicalPixels": 3,
+      "maxBoundsDeltaFinalPixels": 1.5,
+      "passed": true
+    },
+    {
+      "apiZoom": 15,
+      "serverMaskPixels": 3534,
+      "overlapWithinTolerance": 1.0,
+      "maxBoundsDeltaPhysicalPixels": 3,
+      "maxBoundsDeltaFinalPixels": 1.5,
+      "passed": true
+    },
+    {
+      "apiZoom": 17,
+      "serverMaskPixels": 12408,
+      "overlapWithinTolerance": 1.0,
+      "maxBoundsDeltaPhysicalPixels": 3,
+      "maxBoundsDeltaFinalPixels": 1.5,
+      "passed": true
+    }
+  ],
+  "quota": {
+    "currentQps": 1,
+    "limitQps": 5,
+    "currentPv": 13,
+    "limitPv": 5000
+  },
+  "passed": true
+}

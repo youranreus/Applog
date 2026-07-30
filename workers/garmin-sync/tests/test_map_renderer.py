@@ -1,6 +1,6 @@
 import io
 import json
-import urllib.error
+import urllib.parse
 from email.message import Message
 
 import pytest
@@ -8,65 +8,37 @@ from PIL import Image, ImageDraw
 
 from garmin_sync.map_renderer import (
     BasemapRenderError,
-    LocalMapRenderer,
-    MapReleaseManifest,
-    RendererConfig,
+    TencentQuota,
+    TencentRendererConfig,
+    TencentStaticMapRenderer,
+    configured_renderer,
+    wgs84_to_gcj02,
 )
 from garmin_sync.spatial import fit_camera
 
 
-def manifest_file(tmp_path):
-    path = tmp_path / "manifest.json"
-    path.write_text(
-        json.dumps(
-            {
-                "releaseId": "2026-07-test",
-                "styleId": "applog-light",
-                "styleVersion": "5.7.2",
-                "rendererVersion": "1.12.0",
-                "regions": [
-                    {
-                        "id": "public-fixture",
-                        "bounds": [113.0, 22.0, 115.0, 24.0],
-                        "maxZoom": 24,
-                    },
-                    {
-                        "id": "global-low",
-                        "bounds": [-180, -85, 180, 85],
-                        "maxZoom": 6,
-                    },
-                ],
-            }
-        )
-    )
-    return path
+def test_wgs84_to_gcj02_uses_known_mainland_control_point():
+    latitude, longitude = wgs84_to_gcj02((39.908823, 116.39747))
+
+    assert latitude == pytest.approx(39.9102265, abs=0.000001)
+    assert longitude == pytest.approx(116.4037136, abs=0.000001)
 
 
-def test_manifest_selects_detail_region_without_stretching_global_data(tmp_path):
-    manifest = MapReleaseManifest.load(manifest_file(tmp_path))
-
-    assert manifest.supports([(22.5, 113.9)], 15)
-    assert not manifest.supports([(51.5, -0.1)], 15)
-    assert manifest.supports([(51.5, -0.1)], 6)
+def test_wgs84_to_gcj02_rejects_overseas_points():
+    with pytest.raises(BasemapRenderError, match="region_missing"):
+        wgs84_to_gcj02((51.5074, -0.1278))
 
 
-def test_renderer_configuration_rejects_non_loopback_url(tmp_path, monkeypatch):
-    monkeypatch.setenv("GARMIN_MAP_RENDERER_URL", "https://maps.example.com")
-    monkeypatch.setenv("GARMIN_MAP_RELEASE_MANIFEST", str(manifest_file(tmp_path)))
-
-    with pytest.raises(BasemapRenderError, match="renderer_unhealthy"):
-        RendererConfig.from_environment()
-
-
-def test_renderer_validates_webp_dimensions_and_uses_camera_endpoint(
-    tmp_path, monkeypatch
-):
+def test_tencent_renderer_requests_only_camera_parameters(monkeypatch, caplog):
     output = io.BytesIO()
     image = Image.new("RGB", (960, 960), "#e8eee9")
     ImageDraw.Draw(image).line((0, 0, 960, 960), fill="#83908b", width=12)
-    image.save(output, "WEBP")
+    image.save(output, "PNG")
     headers = Message()
-    headers["Content-Type"] = "image/webp"
+    headers["Content-Type"] = "image/png"
+    headers["X-LIMIT"] = (
+        '{"current_qps":1,"limit_qps":5,"current_pv":20,"limit_pv":100}'
+    )
 
     class Response:
         status = 200
@@ -93,50 +65,65 @@ def test_renderer_validates_webp_dimensions_and_uses_camera_endpoint(
         return Response()
 
     monkeypatch.setattr("urllib.request.urlopen", urlopen)
-    config = RendererConfig(
-        "http://127.0.0.1:3000",
-        MapReleaseManifest.load(manifest_file(tmp_path)),
-    )
-    camera = fit_camera([(22.5, 113.9)])
+    camera = fit_camera([(22.5, 113.9), (22.51, 113.92)])
+    renderer = TencentStaticMapRenderer(TencentRendererConfig("server-key"))
 
-    rendered = LocalMapRenderer(config).render(camera, [(22.5, 113.9)])
+    rendered = renderer.render(camera, [(22.5, 113.9), (22.51, 113.92)])
 
-    assert rendered.size == (960, 960)
-    assert "/style/applog-light/static/" in captured["url"]
-    assert captured["url"].endswith("/480x480@2x.webp")
+    parsed = urllib.parse.urlparse(captured["url"])
+    query = urllib.parse.parse_qs(parsed.query)
+    assert set(query) == {"center", "zoom", "size", "scale", "maptype", "key"}
+    assert query["size"] == ["480*480"]
+    assert query["scale"] == ["2"]
+    assert query["maptype"] == ["roadmap"]
+    assert query["key"] == ["server-key"]
+    assert "path" not in captured["url"]
+    assert "marker" not in captured["url"]
+    assert rendered.image.size == (960, 960)
+    assert int(query["zoom"][0]) == min(17, int(camera.zoom) + 1)
+    assert rendered.camera.zoom == float(int(query["zoom"][0]) - 1)
+    assert rendered.points[0] != (22.5, 113.9)
     assert captured["timeout"] == 8
+    assert renderer.last_quota == TencentQuota(1, 5, 20, 100)
+    assert "server-key" not in caplog.text
+    assert "22.5" not in caplog.text
 
 
-def test_renderer_reports_region_missing_before_http(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        "urllib.request.urlopen",
-        lambda *args, **kwargs: pytest.fail("HTTP must not be called"),
-    )
-    config = RendererConfig(
-        "http://127.0.0.1:3000",
-        MapReleaseManifest.load(manifest_file(tmp_path)),
-    )
-    camera = fit_camera([(51.5, -0.1)])
+def test_tencent_quota_accepts_json_and_key_value_headers():
+    assert TencentQuota.from_header(
+        '{"current_qps":2,"limit_qps":10,"current_pv":30,"limit_pv":1000}'
+    ) == TencentQuota(2, 10, 30, 1000)
+    assert TencentQuota.from_header(
+        "current_qps=2;limit_qps=10;current_pv=30;limit_pv=1000"
+    ) == TencentQuota(2, 10, 30, 1000)
+    assert TencentQuota.from_header("unrecognized") is None
 
-    with pytest.raises(BasemapRenderError, match="region_missing"):
-        LocalMapRenderer(config).render(camera, [(51.5, -0.1)])
+
+def test_configured_renderer_requires_explicit_tencent_key(monkeypatch):
+    monkeypatch.delenv("TENCENT_MAP_KEY", raising=False)
+
+    assert configured_renderer() is None
+
+    monkeypatch.setenv("TENCENT_MAP_KEY", "server-key")
+    assert isinstance(configured_renderer(), TencentStaticMapRenderer)
 
 
 @pytest.mark.parametrize(
-    ("size", "color", "content_type"),
+    ("status", "category"),
     [
-        ((480, 480), "#e8eee9", "image/webp"),
-        ((960, 960), "#e8eee9", "image/png"),
-        ((960, 960), "#e8eee9", "image/webp"),
+        (120, "quota_exhausted"),
+        (121, "quota_exhausted"),
+        (190, "asset_missing"),
+        (310, "region_missing"),
+        (500, "renderer_http_error"),
     ],
 )
-def test_renderer_rejects_wrong_dimensions_content_type_and_blank_raster(
-    tmp_path, monkeypatch, size, color, content_type
+def test_tencent_renderer_maps_json_errors_to_safe_categories(
+    monkeypatch, status, category
 ):
-    output = io.BytesIO()
-    Image.new("RGB", size, color).save(output, "WEBP")
+    data = json.dumps({"status": status, "message": "sensitive"}).encode()
     headers = Message()
-    headers["Content-Type"] = content_type
+    headers["Content-Type"] = "application/json"
 
     class Response:
         status = 200
@@ -148,51 +135,17 @@ def test_renderer_rejects_wrong_dimensions_content_type_and_blank_raster(
             return None
 
         def read(self, limit):
-            del limit
-            return output.getvalue()
+            assert limit > len(data)
+            return data
 
         @property
         def headers(self):
             return headers
 
     monkeypatch.setattr("urllib.request.urlopen", lambda *args, **kwargs: Response())
-    config = RendererConfig(
-        "http://127.0.0.1:3000",
-        MapReleaseManifest.load(manifest_file(tmp_path)),
-    )
-    camera = fit_camera([(22.5, 113.9)])
-
-    with pytest.raises(BasemapRenderError, match="invalid_raster"):
-        LocalMapRenderer(config).render(camera, [(22.5, 113.9)])
-
-
-@pytest.mark.parametrize(
-    ("error", "category"),
-    [
-        (TimeoutError(), "renderer_timeout"),
-        (urllib.error.URLError("offline"), "renderer_unhealthy"),
-        (
-            urllib.error.HTTPError("loopback", 404, "missing", {}, None),
-            "asset_missing",
-        ),
-        (
-            urllib.error.HTTPError("loopback", 500, "failed", {}, None),
-            "renderer_http_error",
-        ),
-    ],
-)
-def test_renderer_maps_transport_failures_to_safe_categories(
-    tmp_path, monkeypatch, error, category
-):
-    def fail(*args, **kwargs):
-        raise error
-
-    monkeypatch.setattr("urllib.request.urlopen", fail)
-    config = RendererConfig(
-        "http://127.0.0.1:3000",
-        MapReleaseManifest.load(manifest_file(tmp_path)),
-    )
-    camera = fit_camera([(22.5, 113.9)])
+    camera = fit_camera([(22.5, 113.9), (22.51, 113.92)])
 
     with pytest.raises(BasemapRenderError, match=category):
-        LocalMapRenderer(config).render(camera, [(22.5, 113.9)])
+        TencentStaticMapRenderer(TencentRendererConfig("server-key")).render(
+            camera, [(22.5, 113.9), (22.51, 113.92)]
+        )

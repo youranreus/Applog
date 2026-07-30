@@ -12,16 +12,12 @@ env_dir="${GARMIN_ENV_DIR:-${project_dir}/packages/backend}"
 env_file="${GARMIN_ENV_FILE:-}"
 run_provision=true
 run_initial_sync=true
-martin_bin="${GARMIN_MAP_MARTIN_BIN:-}"
-map_release="${GARMIN_MAP_RELEASE_DIR:-}"
-martin_config="${GARMIN_MAP_MARTIN_CONFIG:-${worker_dir}/maps/martin.yaml}"
 
 usage() {
   cat <<'EOF'
 Usage:
   bootstrap [--user USER] [--python PATH] [--venv PATH]
             [--env-dir PATH | --env-file PATH]
-            [--martin PATH --map-release PATH] [--martin-config PATH]
             [--skip-provision] [--skip-sync]
 
 Performs the first server deployment of the Garmin worker:
@@ -80,21 +76,6 @@ while [[ $# -gt 0 ]]; do
       run_provision=false
       shift
       ;;
-    --martin)
-      [[ $# -ge 2 ]] || fail "--martin requires a path"
-      martin_bin="$2"
-      shift 2
-      ;;
-    --map-release)
-      [[ $# -ge 2 ]] || fail "--map-release requires a path"
-      map_release="$2"
-      shift 2
-      ;;
-    --martin-config)
-      [[ $# -ge 2 ]] || fail "--martin-config requires a path"
-      martin_config="$2"
-      shift 2
-      ;;
     --skip-sync)
       run_initial_sync=false
       shift
@@ -130,16 +111,6 @@ if [[ -n "${env_file}" ]]; then
 else
   validate_path "environment directory" "${env_dir}"
   [[ -d "${env_dir}" ]] || fail "environment directory not found: ${env_dir}"
-fi
-if [[ -n "${martin_bin}" || -n "${map_release}" ]]; then
-  [[ -n "${martin_bin}" && -n "${map_release}" ]] || \
-    fail "--martin and --map-release must be supplied together"
-  validate_path "Martin executable" "${martin_bin}"
-  validate_path "map release" "${map_release}"
-  validate_path "Martin config" "${martin_config}"
-  [[ -x "${martin_bin}" ]] || fail "Martin executable not found: ${martin_bin}"
-  [[ -d "${map_release}" ]] || fail "map release not found: ${map_release}"
-  [[ -f "${martin_config}" ]] || fail "Martin config missing: ${martin_config}"
 fi
 [[ -x "${worker_dir}/start-worker" ]] || fail "start-worker is not executable"
 [[ -x "${worker_dir}/manage-timer" ]] || fail "manage-timer is not executable"
@@ -197,13 +168,6 @@ if [[ -n "${env_file}" ]]; then
   register_args+=(--env-file "${env_file}")
 else
   register_args+=(--env-dir "${env_dir}")
-fi
-if [[ -n "${martin_bin}" ]]; then
-  register_args+=(
-    --martin "${martin_bin}"
-    --map-release "${map_release}"
-    --martin-config "${martin_config}"
-  )
 fi
 "${worker_dir}/manage-timer" "${register_args[@]}"
 "${worker_dir}/manage-timer" disable

@@ -7,16 +7,23 @@ from garmin_sync.cover import (
     COVER_WIDTH,
     DEFAULT_ROUTE_PADDING_PIXELS,
     NO_MAP_PROVIDER,
-    PROTOMAPS_HEATMAP_PROVIDER,
-    PROTOMAPS_POINT_PROVIDER,
     PROTOMAPS_ROUTE_PROVIDER,
+    TENCENT_HEATMAP_PROVIDER,
+    TENCENT_POINT_PROVIDER,
+    TENCENT_ROUTE_PROVIDER,
     cover_provider_rank,
     render_no_map_cover,
     render_point_cover,
     render_route_cover,
     render_soccer_heatmap_cover,
 )
-from garmin_sync.map_renderer import BasemapRenderError
+from garmin_sync.map_renderer import (
+    BasemapRenderError,
+    RenderedBasemap,
+    TencentRendererConfig,
+    TencentStaticMapRenderer,
+    wgs84_to_gcj02,
+)
 
 
 class FakeRenderer:
@@ -37,6 +44,27 @@ class FailingRenderer:
     def render(self, camera, points):
         del camera, points
         raise BasemapRenderError(self.category)
+
+
+class FakeTencentRenderer(TencentStaticMapRenderer):
+    def __init__(self):
+        super().__init__(TencentRendererConfig("test-key"))
+
+    def render(self, camera, points):
+        converted = tuple(wgs84_to_gcj02(point) for point in points)
+        converted_center = wgs84_to_gcj02(
+            (camera.center_latitude, camera.center_longitude)
+        )
+        actual_camera = type(camera)(
+            converted_center[0],
+            converted_center[1],
+            float(int(camera.zoom)),
+            camera.width,
+            camera.height,
+        )
+        image = Image.new("RGBA", (960, 960), "#e8eee9")
+        ImageDraw.Draw(image).line((0, 0, 960, 960), fill="#c4cfca", width=8)
+        return RenderedBasemap(image, actual_camera, converted)
 
 
 def assert_safe_webp(data: bytes) -> Image.Image:
@@ -64,9 +92,9 @@ def test_mapped_point_preserves_private_provenance_only_in_worker_result():
         (22.5, 113.9), provenance="weather", renderer=FakeRenderer()
     )
 
-    assert cover.provider == PROTOMAPS_POINT_PROVIDER
+    assert cover.provider == TENCENT_POINT_PROVIDER
     assert cover.provenance == "weather"
-    assert cover.attribution == "© OpenStreetMap contributors"
+    assert cover.attribution == "© 腾讯地图"
     assert cover.outcome == "map_success"
     assert_safe_webp(cover.image_data)
 
@@ -77,13 +105,13 @@ def test_route_uses_final_camera_and_keeps_visible_pixels_in_safe_area():
         renderer=FakeRenderer(),
     )
 
-    assert cover.provider == PROTOMAPS_ROUTE_PROVIDER
+    assert cover.provider == TENCENT_ROUTE_PROVIDER
     image = assert_safe_webp(cover.image_data).convert("RGB")
     route_pixels = [
         (x, y)
         for y in range(COVER_HEIGHT)
         for x in range(COVER_WIDTH)
-        if (lambda rgb: rgb[0] < 70 and 45 < rgb[1] < 100 and rgb[2] < 95)(
+        if (lambda rgb: rgb[0] > 170 and rgb[1] < 110 and rgb[2] < 115)(
             image.getpixel((x, y))
         )
     ]
@@ -94,7 +122,7 @@ def test_route_uses_final_camera_and_keeps_visible_pixels_in_safe_area():
         max(y for _, y in route_pixels),
     )
     dominant_span = max(bounds[2] - bounds[0], bounds[3] - bounds[1])
-    assert 412 <= dominant_span <= 420
+    assert 420 <= dominant_span <= 430
     assert min(bounds[0], bounds[1]) >= DEFAULT_ROUTE_PADDING_PIXELS - 2
     assert COVER_WIDTH - max(bounds[2], bounds[3]) >= DEFAULT_ROUTE_PADDING_PIXELS - 2
 
@@ -108,6 +136,18 @@ def test_route_renderer_failure_is_typed_and_does_not_claim_a_map():
     assert cover.outcome == "fallback_created"
     assert cover.failure_category == "renderer_timeout"
     assert cover.attribution is None
+    assert_safe_webp(cover.image_data)
+
+
+def test_tencent_route_uses_converted_overlay_camera_and_provider():
+    cover = render_route_cover(
+        [(22.5000, 113.9000), (22.5010, 113.9200)],
+        renderer=FakeTencentRenderer(),
+    )
+
+    assert cover.provider == TENCENT_ROUTE_PROVIDER
+    assert cover.attribution == "© 腾讯地图"
+    assert cover.outcome == "map_success"
     assert_safe_webp(cover.image_data)
 
 
@@ -125,8 +165,8 @@ def test_soccer_heatmap_uses_real_samples_over_the_basemap():
     second = render_soccer_heatmap_cover(points, renderer=FakeRenderer())
 
     assert first.image_data == second.image_data
-    assert first.provider == PROTOMAPS_HEATMAP_PROVIDER
-    assert first.attribution == "© OpenStreetMap contributors"
+    assert first.provider == TENCENT_HEATMAP_PROVIDER
+    assert first.attribution == "© 腾讯地图"
     image = assert_safe_webp(first.image_data).convert("RGB")
     assert any(
         red >= 150 and red > green and blue < 120
@@ -139,7 +179,7 @@ def test_soccer_without_distinct_samples_becomes_a_mapped_point():
         [(22.5, 113.9), (22.5, 113.9)], renderer=FakeRenderer()
     )
 
-    assert cover.provider == PROTOMAPS_POINT_PROVIDER
+    assert cover.provider == TENCENT_POINT_PROVIDER
     assert_safe_webp(cover.image_data)
 
 

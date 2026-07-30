@@ -1,22 +1,27 @@
-"""Validated loopback client for a pinned Protomaps static renderer."""
+"""Validated Tencent static-map client for private Garmin overlays."""
 
 import hashlib
 import io
 import json
+import logging
+import math
 import os
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from .spatial import MapCamera
 
-PROTOMAPS_ATTRIBUTION = "© OpenStreetMap contributors"
+LOGGER = logging.getLogger(__name__)
+
+TENCENT_ATTRIBUTION = "© 腾讯地图"
+TENCENT_STATIC_MAP_URL = "https://apis.map.qq.com/ws/staticmap/v2/"
+TENCENT_RENDERER_VERSION = "static-v2-gcj02-v1"
+COVER_RENDER_VERSION = "garmin-cover-v7"
 MAX_RASTER_BYTES = 8 * 1024 * 1024
 MAX_BLANK_CHANNEL_RANGE = 8
-LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
 
 
 class BasemapRenderError(RuntimeError):
@@ -28,135 +33,188 @@ class BasemapRenderError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
-class CoverageRegion:
-    region_id: str
-    bounds: tuple[float, float, float, float]
-    max_zoom: float
+class RenderedBasemap:
+    """Raster plus the exact camera and coordinates it represents."""
 
-    def contains(self, latitude: float, longitude: float) -> bool:
-        west, south, east, north = self.bounds
-        longitude_matches = (
-            west <= longitude <= east
-            if west <= east
-            else longitude >= west or longitude <= east
-        )
-        return south <= latitude <= north and longitude_matches
+    image: Any
+    camera: MapCamera
+    points: tuple[tuple[float, float], ...]
+
+
+class BasemapRenderer(Protocol):
+    def render(
+        self, camera: MapCamera, points: list[tuple[float, float]]
+    ) -> Any | RenderedBasemap: ...
+
+
+def _outside_tencent_mainland(latitude: float, longitude: float) -> bool:
+    """Apply Tencent's documented domestic static-map coordinate envelope."""
+    return not (3.5 <= latitude <= 53.0 and 73.5 <= longitude <= 135.0)
+
+
+def _transform_latitude(latitude: float, longitude: float) -> float:
+    value = (
+        -100.0
+        + 2.0 * longitude
+        + 3.0 * latitude
+        + 0.2 * latitude * latitude
+        + 0.1 * longitude * latitude
+        + 0.2 * math.sqrt(abs(longitude))
+    )
+    value += (
+        20.0 * math.sin(6.0 * longitude * math.pi)
+        + 20.0 * math.sin(2.0 * longitude * math.pi)
+    ) * 2.0 / 3.0
+    value += (
+        20.0 * math.sin(latitude * math.pi)
+        + 40.0 * math.sin(latitude / 3.0 * math.pi)
+    ) * 2.0 / 3.0
+    return value + (
+        160.0 * math.sin(latitude / 12.0 * math.pi)
+        + 320.0 * math.sin(latitude * math.pi / 30.0)
+    ) * 2.0 / 3.0
+
+
+def _transform_longitude(latitude: float, longitude: float) -> float:
+    value = (
+        300.0
+        + longitude
+        + 2.0 * latitude
+        + 0.1 * longitude * longitude
+        + 0.1 * longitude * latitude
+        + 0.1 * math.sqrt(abs(longitude))
+    )
+    value += (
+        20.0 * math.sin(6.0 * longitude * math.pi)
+        + 20.0 * math.sin(2.0 * longitude * math.pi)
+    ) * 2.0 / 3.0
+    value += (
+        20.0 * math.sin(longitude * math.pi)
+        + 40.0 * math.sin(longitude / 3.0 * math.pi)
+    ) * 2.0 / 3.0
+    return value + (
+        150.0 * math.sin(longitude / 12.0 * math.pi)
+        + 300.0 * math.sin(longitude / 30.0 * math.pi)
+    ) * 2.0 / 3.0
+
+
+def wgs84_to_gcj02(point: tuple[float, float]) -> tuple[float, float]:
+    """Convert a mainland WGS-84 coordinate to Tencent's display coordinates."""
+    latitude, longitude = point
+    if _outside_tencent_mainland(latitude, longitude):
+        raise BasemapRenderError("region_missing")
+    shifted_latitude = latitude - 35.0
+    shifted_longitude = longitude - 105.0
+    latitude_delta = _transform_latitude(shifted_latitude, shifted_longitude)
+    longitude_delta = _transform_longitude(shifted_latitude, shifted_longitude)
+    radians = latitude / 180.0 * math.pi
+    magic = math.sin(radians)
+    magic = 1 - 0.00669342162296594323 * magic * magic
+    root_magic = math.sqrt(magic)
+    latitude_delta = latitude_delta * 180.0 / (
+        (6335552.717000426 / (magic * root_magic)) * math.pi
+    )
+    longitude_delta = longitude_delta * 180.0 / (
+        (6378245.0 / root_magic) * math.cos(radians) * math.pi
+    )
+    return latitude + latitude_delta, longitude + longitude_delta
 
 
 @dataclass(frozen=True, slots=True)
-class MapReleaseManifest:
-    release_id: str
-    style_id: str
-    style_version: str
-    renderer_version: str
-    regions: tuple[CoverageRegion, ...]
-
-    @classmethod
-    def load(cls, path: Path) -> "MapReleaseManifest":
-        try:
-            value = json.loads(path.read_text())
-            regions = tuple(
-                CoverageRegion(
-                    str(item["id"]),
-                    tuple(float(number) for number in item["bounds"]),
-                    float(item["maxZoom"]),
-                )
-                for item in value["regions"]
-            )
-            if any(len(region.bounds) != 4 for region in regions):
-                raise ValueError
-            return cls(
-                str(value["releaseId"]),
-                str(value["styleId"]),
-                str(value["styleVersion"]),
-                str(value["rendererVersion"]),
-                regions,
-            )
-        except (
-            OSError,
-            KeyError,
-            TypeError,
-            ValueError,
-            json.JSONDecodeError,
-        ) as error:
-            raise BasemapRenderError("asset_missing") from error
-
-    def supports(
-        self, points: list[tuple[float, float]], required_zoom: float
-    ) -> bool:
-        return any(
-            required_zoom <= region.max_zoom
-            and all(
-                region.contains(latitude, longitude)
-                for latitude, longitude in points
-            )
-            for region in self.regions
-        )
-
-    def fingerprint(self) -> str:
-        value = ":".join(
-            (
-                self.release_id,
-                self.style_id,
-                self.style_version,
-                self.renderer_version,
-            )
-        )
-        return hashlib.sha256(value.encode()).hexdigest()[:16]
-
-
-@dataclass(frozen=True, slots=True)
-class RendererConfig:
-    base_url: str
-    manifest: MapReleaseManifest
-    connect_timeout_seconds: float = 1.0
+class TencentRendererConfig:
+    key: str
     total_timeout_seconds: float = 8.0
 
     @classmethod
-    def from_environment(cls) -> "RendererConfig | None":
-        base_url = os.getenv("GARMIN_MAP_RENDERER_URL")
-        manifest_path = os.getenv("GARMIN_MAP_RELEASE_MANIFEST")
-        if not base_url and not manifest_path:
+    def from_environment(cls) -> "TencentRendererConfig | None":
+        key = os.getenv("TENCENT_MAP_KEY")
+        if not key:
             return None
-        if not base_url or not manifest_path:
-            raise BasemapRenderError("asset_missing")
-        parsed = urllib.parse.urlparse(base_url)
-        if parsed.scheme != "http" or parsed.hostname not in LOOPBACK_HOSTS:
-            raise BasemapRenderError("renderer_unhealthy")
         try:
             timeout = float(os.getenv("GARMIN_MAP_RENDER_TIMEOUT_SECONDS", "8"))
         except ValueError as error:
             raise BasemapRenderError("renderer_unhealthy") from error
-        if timeout <= 0:
+        if timeout <= 0 or any(character.isspace() for character in key):
             raise BasemapRenderError("renderer_unhealthy")
-        return cls(
-            base_url.rstrip("/"),
-            MapReleaseManifest.load(Path(manifest_path)),
-            total_timeout_seconds=timeout,
+        return cls(key, timeout)
+
+    def fingerprint(self) -> str:
+        return hashlib.sha256(TENCENT_RENDERER_VERSION.encode()).hexdigest()[:16]
+
+
+@dataclass(frozen=True, slots=True)
+class TencentQuota:
+    current_qps: int | None = None
+    limit_qps: int | None = None
+    current_pv: int | None = None
+    limit_pv: int | None = None
+
+    @classmethod
+    def from_header(cls, value: str | None) -> "TencentQuota | None":
+        if not value:
+            return None
+        parsed: dict[str, object]
+        try:
+            candidate = json.loads(value)
+            parsed = candidate if isinstance(candidate, dict) else {}
+        except json.JSONDecodeError:
+            parsed = {}
+            for item in value.replace(";", ",").split(","):
+                key, separator, raw = item.partition("=")
+                if separator:
+                    parsed[key.strip()] = raw.strip()
+
+        def bounded_integer(key: str) -> int | None:
+            try:
+                result = int(parsed[key])
+            except (KeyError, TypeError, ValueError):
+                return None
+            return result if result >= 0 else None
+
+        quota = cls(
+            bounded_integer("current_qps"),
+            bounded_integer("limit_qps"),
+            bounded_integer("current_pv"),
+            bounded_integer("limit_pv"),
         )
+        values = (quota.current_qps, quota.limit_qps, quota.current_pv, quota.limit_pv)
+        return quota if any(value is not None for value in values) else None
 
 
-class LocalMapRenderer:
-    """Request clean 2x basemaps from a loopback Martin-compatible API."""
+class TencentStaticMapRenderer:
+    """Request a clean Tencent basemap without disclosing the activity trace."""
 
-    def __init__(self, config: RendererConfig) -> None:
+    def __init__(self, config: TencentRendererConfig) -> None:
         self.config = config
+        self.last_quota: TencentQuota | None = None
 
     def render(
         self, camera: MapCamera, points: list[tuple[float, float]]
-    ) -> Any:
-        if not self.config.manifest.supports(points, camera.zoom):
-            raise BasemapRenderError("region_missing")
-        style_id = urllib.parse.quote(self.config.manifest.style_id, safe="")
-        camera_value = (
-            f"{camera.center_longitude:.8f},{camera.center_latitude:.8f},"
-            f"{camera.zoom:.6f}"
+    ) -> RenderedBasemap:
+        converted_points = tuple(wgs84_to_gcj02(point) for point in points)
+        center = wgs84_to_gcj02(
+            (camera.center_latitude, camera.center_longitude)
         )
-        url = (
-            f"{self.config.base_url}/style/{style_id}/static/{camera_value}/"
-            f"{camera.width}x{camera.height}@2x.webp"
+        # Tencent uses a 256px tile pyramid while MapCamera follows MapLibre's
+        # 512px convention, so the equivalent Tencent zoom is one level higher.
+        zoom = max(4, min(17, math.floor(camera.zoom) + 1))
+        actual_camera = MapCamera(
+            center[0], center[1], float(zoom - 1), camera.width, camera.height
         )
-        request = urllib.request.Request(url, headers={"Accept": "image/webp"})
+        query = urllib.parse.urlencode(
+            {
+                "center": f"{center[0]:.8f},{center[1]:.8f}",
+                "zoom": str(zoom),
+                "size": f"{camera.width}*{camera.height}",
+                "scale": "2",
+                "maptype": "roadmap",
+                "key": self.config.key,
+            }
+        )
+        request = urllib.request.Request(
+            f"{TENCENT_STATIC_MAP_URL}?{query}",
+            headers={"Accept": "image/png,image/jpeg"},
+        )
         try:
             with urllib.request.urlopen(
                 request, timeout=self.config.total_timeout_seconds
@@ -164,15 +222,31 @@ class LocalMapRenderer:
                 if getattr(response, "status", 200) != 200:
                     raise BasemapRenderError("renderer_http_error")
                 content_type = response.headers.get_content_type()
-                if content_type != "image/webp":
-                    raise BasemapRenderError("invalid_raster")
+                self.last_quota = TencentQuota.from_header(
+                    response.headers.get("X-LIMIT")
+                )
+                if self.last_quota is not None:
+                    LOGGER.info(
+                        "Tencent map quota current_qps=%s limit_qps=%s "
+                        "current_pv=%s limit_pv=%s",
+                        self.last_quota.current_qps,
+                        self.last_quota.limit_qps,
+                        self.last_quota.current_pv,
+                        self.last_quota.limit_pv,
+                    )
                 data = response.read(MAX_RASTER_BYTES + 1)
+                if content_type not in {"image/png", "image/jpeg"}:
+                    raise BasemapRenderError(_tencent_error_category(data))
         except BasemapRenderError:
             raise
         except TimeoutError as error:
             raise BasemapRenderError("renderer_timeout") from error
         except urllib.error.HTTPError as error:
-            category = "asset_missing" if error.code == 404 else "renderer_http_error"
+            category = (
+                "quota_exhausted"
+                if error.code in {402, 429}
+                else "renderer_http_error"
+            )
             raise BasemapRenderError(category) from error
         except (urllib.error.URLError, OSError) as error:
             raise BasemapRenderError("renderer_unhealthy") from error
@@ -186,40 +260,56 @@ class LocalMapRenderer:
             if image.size != (camera.width * 2, camera.height * 2):
                 raise BasemapRenderError("invalid_raster")
             rgb = image.convert("RGB")
-            extrema = rgb.getextrema()
-            # Lossy WebP introduces small channel noise even for a flat image.
-            if all(high - low <= MAX_BLANK_CHANNEL_RANGE for low, high in extrema):
+            if all(
+                high - low <= MAX_BLANK_CHANNEL_RANGE
+                for low, high in rgb.getextrema()
+            ):
                 raise BasemapRenderError("invalid_raster")
-            return image.convert("RGBA")
+            return RenderedBasemap(
+                image.convert("RGBA"), actual_camera, converted_points
+            )
         except BasemapRenderError:
             raise
         except Exception as error:
             raise BasemapRenderError("invalid_raster") from error
 
 
-def configured_renderer() -> LocalMapRenderer | None:
-    config = RendererConfig.from_environment()
-    return LocalMapRenderer(config) if config is not None else None
+def _tencent_error_category(data: bytes) -> str:
+    """Map Tencent's documented JSON status codes without exposing its body."""
+    try:
+        value = json.loads(data)
+        status = int(value["status"])
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return "invalid_raster"
+    if status in {120, 121}:
+        return "quota_exhausted"
+    if status in {110, 111, 112, 113, 160, 161, 190, 199}:
+        return "asset_missing"
+    if 300 <= status < 500:
+        return "region_missing"
+    return "renderer_http_error"
+
+
+def configured_renderer() -> BasemapRenderer | None:
+    config = TencentRendererConfig.from_environment()
+    return TencentStaticMapRenderer(config) if config is not None else None
 
 
 def check_renderer_health() -> bool:
-    """Probe the configured loopback service without logging its private URLs."""
-    config = RendererConfig.from_environment()
-    if config is None:
-        return False
-    request = urllib.request.Request(f"{config.base_url}/health")
+    """Validate Tencent renderer configuration without disclosing location."""
     try:
-        with urllib.request.urlopen(
-            request, timeout=config.connect_timeout_seconds
-        ) as response:
-            return getattr(response, "status", 200) == 200
-    except (urllib.error.URLError, OSError, TimeoutError):
+        return TencentRendererConfig.from_environment() is not None
+    except BasemapRenderError:
         return False
 
 
 def configured_route_provider() -> str | None:
     try:
-        return "protomaps" if RendererConfig.from_environment() is not None else None
+        return (
+            "tencent"
+            if TencentRendererConfig.from_environment() is not None
+            else None
+        )
     except BasemapRenderError:
         return None
 
@@ -227,9 +317,9 @@ def configured_route_provider() -> str | None:
 def active_render_version() -> str:
     """Return a bounded fingerprint covering code, data, style, and renderer."""
     try:
-        config = RendererConfig.from_environment()
+        config = TencentRendererConfig.from_environment()
     except BasemapRenderError:
-        return "garmin-cover-v4-unconfigured"
+        return f"{COVER_RENDER_VERSION}-unconfigured"
     if config is None:
-        return "garmin-cover-v4-local"
-    return f"garmin-cover-v4-{config.manifest.fingerprint()}"
+        return f"{COVER_RENDER_VERSION}-local"
+    return f"{COVER_RENDER_VERSION}-tencent-{config.fingerprint()}"

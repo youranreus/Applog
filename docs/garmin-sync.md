@@ -19,11 +19,41 @@ worker 默认从 NestJS 的 `packages/backend` 目录加载环境配置文件。
 - `GARMIN_REQUEST_BUDGET`：单轮 Garmin 请求上限，默认 `80`
 - `GARMIN_HEALTH_EMPTY_DAY_LIMIT`：连续多少个无任何观测值的历史自然日后判定已到上游边界，默认 `30`
 - `GARMIN_PRIVATE_ARCHIVE_ENABLED`、`GARMIN_HEALTH_BACKFILL_ENABLED`、`GARMIN_MAP_COVERS_ENABLED`：三个独立回滚开关
-- `GARMIN_MAP_RENDERER_URL`：只允许 loopback HTTP，标准值为 `http://127.0.0.1:3000`
-- `GARMIN_MAP_RELEASE_MANIFEST`：当前不可变 Protomaps release 的 `manifest.json` 绝对路径
-- `GARMIN_MAP_RENDER_TIMEOUT_SECONDS`：localhost 静态图总超时，默认 `8`
+- `TENCENT_MAP_KEY`：地图封面启用时需要；使用只启用
+  WebService 的服务端 Key，不得提交到 Git 或输出到日志
+- `GARMIN_MAP_RENDER_TIMEOUT_SECONDS`：单次静态图请求总超时，默认 `8`
 
-地图底图由本机 Martin 读取 Protomaps PMTiles 后生成，不调用 CARTO 或其他在线地图 API。普通户外活动使用统一 Web Mercator camera，在 480×480 封面保留 32px 目标安全区；足球仅在拿到真实 GPS 采样时在同一底图上生成密度热力图。椭圆机等活动没有轨迹但 Garmin weather payload 有合法位置时显示单点标记，内部 provenance 标记为 `weather`；完全没有坐标时显示明确的无地图封面。
+地图底图统一由腾讯静态图 API 在线生成。
+普通户外活动使用统一 Web Mercator camera，在 480×480 封面保留 16px
+目标安全区；足球仅在拿到真实 GPS 采样时在同一底图上生成密度热力图。椭圆
+机等活动没有轨迹但 Garmin weather payload 有合法位置时显示单点标记，内部
+provenance 标记为 `weather`；完全没有坐标时显示明确的无地图封面。
+
+## 腾讯静态底图（轻量部署）
+
+地图链路不需要自建 renderer、地图数据卷、地图镜像、字体目录或 release manifest。Key
+作为 worker 环境文件中的 secret 交给既有 `bootstrap` / `manage-timer` 自动化，
+部署命令和服务注册方式不变：
+
+```ini
+GARMIN_MAP_COVERS_ENABLED=true
+TENCENT_MAP_KEY=REPLACE_WITH_SERVER_SIDE_KEY
+GARMIN_MAP_RENDER_TIMEOUT_SECONDS=8
+```
+
+为 Key 只开启 WebService，并配置控制台支持的最窄服务端安全限制。worker 只向
+静态图接口发送转换后的中心点、整数 zoom、`480*480`、`scale=2` 和
+`maptype=roadmap`；完整轨迹、marker、活动 ID 不会发给腾讯。路线、起终点、
+单点和足球热力层仍由 worker 本地绘制。
+
+腾讯模式只保证中国大陆文档支持范围。境外点会在发起 HTTP 请求前返回
+`region_missing` 并遵循现有封面降级保护。响应中的 `X-LIMIT` 额度信息只作为
+进程内遥测读取，不记录 Key、完整 URL 或坐标。生产启用前必须在当前账户确认
+静态图额度、商用资格和生成图片的持久化/展示条款。
+
+腾讯请求失败时沿用本地无底图降级封面，且不会用失败结果覆盖已有成功封面。
+
+## 通用部署配置
 
 生成加密密钥：
 
@@ -59,70 +89,8 @@ GARMIN_HEALTH_EMPTY_DAY_LIMIT=30
 GARMIN_PRIVATE_ARCHIVE_ENABLED=true
 GARMIN_HEALTH_BACKFILL_ENABLED=true
 GARMIN_MAP_COVERS_ENABLED=true
-GARMIN_MAP_RENDERER_URL=http://127.0.0.1:3000
-GARMIN_MAP_RELEASE_MANIFEST=/opt/applog/maps/current/manifest.json
+TENCENT_MAP_KEY=replace-with-server-side-key
 GARMIN_MAP_RENDER_TIMEOUT_SECONDS=8
-```
-
-## Protomaps 地图发布
-
-生产地图包不进入 Git。仓库中的 `workers/garmin-sync/maps/` 保存固定版本、样式生成器、Martin 配置、manifest 模板和许可说明。每个生产 release 必须包含 `basemap.pmtiles`、`style.json`、本地字体、`manifest.json` 和许可证；详细构建与验证命令见该目录 README。
-
-推荐部署方式是构建项目专用的自包含 Docker 镜像。镜像把 Martin、完整
-PMTiles release、样式、字体、manifest 和许可证作为同一不可变 OCI 制品，
-运行时不挂载地图数据目录，也不访问公网。构建命令、公共 fixture 模式、
-manifest 导出、loopback 启动和 digest 回滚流程见
-[`workers/garmin-sync/maps/README.md`](../workers/garmin-sync/maps/README.md)。
-生产构建通过 PMTiles CLI 对固定 daily build URL 发起 HTTP Range 请求，只
-提取 global z0-6 与大湾区 z7-15，不下载约 150 GiB 的完整 planet。官方
-BLAKE3 仅作为 provenance 写入 manifest；本地门禁是合并产物的
-`pmtiles verify` 和 release 资产 SHA-256 校验。
-
-容器内部监听 `0.0.0.0:3000` 仅用于 Docker 网络转发；宿主机必须显式绑定
-`127.0.0.1:3000:3000`，禁止发布为 `0.0.0.0:3000`。worker 仍使用：
-
-```ini
-GARMIN_MAP_COVERS_ENABLED=true
-GARMIN_MAP_RENDERER_URL=http://127.0.0.1:3000
-GARMIN_MAP_RELEASE_MANIFEST=/opt/applog/maps/current/manifest.json
-GARMIN_MAP_RENDER_TIMEOUT_SECONDS=8
-```
-
-manifest 必须从将要运行的同一镜像 digest 导出到临时目录；它只含 release
-元数据，不是地图数据 volume。更新或回滚期间先停用 Garmin timer，再替换
-renderer；健康检查通过后用同目录临时文件和原子 `mv` 发布 manifest，最后
-恢复 timer。禁止在 timer 运行时先覆盖 live manifest，以免 worker 观察到
-“新 manifest + 旧 renderer”。
-
-当前固定工具链为 Martin `1.12.0`、`@protomaps/basemaps` `5.7.2` 与 PMTiles CLI `1.31.2`。地图包按月从明确的 Protomaps daily build 生成，不使用 `latest`。初始覆盖为大湾区高精度（z7–15，可在 renderer 内 overzoom）与全球 z0–6；区域外需要街区级细节时返回 `region_missing`，不会拉伸低精度数据冒充细节。
-
-Martin 静态渲染只在 Linux 上运行。激活前必须在部署机执行：
-
-```bash
-cd /opt/applog/current/workers/garmin-sync
-/opt/applog/venvs/garmin-sync/bin/python -m garmin_sync.map_release verify \
-  /opt/applog/maps/releases/RELEASE_ID --pmtiles /usr/local/bin/pmtiles \
-  --martin /usr/local/bin/martin
-APPLOG_MAP_RELEASE_DIR=/opt/applog/maps/releases/RELEASE_ID \
-  /usr/local/bin/martin --config ./maps/martin.yaml
-```
-
-另一个终端运行 100 张串行原型门禁并人工检查四张公开 fixture：
-
-```bash
-/opt/applog/venvs/garmin-sync/bin/python -m garmin_sync.map_prototype \
-  --manifest /opt/applog/maps/releases/RELEASE_ID/manifest.json \
-  --output /tmp/applog-map-prototype --iterations 100 \
-  --renderer-pid MARTIN_PID
-```
-
-通过后原子激活完整 release：
-
-```bash
-/opt/applog/venvs/garmin-sync/bin/python -m garmin_sync.map_release activate \
-  /opt/applog/maps/releases/RELEASE_ID /opt/applog/maps
-sudo systemctl restart applog-map-renderer.service
-curl --fail --silent http://127.0.0.1:3000/health
 ```
 
 ## 首次部署
@@ -138,9 +106,7 @@ curl --fail --silent http://127.0.0.1:3000/health
    sudo ./bootstrap \
      --user applog \
      --python /usr/bin/python3.12 \
-     --venv /opt/applog/venvs/garmin-sync \
-     --martin /usr/local/bin/martin \
-     --map-release /opt/applog/maps/current
+     --venv /opt/applog/venvs/garmin-sync
    ```
 
    bootstrap 会创建或更新虚拟环境、安装 worker、注册并确保 systemd timer 处于关闭状态、交互读取 Garmin 邮箱/密码/MFA、加密保存 token，并执行一次同步。它不会把密码或 MFA 写入磁盘。
