@@ -36,8 +36,10 @@ These guides help you **ask the right questions before coding**.
 - [ ] You're not sure where to put some logic
 - [ ] You are adding an event kind, JSONL record, RPC payload, or config field
 - [ ] UI / command code starts casting raw payload fields directly
+- [ ] Work touches deployment, upgrades, migrations, service registration, scheduled jobs, rollback, backup, or restore
 
 → Read [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md)
+→ For deployment-related work, also read [Deployment Automation Contracts](../common/shared/deployment-automation-contracts.md)
 
 ### When to Think About Code Reuse
 

@@ -123,6 +123,19 @@ After implementation:
 - [ ] Checked that derived state points back to the source event identifier
       (`seq`, `id`, `version`) instead of inventing a second cursor
 
+### Deployment / Operations Gate
+
+If the change affects deployment, upgrades, migrations, service registration,
+scheduled jobs, rollback, backup, or restore, read and satisfy
+[Deployment Automation Contracts](../common/shared/deployment-automation-contracts.md).
+
+- [ ] The user runs one repository-owned command after providing only
+      irreducible external inputs such as a host, account, or credentials
+- [ ] All automatable preparation and post-deployment health verification live
+      inside the script rather than a manual runbook
+- [ ] The same change includes documentation, idempotency/failure tests, and an
+      automated retry or rollback path where operationally possible
+
 ---
 
 ## Cross-Platform Template Consistency

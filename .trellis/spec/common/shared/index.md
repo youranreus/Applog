@@ -31,6 +31,7 @@ Build output: `dist/` (`main`: `dist/index.js`, `types`: `dist/index.d.ts`). Tur
 | [Package Boundaries](./package-boundaries.md) | What belongs (and does not) in common | Filled |
 | [Type Safety](./type-safety.md) | Naming and export patterns | Filled |
 | [System Config Contracts](./system-config-contracts.md) | Cross-layer field formats and compatibility rules | Filled |
+| [Deployment Automation Contracts](./deployment-automation-contracts.md) | One-command deployment, rollback, documentation, and verification requirements | Filled |
 | [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Shared presence types, constants, expiry, and polling rules | Filled |
 | [Duolingo Contract](../../backend/backend/duolingo-guidelines.md) | Shared secret config and public Landing statistics DTO | Filled |
 | [Garmin Contract](../../backend/backend/garmin-guidelines.md) | Shared public Landing activity snapshot DTO and privacy bounds | Filled |
@@ -43,6 +44,7 @@ Build output: `dist/` (`main`: `dist/index.js`, `types`: `dist/index.d.ts`). Tur
 - [ ] No placeholder / TODO fill text
 - [ ] New symbols re-exported from `src/index.ts`
 - [ ] Frontend/backend can import without pulling framework code
+- [ ] Deployment/operations changes include a tested one-command script and matching documentation
 - [ ] `pnpm --filter @applog/common run build` succeeds
 
 ---
