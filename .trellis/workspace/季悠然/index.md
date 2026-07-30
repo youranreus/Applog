@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 22
+- **Total Sessions**: 23
 - **Last Active**: 2026-07-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~640 | Active |
+| `journal-1.md` | ~661 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 23 | 2026-07-30 | 调整 Landing Garmin 展示 | `6d56494` | `master` |
 | 22 | 2026-07-30 | Garmin 室内运动详情解析 | `90e1eac` | `master` |
 | 21 | 2026-07-30 | 腾讯地图封面迁移 | `ee9abce` | `master` |
 | 20 | 2026-07-29 | 完成 Landing Garmin 活动明细与地图交互 | `b3ae5b8`, `d6c2fbc`, `d4912a4`, `55d1231`, `50747df`, `29dd546`, `213b276` | `master` |

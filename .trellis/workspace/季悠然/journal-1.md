@@ -638,3 +638,24 @@ Duolingo Client 超时调至 15s、timeout 重试 1 次、username→userId 缓�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 23: 调整 Landing Garmin 展示
+
+**Date**: 2026-07-30
+**Task**: 调整 Landing Garmin 展示
+**Branch**: `master`
+
+### Summary
+
+按有效 GPS 路线拆分交互与静态数据卡，扩展公开指标投影，支持骑行与室内骑行，修复详情弹窗响应式宽度并完成四视口视觉校验。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6d56494` | (see git log) |
+
+### Status
+
+[OK] **Completed**
