@@ -11,7 +11,7 @@ export function usePointerTilt() {
 
   const style = computed<CSSProperties>(() => ({
     transform: active.value
-      ? `perspective(720px) rotateX(${rotateX.value}deg) rotateY(${rotateY.value}deg) scale(1.025)`
+      ? `perspective(720px) rotateX(${rotateX.value}deg) rotateY(${rotateY.value}deg)`
       : undefined,
     willChange: active.value ? 'transform' : undefined,
   }))

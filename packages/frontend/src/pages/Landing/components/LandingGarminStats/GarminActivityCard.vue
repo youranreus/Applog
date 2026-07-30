@@ -12,27 +12,28 @@ const { style, onPointerMove, reset } = usePointerTilt()
 
 function activate(): void {
   reset()
-  if (cardRef.value && props.activity.publicId) {
+  if (cardRef.value && props.activity.publicId && props.activity.route) {
     emit('activate', props.activity, cardRef.value)
   }
 }
 </script>
 
 <template>
-  <button
+  <component
+    :is="activity.route ? 'button' : 'article'"
     ref="card"
-    type="button"
+    :type="activity.route ? 'button' : undefined"
     class="garmin-card"
+    :class="{ 'garmin-card--static': !activity.route }"
     :style="style"
-    :disabled="!activity.publicId"
-    :aria-label="`查看${activity.typeDisplay}详情`"
+    :aria-label="activity.route ? `查看${activity.typeDisplay}详情` : undefined"
     @pointermove="onPointerMove"
     @pointerleave="reset"
     @blur="reset"
     @click="activate"
   >
-    <GarminActivityCover :activity="activity" />
-    <span class="garmin-card__body">
+    <GarminActivityCover v-if="activity.route" :activity="activity" />
+    <span v-if="activity.route" class="garmin-card__body">
       <strong class="garmin-card__title">{{ activity.typeDisplay }}</strong>
       <span class="garmin-card__row">
         <span class="garmin-card__metric">
@@ -55,7 +56,19 @@ function activate(): void {
         </span>
       </span>
     </span>
-  </button>
+    <span v-else class="garmin-card__data">
+      <span class="garmin-card__data-header">
+        <strong class="garmin-card__title">{{ activity.typeDisplay }}</strong>
+        <time>{{ activity.dateText }}</time>
+      </span>
+      <span class="garmin-card__data-grid">
+        <span v-for="metric in activity.cardMetrics" :key="metric.key" class="garmin-card__datum">
+          <small>{{ metric.label }}</small>
+          <strong>{{ metric.value }}</strong>
+        </span>
+      </span>
+    </span>
+  </component>
 </template>
 
 <style scoped>
@@ -85,7 +98,7 @@ function activate(): void {
   outline-offset: 3px;
 }
 
-.garmin-card:disabled {
+.garmin-card--static {
   cursor: default;
 }
 
@@ -137,6 +150,51 @@ function activate(): void {
   width: 0.7rem;
   height: 0.7rem;
   flex: none;
+}
+
+.garmin-card__data {
+  display: flex;
+  min-height: 15.9rem;
+  flex-direction: column;
+  padding: 0.85rem 0.75rem 0.75rem;
+}
+
+.garmin-card__data-header {
+  display: grid;
+  gap: 0.2rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--landing-muted) 15%, transparent);
+}
+
+.garmin-card__data-header time,
+.garmin-card__datum small {
+  color: var(--landing-muted);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.garmin-card__data-grid {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 0.8rem 0.55rem;
+  padding-top: 0.85rem;
+}
+
+.garmin-card__datum {
+  display: grid;
+  min-width: 0;
+  gap: 0.16rem;
+}
+
+.garmin-card__datum strong {
+  overflow: hidden;
+  color: var(--landing-text);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 720px) {

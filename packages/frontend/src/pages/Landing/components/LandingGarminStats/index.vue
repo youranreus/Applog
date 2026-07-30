@@ -32,7 +32,7 @@ watch(
 )
 
 async function openActivity(activity: IGarminActivityView, element: HTMLElement): Promise<void> {
-  if (!activity.publicId) return
+  if (!activity.publicId || !activity.route) return
   if (closeTimer) {
     window.clearTimeout(closeTimer)
     closeTimer = undefined

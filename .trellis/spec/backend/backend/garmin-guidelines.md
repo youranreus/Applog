@@ -6,14 +6,14 @@
 
 ### 1. Scope / Trigger
 
-- Trigger: worker → MySQL → NestJS → Vue Landing; schema and DTO fields for calories / location / route previews.
+- Trigger: worker → MySQL → NestJS → Vue Landing; schema and DTO fields for calories / location / route previews / card-safe detail metrics.
 - Applies when changing `workers/garmin-sync/`, `GarminActivitySnapshot`, `GET /garmin/stats`, `@applog/common` Garmin types, or `LandingGarminStats`.
 
 ### 2. Signatures
 
 - Public API: `GET /garmin/stats` → `IGarminLandingStats | null` (never triggers Garmin upstream).
 - DB table: `garmin_activity_snapshot` (camelCase columns, aligned with TypeORM + worker SQL).
-- Worker: list normalize → optional GPS route SVG for running-class types → upsert + reconcile.
+- Worker: list normalize → optional GPS route SVG for route activity types → bounded private-detail parse → upsert + reconcile.
 
 ### 3. Contracts
 
@@ -30,6 +30,12 @@
 | `locationName` | string \| null | Display string ≤ 64; reject coordinate-like; never lat/lon columns |
 | `deviceSource` | string \| null | Optional device model |
 | `route` | `{ pathData, viewBox } \| null` | Coordinate-free `M/L` SVG only |
+| `metrics` | `IGarminLandingActivityMetrics` | Seven finite-number-or-null card fields projected from normalized `detailData`; never contains splits or raw payload |
+
+**`IGarminLandingActivityMetrics`**: `averagePaceSecondsPerKm`,
+`averageHeartRateBpm`, `maxHeartRateBpm`, `averageCadencePerMinute`,
+`averagePowerWatts`, `trainingEffect`, and `steps`. NestJS owns the `unknown` →
+finite number/null boundary. Old snapshots without `detailData` return all-null metrics.
 
 **`IGarminLandingStats`**: `totalActivityCount`, `activities` (newest 6, `published`), `fetchedAt`, `stale` (>6h or non-healthy sync).
 
@@ -38,17 +44,27 @@
 **Landing presentation**
 
 - Horizontal scroll; edge fades only when overflow can scroll.
-- Cover: generated WebP first. Regular GPS activities use a Tencent route map;
+- Route cards: generated WebP first. Regular GPS activities use a Tencent route map;
   `soccer` uses GPS density over the same real basemap; a single activity or
   weather coordinate uses a mapped marker. Without any usable coordinate, use
-  the explicit no-map cover and never fabricate a track, marker, or heatmap. The
-  public SVG route / `ActivityTypeCover` remain migration fallbacks when no
-  generated cover is available.
-- Metrics with small icons: time, location?, distance?, calories?, duration. Omit null optionals (no「距离暂无」).
-- Compact square-cover cards; distance (when present) is a bottom-left cover tag, not a body metric.
-- Body is always 3 rows: title · time(+location) · calories/duration packed on one line.
+  the explicit no-map cover and never fabricate a track, marker, or heatmap.
+  A card is interactive only when its public SVG route passes frontend M/L path
+  validation; a generated cover or `publicId` alone does not make it interactive.
+- No-route cards: render no WebP, SVG, `ActivityTypeCover`, point map, or other
+  cover. Render a non-interactive `article` with title/date plus at most five
+  non-null type-preset metrics. It must not expose a detail aria-label or respond
+  to click/Enter/Space.
+- Route card metrics use small icons: time, location?, distance?, calories?,
+  duration. Distance (when present) is a bottom-left cover tag.
+- `indoor_cycling` card priority: duration, calories, average heart rate,
+  average power, cadence; label cycling cadence「踏频」rather than「步频」.
+- Pointer-fine cards retain bounded perspective rotation but must not scale;
+  touch and reduced-motion environments remain static.
 - No per-card device source line (`Garmin · …`).
 - Elliptical (`elliptical`) never shows distance even if upstream provides meters.
+- The detail Dialog is teleported. Width/max-width overrides must be expressed
+  as important classes on `DialogContent`; scoped `:deep()` width rules alone do
+  not reliably beat the primitive's `w-full sm:max-w-sm` classes after teleport.
 
 ### 4. Validation & Error Matrix
 
@@ -59,27 +75,36 @@
 | Calories invalid / negative | Persist `null` |
 | Location empty or coordinate-like | Persist `null` |
 | Route points degenerate | `route` null; metadata may still publish |
+| `detailData` metric missing, non-number, or non-finite | Public `metrics` field is `null`; card omits it |
+| Valid `publicId` but no validated route | Static data card; detail endpoint is not opened |
+| Viewport ≤800px | Detail Dialog switches to single column and keeps 0.5rem viewport gutter |
 | Never synced / DB error | Nest returns `null` or `BusinessException` soft message |
 | Sync degraded / >6h | Return last snapshot with `stale: true` |
 
 ### 5. Good / Base / Bad Cases
 
-- Good: public running with route + calories + city name → GPS cover, full metrics.
-- Base: elliptical / soccer, no route → coordinate-free cover; omit distance/location if null.
+- Good: public cycling with a validated route → route button, GPS cover, detail Dialog.
+- Base: indoor cycling without route → static data card with available heart-rate/power/cadence metrics; null metrics omitted.
 - Bad: private activity, or location `"31.2, 121.5"` → not published / location null.
 
 ### 6. Tests Required
 
-- Worker: TYPE_LABELS for elliptical / track_running / soccer; calories/location accept/reject.
-- Backend: public DTO includes new fields; JSON must not contain `latitude` / `longitude` / `sourceActivityId`.
-- Frontend utils: `formatDistance` / `formatCalories` return null when absent; route endpoint safety.
+- Worker: TYPE_LABELS for elliptical / track_running / soccer / cycling / indoor
+  cycling; indoor cycling is included in bounded archived-detail reparsing.
+- Backend: public DTO projects only the seven card metric fields; JSON must not
+  contain splits, raw payload, `latitude` / `longitude` / `sourceActivityId`.
+- Frontend utils: `formatDistance` / `formatCalories` return null when absent;
+  route endpoint safety; indoor cycling preset returns at most five non-null
+  metrics and labels cadence「踏频」.
+- Frontend visual: 1440×900, 1024×768, 768×1024, and 390×844 have no horizontal
+  Dialog overflow; 768/390 use a single column and keep the close button visible.
 
 ### 7. Wrong vs Correct
 
 #### Wrong
 ```ts
-// Expose start coordinates or fake soccer heatmap from missing GPS samples
-return { ...activity, startLat, startLon, heatmap: fabricateGrid() }
+// Treat every public activity as interactive or leak all detailData into stats
+return { ...activity, metrics: activity.detailData }
 ```
 
 #### Correct
@@ -88,6 +113,7 @@ return {
   type, typeDisplay, date, distanceMeters, durationSeconds,
   calories, locationName, deviceSource,
   route: pathData && viewBox ? { pathData, viewBox } : null,
+  metrics: pickFiniteCardMetrics(detailData),
 }
 ```
 

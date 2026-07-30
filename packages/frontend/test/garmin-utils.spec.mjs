@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert'
 import { describe, it } from 'node:test'
+import { readFile } from 'node:fs/promises'
 import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
@@ -10,6 +11,7 @@ const {
   formatDuration,
   getRouteEndpoints,
   getGarminMetricGroups,
+  getGarminCardMetrics,
 } = await jiti.import('../src/pages/Landing/components/LandingGarminStats/utils.ts')
 const { resolveApiAssetUrl } = await jiti.import('../src/utils/api-url.ts')
 
@@ -67,6 +69,15 @@ describe('Landing Garmin view utils', () => {
       deviceSource: null,
       route: null,
       cover: null,
+      metrics: {
+        averagePaceSecondsPerKm: null,
+        averageHeartRateBpm: 0,
+        maxHeartRateBpm: 170,
+        averageCadencePerMinute: null,
+        averagePowerWatts: null,
+        trainingEffect: null,
+        steps: 1200,
+      },
     }
     const detail = {
       ...summary,
@@ -104,5 +115,69 @@ describe('Landing Garmin view utils', () => {
     )
     assert.equal(groups.secondary.find((metric) => metric.key === 'trainingLoad')?.value, '42')
     assert.equal(groups.secondary.find((metric) => metric.key === 'steps')?.value, '1200 步')
+  })
+
+  it('为室内骑行选择最多五项非空指标并使用踏频文案', () => {
+    const metrics = getGarminCardMetrics({
+      publicId: 'indoor-bike',
+      type: 'indoor_cycling',
+      typeDisplay: '室内骑行',
+      date: '2026-07-28T00:00:00Z',
+      distanceMeters: 20_000,
+      durationSeconds: 3600,
+      calories: 500,
+      locationName: null,
+      deviceSource: null,
+      route: null,
+      cover: null,
+      metrics: {
+        averagePaceSecondsPerKm: null,
+        averageHeartRateBpm: 142,
+        maxHeartRateBpm: 170,
+        averageCadencePerMinute: 88,
+        averagePowerWatts: 210,
+        trainingEffect: 3.2,
+        steps: null,
+      },
+    })
+
+    assert.deepEqual(
+      metrics.map((metric) => metric.key),
+      ['duration', 'calories', 'averageHeartRate', 'power', 'cadence'],
+    )
+    assert.equal(metrics.find((metric) => metric.key === 'cadence')?.label, '踏频')
+    assert.equal(metrics.length, 5)
+  })
+
+  it('仅路线卡使用按钮语义，倾斜 transform 不再缩放', async () => {
+    const [cardSource, tiltSource, dialogSource] = await Promise.all([
+      readFile(
+        new URL(
+          '../src/pages/Landing/components/LandingGarminStats/GarminActivityCard.vue',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+      readFile(
+        new URL(
+          '../src/pages/Landing/components/LandingGarminStats/hooks/usePointerTilt.ts',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+      readFile(
+        new URL(
+          '../src/pages/Landing/components/LandingGarminStats/GarminActivityDetailDialog.vue',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    ])
+
+    assert.match(cardSource, /activity\.route \? 'button' : 'article'/)
+    assert.match(cardSource, /activity\.route \? `查看\$\{activity\.typeDisplay\}详情` : undefined/)
+    assert.doesNotMatch(tiltSource, /scale\(/)
+    assert.match(tiltSource, /rotateX/)
+    assert.match(dialogSource, /max-\[800px\]:!w-\[calc\(100vw-1rem\)\]/)
   })
 })

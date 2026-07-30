@@ -5,6 +5,7 @@ import {
   formatCalories,
   formatDistance,
   formatDuration,
+  getGarminCardMetrics,
   getRouteEndpoints,
 } from '../utils'
 
@@ -43,6 +44,7 @@ export function useLandingGarminStatsPresentation(props: IProps) {
         distanceText: hideDistance ? null : formatDistance(activity.distanceMeters ?? null),
         caloriesText: formatCalories(activity.calories ?? null),
         durationText: formatDuration(activity.durationSeconds),
+        cardMetrics: getGarminCardMetrics(activity),
         cover: activity.cover,
         summary: activity,
         route: activity.route && endpoints ? { ...activity.route, endpoints } : null,

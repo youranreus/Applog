@@ -73,6 +73,16 @@ describe('GarminService public landing snapshot', () => {
       coverId: index === 0 ? 'cover-0' : null,
       latitude: 10.1,
       longitude: 20.1,
+      detailData:
+        index === 0
+          ? {
+              averageHeartRateBpm: 148,
+              averagePowerWatts: 215,
+              steps: 4200,
+              splits: [{ index: 1 }],
+              rawPayload: { secret: true },
+            }
+          : null,
     }));
     const service = createService({
       state: {
@@ -113,11 +123,22 @@ describe('GarminService public landing snapshot', () => {
         height: 480,
         attribution: 'Map provider',
       },
+      metrics: {
+        averagePaceSecondsPerKm: null,
+        averageHeartRateBpm: 148,
+        maxHeartRateBpm: null,
+        averageCadencePerMinute: null,
+        averagePowerWatts: 215,
+        trainingEffect: null,
+        steps: 4200,
+      },
     });
     assert.equal(JSON.stringify(result).includes('private-'), false);
     assert.equal(JSON.stringify(result).includes('latitude'), false);
     assert.equal(JSON.stringify(result).includes('longitude'), false);
     assert.equal(JSON.stringify(result).includes('sourceActivityId'), false);
+    assert.equal(JSON.stringify(result).includes('splits'), false);
+    assert.equal(JSON.stringify(result).includes('rawPayload'), false);
   });
 
   it('同步失败或超过六小时仍返回最后快照，但标记 stale', async () => {

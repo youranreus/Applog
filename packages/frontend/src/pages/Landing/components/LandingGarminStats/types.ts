@@ -29,6 +29,7 @@ export interface IGarminActivityView {
   distanceText: string | null
   caloriesText: string | null
   durationText: string
+  cardMetrics: IGarminMetricView[]
   cover: IGarminActivityCover | null
   summary: IGarminLandingActivity
   route: {

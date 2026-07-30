@@ -6,7 +6,11 @@ from types import SimpleNamespace
 from garmin_sync.cover import RENDER_VERSION, ActivityCover
 from garmin_sync.models import NormalizedHealthDaily
 from garmin_sync.payload_codec import encrypt_payload
-from garmin_sync.repository import MySQLRepository, _mysql_datetime
+from garmin_sync.repository import (
+    DETAIL_PARSER_VERSION,
+    MySQLRepository,
+    _mysql_datetime,
+)
 
 
 def test_mysql_datetime_matches_datetime_three_precision():
@@ -75,6 +79,38 @@ def test_stream_cursor_sql_quotes_mysql_reserved_cursor_column():
     assert "SELECT `cursor`, backfillComplete" in select_sql
     assert "(streamKey, `cursor`, backfillComplete" in upsert_sql
     assert "UPDATE `cursor` = VALUES(`cursor`)" in upsert_sql
+
+
+def test_indoor_cycling_is_reparsed_for_card_metrics():
+    captured = {}
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def execute(self, sql, params):
+            captured["sql"] = sql
+            captured["params"] = params
+
+        def fetchall(self):
+            return []
+
+    repository = MySQLRepository(SimpleNamespace(cursor=lambda: Cursor()), b"token-key")
+    repository.pending_activity_details(2)
+
+    assert "activityType IN (%s, %s, %s, %s, %s)" in captured["sql"]
+    assert captured["params"] == (
+        DETAIL_PARSER_VERSION,
+        "treadmill_running",
+        "elliptical",
+        "indoor_cardio",
+        "stair_climbing",
+        "indoor_cycling",
+        2,
+    )
 
 
 def test_activity_weather_payload_is_decrypted_only_inside_private_repository():

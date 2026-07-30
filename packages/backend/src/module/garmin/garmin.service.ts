@@ -56,27 +56,43 @@ export class GarminService {
 
       return {
         totalActivityCount: state.totalActivityCount,
-        activities: activities.map((activity) => ({
-          publicId: activity.publicId as string,
-          type: activity.activityType,
-          typeDisplay: activity.activityTypeDisplay,
-          date: activity.startedAt.toISOString(),
-          distanceMeters: activity.distanceMeters,
-          durationSeconds: activity.durationSeconds,
-          calories: activity.calories,
-          locationName: activity.locationName,
-          deviceSource: activity.deviceSource,
-          route:
-            activity.routePathData && activity.routeViewBox
-              ? {
-                  pathData: activity.routePathData,
-                  viewBox: activity.routeViewBox,
-                }
+        activities: activities.map((activity) => {
+          const data = activity.detailData ?? {};
+          return {
+            publicId: activity.publicId as string,
+            type: activity.activityType,
+            typeDisplay: activity.activityTypeDisplay,
+            date: activity.startedAt.toISOString(),
+            distanceMeters: activity.distanceMeters,
+            durationSeconds: activity.durationSeconds,
+            calories: activity.calories,
+            locationName: activity.locationName,
+            deviceSource: activity.deviceSource,
+            route:
+              activity.routePathData && activity.routeViewBox
+                ? {
+                    pathData: activity.routePathData,
+                    viewBox: activity.routeViewBox,
+                  }
+                : null,
+            cover: activity.coverId
+              ? this.toPublicCover(coverById.get(activity.coverId))
               : null,
-          cover: activity.coverId
-            ? this.toPublicCover(coverById.get(activity.coverId))
-            : null,
-        })),
+            metrics: {
+              averagePaceSecondsPerKm: this.numberOrNull(
+                data.averagePaceSecondsPerKm,
+              ),
+              averageHeartRateBpm: this.numberOrNull(data.averageHeartRateBpm),
+              maxHeartRateBpm: this.numberOrNull(data.maxHeartRateBpm),
+              averageCadencePerMinute: this.numberOrNull(
+                data.averageCadencePerMinute,
+              ),
+              averagePowerWatts: this.numberOrNull(data.averagePowerWatts),
+              trainingEffect: this.numberOrNull(data.trainingEffect),
+              steps: this.numberOrNull(data.steps),
+            },
+          };
+        }),
         fetchedAt: fetchedAt.toISOString(),
         stale,
       };
@@ -139,8 +155,6 @@ export class GarminService {
     activity: GarminActivitySnapshotEntity,
   ): IGarminLandingActivityDetail {
     const data = activity.detailData ?? {};
-    const numberOrNull = (value: unknown): number | null =>
-      typeof value === 'number' && Number.isFinite(value) ? value : null;
     const splits = Array.isArray(data.splits)
       ? data.splits.slice(0, 12).map((value, index): IGarminActivitySplit => {
           const split =
@@ -150,12 +164,12 @@ export class GarminService {
           return {
             index: typeof split.index === 'number' ? split.index : index + 1,
             type: typeof split.type === 'string' ? split.type : null,
-            distanceMeters: numberOrNull(split.distanceMeters),
-            durationSeconds: numberOrNull(split.durationSeconds),
-            averagePaceSecondsPerKm: numberOrNull(
+            distanceMeters: this.numberOrNull(split.distanceMeters),
+            durationSeconds: this.numberOrNull(split.durationSeconds),
+            averagePaceSecondsPerKm: this.numberOrNull(
               split.averagePaceSecondsPerKm,
             ),
-            averageHeartRateBpm: numberOrNull(split.averageHeartRateBpm),
+            averageHeartRateBpm: this.numberOrNull(split.averageHeartRateBpm),
           };
         })
       : [];
@@ -166,26 +180,30 @@ export class GarminService {
       date: activity.startedAt.toISOString(),
       distanceMeters: activity.distanceMeters,
       durationSeconds: activity.durationSeconds,
-      movingDurationSeconds: numberOrNull(data.movingDurationSeconds),
+      movingDurationSeconds: this.numberOrNull(data.movingDurationSeconds),
       calories: activity.calories,
-      averagePaceSecondsPerKm: numberOrNull(data.averagePaceSecondsPerKm),
-      averageSpeedMetersPerSecond: numberOrNull(
+      averagePaceSecondsPerKm: this.numberOrNull(data.averagePaceSecondsPerKm),
+      averageSpeedMetersPerSecond: this.numberOrNull(
         data.averageSpeedMetersPerSecond,
       ),
-      maxSpeedMetersPerSecond: numberOrNull(data.maxSpeedMetersPerSecond),
-      averageHeartRateBpm: numberOrNull(data.averageHeartRateBpm),
-      maxHeartRateBpm: numberOrNull(data.maxHeartRateBpm),
-      elevationGainMeters: numberOrNull(data.elevationGainMeters),
-      averageCadencePerMinute: numberOrNull(data.averageCadencePerMinute),
-      averagePowerWatts: numberOrNull(data.averagePowerWatts),
-      trainingEffect: numberOrNull(data.trainingEffect),
-      anaerobicTrainingEffect: numberOrNull(data.anaerobicTrainingEffect),
-      activityTrainingLoad: numberOrNull(data.activityTrainingLoad),
-      bodyBatteryDelta: numberOrNull(data.bodyBatteryDelta),
-      steps: numberOrNull(data.steps),
-      lapCount: numberOrNull(data.lapCount),
+      maxSpeedMetersPerSecond: this.numberOrNull(data.maxSpeedMetersPerSecond),
+      averageHeartRateBpm: this.numberOrNull(data.averageHeartRateBpm),
+      maxHeartRateBpm: this.numberOrNull(data.maxHeartRateBpm),
+      elevationGainMeters: this.numberOrNull(data.elevationGainMeters),
+      averageCadencePerMinute: this.numberOrNull(data.averageCadencePerMinute),
+      averagePowerWatts: this.numberOrNull(data.averagePowerWatts),
+      trainingEffect: this.numberOrNull(data.trainingEffect),
+      anaerobicTrainingEffect: this.numberOrNull(data.anaerobicTrainingEffect),
+      activityTrainingLoad: this.numberOrNull(data.activityTrainingLoad),
+      bodyBatteryDelta: this.numberOrNull(data.bodyBatteryDelta),
+      steps: this.numberOrNull(data.steps),
+      lapCount: this.numberOrNull(data.lapCount),
       splits,
     };
+  }
+
+  private numberOrNull(value: unknown): number | null {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
   }
 
   private logUnexpected(prefix: string, error: unknown): void {

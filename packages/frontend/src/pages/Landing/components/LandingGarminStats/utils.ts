@@ -76,6 +76,27 @@ type MetricKey =
   | 'steps'
   | 'laps'
 
+type CardMetricKey =
+  | 'distance'
+  | 'duration'
+  | 'calories'
+  | 'pace'
+  | 'averageHeartRate'
+  | 'maxHeartRate'
+  | 'cadence'
+  | 'power'
+  | 'trainingEffect'
+  | 'steps'
+
+const CARD_PRESETS: Record<string, CardMetricKey[]> = {
+  generic: ['duration', 'calories', 'averageHeartRate', 'maxHeartRate'],
+  indoor_cycling: ['duration', 'calories', 'averageHeartRate', 'power', 'cadence'],
+  treadmill_running: ['distance', 'duration', 'pace', 'averageHeartRate', 'cadence'],
+  elliptical: ['duration', 'calories', 'averageHeartRate', 'cadence', 'trainingEffect'],
+  indoor_cardio: ['duration', 'calories', 'averageHeartRate', 'maxHeartRate', 'trainingEffect'],
+  stair_climbing: ['duration', 'calories', 'averageHeartRate', 'cadence', 'steps'],
+}
+
 const PRESETS: Record<string, { core: MetricKey[]; secondary: MetricKey[] }> = {
   generic: {
     core: ['duration', 'distance', 'calories'],
@@ -193,6 +214,41 @@ export function getGarminMetricGroups(
   const select = (keys: MetricKey[]) =>
     keys.flatMap((key) => (values[key] ? [values[key]] : [])) as IGarminMetricView[]
   return { core: select(preset.core), secondary: select(preset.secondary) }
+}
+
+/** Build at most five available metrics for a non-route activity card. */
+export function getGarminCardMetrics(summary: IGarminLandingActivity): IGarminMetricView[] {
+  const values: Record<CardMetricKey, IGarminMetricView | null> = {
+    distance: metric('distance', '距离', formatDistance(summary.distanceMeters)),
+    duration: metric('duration', '时长', formatDuration(summary.durationSeconds)),
+    calories: metric('calories', '热量', formatCalories(summary.calories)),
+    pace: metric('pace', '平均配速', formatPace(summary.metrics.averagePaceSecondsPerKm)),
+    averageHeartRate: numericMetric(
+      'averageHeartRate',
+      '平均心率',
+      summary.metrics.averageHeartRateBpm,
+      ' bpm',
+    ),
+    maxHeartRate: numericMetric(
+      'maxHeartRate',
+      '最高心率',
+      summary.metrics.maxHeartRateBpm,
+      ' bpm',
+    ),
+    cadence: numericMetric(
+      'cadence',
+      summary.type.includes('cycl') ? '踏频' : '步频',
+      summary.metrics.averageCadencePerMinute,
+      ' /min',
+    ),
+    power: numericMetric('power', '平均功率', summary.metrics.averagePowerWatts, ' W'),
+    trainingEffect: numericMetric('trainingEffect', '训练效果', summary.metrics.trainingEffect, ''),
+    steps: numericMetric('steps', '步数', summary.metrics.steps, ' 步'),
+  }
+  const preset = CARD_PRESETS[summary.type] ?? CARD_PRESETS.generic!
+  return preset
+    .flatMap((key) => (values[key] ? [values[key]] : []))
+    .slice(0, 5) as IGarminMetricView[]
 }
 
 function metric(key: string, label: string, value: string | null): IGarminMetricView | null {

@@ -29,7 +29,11 @@ const metrics = computed(() =>
 
 <template>
   <Dialog :open="open" @update:open="emit('updateOpen', $event)">
-    <DialogContent v-if="activity" class="garmin-detail" :show-close-button="true">
+    <DialogContent
+      v-if="activity"
+      class="garmin-detail !w-[calc(100vw-2rem)] !max-w-[62rem] max-[800px]:!w-[calc(100vw-1rem)] max-[800px]:!max-w-none"
+      :show-close-button="true"
+    >
       <div class="garmin-detail__layout">
         <div class="garmin-detail__media" data-garmin-detail-media>
           <GarminActivityCover :activity="activity" />
@@ -97,8 +101,8 @@ const metrics = computed(() =>
 
 <style scoped>
 :deep(.garmin-detail) {
-  width: min(62rem, calc(100vw - 2rem));
-  max-width: 62rem;
+  width: min(62rem, calc(100vw - 2rem)) !important;
+  max-width: 62rem !important;
   max-height: min(46rem, calc(100dvh - 2rem));
   padding: 0;
   overflow: hidden auto;
@@ -107,7 +111,7 @@ const metrics = computed(() =>
 
 .garmin-detail__layout {
   display: grid;
-  grid-template-columns: minmax(18rem, 1.05fr) minmax(19rem, 0.95fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   min-height: 30rem;
 }
 
@@ -123,6 +127,7 @@ const metrics = computed(() =>
 }
 
 .garmin-detail__content {
+  min-width: 0;
   padding: 2.5rem 2.25rem 2rem;
 }
 
@@ -214,7 +219,7 @@ const metrics = computed(() =>
 
 .garmin-detail__splits li {
   display: grid;
-  grid-template-columns: 1fr repeat(3, auto);
+  grid-template-columns: minmax(4rem, 1fr) repeat(3, minmax(0, auto));
   gap: 0.75rem;
   padding: 0.4rem 0;
   color: var(--landing-muted);
@@ -222,10 +227,10 @@ const metrics = computed(() =>
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 800px) {
   :deep(.garmin-detail) {
-    width: calc(100vw - 1rem);
-    max-width: none;
+    width: calc(100vw - 1rem) !important;
+    max-width: none !important;
     max-height: calc(100dvh - 1rem);
   }
 
@@ -240,6 +245,16 @@ const metrics = computed(() =>
 
   .garmin-detail__content {
     padding: 1.5rem 1.25rem 1.75rem;
+  }
+
+  .garmin-detail__splits li {
+    gap: 0.45rem;
+  }
+}
+
+@media (max-width: 440px) {
+  .garmin-detail__splits li {
+    grid-template-columns: 1fr auto;
   }
 }
 </style>

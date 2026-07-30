@@ -50,6 +50,17 @@ export interface IGarminLandingActivityDetail {
   splits: IGarminActivitySplit[];
 }
 
+/** Card-safe normalized metrics projected from the private activity detail. */
+export interface IGarminLandingActivityMetrics {
+  averagePaceSecondsPerKm: number | null;
+  averageHeartRateBpm: number | null;
+  maxHeartRateBpm: number | null;
+  averageCadencePerMinute: number | null;
+  averagePowerWatts: number | null;
+  trainingEffect: number | null;
+  steps: number | null;
+}
+
 /** Landing 展示的一条 Garmin 活动。 */
 export interface IGarminLandingActivity {
   publicId: string;
@@ -63,6 +74,7 @@ export interface IGarminLandingActivity {
   deviceSource: string | null;
   route: IGarminRoutePreview | null;
   cover: IGarminActivityCover | null;
+  metrics: IGarminLandingActivityMetrics;
 }
 
 /**
