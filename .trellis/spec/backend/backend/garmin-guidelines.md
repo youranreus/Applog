@@ -64,6 +64,8 @@ finite number/null boundary. Old snapshots without `detailData` return all-null 
   touch and reduced-motion environments remain static.
 - Opening and closing activity details uses the Dialog's native transition only;
   do not clone, move, or scale the card cover as a shared element.
+- At viewport widths up to 800px, route cards are static articles rather than
+  buttons and the activity detail Dialog cannot be opened.
 - No per-card device source line (`Garmin · …`).
 - Elliptical (`elliptical`) never shows distance even if upstream provides meters.
 - The detail Dialog is teleported. Width/max-width overrides must be expressed
@@ -81,7 +83,7 @@ finite number/null boundary. Old snapshots without `detailData` return all-null 
 | Route points degenerate | `route` null; metadata may still publish |
 | `detailData` metric missing, non-number, or non-finite | Public `metrics` field is `null`; card omits it |
 | Valid `publicId` but no validated route | Static data card; detail endpoint is not opened |
-| Viewport ≤800px | Detail Dialog switches to single column and keeps 0.5rem viewport gutter |
+| Viewport ≤800px | Route cards are non-interactive and no detail Dialog is rendered |
 | Never synced / DB error | Nest returns `null` or `BusinessException` soft message |
 | Sync degraded / >6h | Return last snapshot with `stale: true` |
 

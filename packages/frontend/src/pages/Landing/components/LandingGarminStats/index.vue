@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
 import { nextTick, onBeforeUnmount, shallowRef, watch } from 'vue'
 import GarminActivityCard from './GarminActivityCard.vue'
 import GarminActivityDetailDialog from './GarminActivityDetailDialog.vue'
@@ -19,6 +20,7 @@ const { detail, loading: detailLoading, error, load, clear } = useGarminActivity
 const selectedActivity = shallowRef<IGarminActivityView | null>(null)
 const sourceElement = shallowRef<HTMLElement | null>(null)
 const detailOpen = shallowRef(false)
+const isMobile = useMediaQuery('(max-width: 800px)')
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(
@@ -28,6 +30,10 @@ watch(
     updateScrollFades()
   },
 )
+
+watch(isMobile, (mobile) => {
+  if (mobile && detailOpen.value) setDetailOpen(false)
+})
 
 function openActivity(activity: IGarminActivityView, element: HTMLElement): void {
   if (!activity.publicId || !activity.route) return
@@ -122,12 +128,14 @@ onBeforeUnmount(() => {
           v-for="activity in activities"
           :key="activity.key"
           :activity="activity"
+          :detail-enabled="!isMobile"
           @activate="openActivity"
         />
       </div>
     </div>
 
     <GarminActivityDetailDialog
+      v-if="!isMobile"
       :open="detailOpen"
       :activity="selectedActivity"
       :detail="detail"

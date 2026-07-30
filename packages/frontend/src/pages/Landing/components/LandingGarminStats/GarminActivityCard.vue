@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { CalendarIcon, FlameIcon, MapPinIcon, TimerIcon } from '@lucide/vue'
-import { useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import GarminActivityCover from './GarminActivityCover.vue'
 import { usePointerTilt } from './hooks/usePointerTilt'
 import type { IGarminActivityView } from './types'
 
-const props = defineProps<{ activity: IGarminActivityView }>()
+const props = withDefaults(
+  defineProps<{ activity: IGarminActivityView; detailEnabled?: boolean }>(),
+  { detailEnabled: true },
+)
 const emit = defineEmits<{ activate: [activity: IGarminActivityView, element: HTMLElement] }>()
 const cardRef = useTemplateRef<HTMLElement>('card')
 const { style, onPointerMove, reset } = usePointerTilt()
+const isInteractive = computed(() => Boolean(props.detailEnabled && props.activity.route))
 
 function activate(): void {
   reset()
-  if (cardRef.value && props.activity.publicId && props.activity.route) {
+  if (isInteractive.value && cardRef.value && props.activity.publicId && props.activity.route) {
     emit('activate', props.activity, cardRef.value)
   }
 }
@@ -20,13 +24,13 @@ function activate(): void {
 
 <template>
   <component
-    :is="activity.route ? 'button' : 'article'"
+    :is="isInteractive ? 'button' : 'article'"
     ref="card"
-    :type="activity.route ? 'button' : undefined"
+    :type="isInteractive ? 'button' : undefined"
     class="garmin-card"
-    :class="{ 'garmin-card--static': !activity.route }"
+    :class="{ 'garmin-card--static': !isInteractive }"
     :style="style"
-    :aria-label="activity.route ? `查看${activity.typeDisplay}详情` : undefined"
+    :aria-label="isInteractive ? `查看${activity.typeDisplay}详情` : undefined"
     @pointermove="onPointerMove"
     @pointerleave="reset"
     @blur="reset"

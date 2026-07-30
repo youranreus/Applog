@@ -242,8 +242,8 @@ describe('Landing Garmin view utils', () => {
       ),
     ])
 
-    assert.match(cardSource, /activity\.route \? 'button' : 'article'/)
-    assert.match(cardSource, /activity\.route \? `查看\$\{activity\.typeDisplay\}详情` : undefined/)
+    assert.match(cardSource, /isInteractive \? 'button' : 'article'/)
+    assert.match(cardSource, /isInteractive \? `查看\$\{activity\.typeDisplay\}详情` : undefined/)
     assert.match(cardSource, /\.garmin-card__data-grid\s*\{[\s\S]*align-content: end/)
     assert.doesNotMatch(cardSource, /\.garmin-card__data-header\s*\{[^}]*border-bottom/)
     assert.match(coverSource, /\.garmin-cover__distance\s*\{[\s\S]*right: 0\.4rem/)
@@ -251,6 +251,9 @@ describe('Landing Garmin view utils', () => {
     assert.doesNotMatch(tiltSource, /scale\(/)
     assert.match(tiltSource, /rotateX/)
     assert.match(dialogSource, /max-\[800px\]:!w-\[calc\(100vw-1rem\)\]/)
+    assert.match(statsSource, /useMediaQuery\('\(max-width: 800px\)'\)/)
+    assert.match(statsSource, /:detail-enabled="!isMobile"/)
+    assert.match(statsSource, /<GarminActivityDetailDialog\s+v-if="!isMobile"/)
     assert.doesNotMatch(statsSource, /useSharedElementTransition|transition\.open|transition\.close/)
   })
 })
