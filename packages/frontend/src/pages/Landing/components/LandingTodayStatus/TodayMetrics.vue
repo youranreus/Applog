@@ -12,7 +12,7 @@ const stepProgress = computed(() =>
 
 <template>
   <div class="today-metrics">
-    <div class="today-metrics__progress-card">
+    <div class="today-metrics__progress-item">
       <div class="today-metrics__row">
         <span>步数</span>
         <strong>{{ formatMetric(metrics.steps, ' 步') }}</strong>
@@ -31,7 +31,7 @@ const stepProgress = computed(() =>
       <small>目标 {{ metrics.stepGoal.toLocaleString('zh-CN') }} 步</small>
     </div>
 
-    <div class="today-metrics__progress-card">
+    <div class="today-metrics__progress-item">
       <div class="today-metrics__row">
         <span>身体电池</span>
         <strong>{{ formatMetric(metrics.bodyBattery, '%') }}</strong>
@@ -59,18 +59,19 @@ const stepProgress = computed(() =>
 </template>
 
 <style scoped>
-.today-metrics { display: grid; gap: .8rem; }
-.today-metrics__progress-card { padding: .8rem .9rem; border-radius: 12px; background: color-mix(in srgb, var(--landing-surface-soft) 72%, transparent); }
-.today-metrics__row { display: flex; justify-content: space-between; gap: 1rem; font-size: .9rem; }
-.today-metrics__row strong { font-variant-numeric: tabular-nums; }
-.today-progress { height: .45rem; margin-top: .6rem; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--landing-muted) 20%, transparent); }
+.today-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.5rem; }
+.today-metrics__progress-item { padding: 1rem 0 1.15rem; }
+.today-metrics__row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; font-size: .875rem; }
+.today-metrics__row span { color: var(--landing-muted); }
+.today-metrics__row strong { color: var(--landing-text); font-size: 1.0625rem; font-variant-numeric: tabular-nums; }
+.today-progress { height: .25rem; margin-top: .7rem; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--landing-muted) 20%, transparent); }
 .today-progress span { display: block; height: 100%; border-radius: inherit; background: var(--landing-primary); transition: width 500ms ease; }
 .today-progress--battery span { background: #34c759; }
-.today-metrics small { display: block; margin-top: .4rem; color: var(--landing-muted); }
-.today-metrics__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
-.today-metrics__grid div { min-width: 0; padding: .75rem .85rem; border-radius: 12px; background: color-mix(in srgb, var(--landing-surface-soft) 72%, transparent); }
-.today-metrics dt { color: var(--landing-muted); font-size: .78rem; }
-.today-metrics dd { margin-top: .3rem; font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-@media (max-width: 480px) { .today-metrics__grid { grid-template-columns: 1fr; } }
+.today-metrics small { display: block; margin-top: .45rem; color: var(--landing-muted); font-size: .75rem; }
+.today-metrics__grid { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.5rem; }
+.today-metrics__grid div { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: 1rem; padding: .9rem 0; }
+.today-metrics dt { color: var(--landing-muted); font-size: .8125rem; }
+.today-metrics dd { color: var(--landing-text); font-size: .9375rem; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; text-align: right; }
+@media (max-width: 480px) { .today-metrics, .today-metrics__grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .today-progress span { transition: none; } }
 </style>

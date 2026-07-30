@@ -27,7 +27,8 @@ const motion = computed(() => (props.status ? STATUS_MOTIONS[props.status] : 'id
 </template>
 
 <style scoped>
-.character-stage { position: relative; display: grid; min-height: 260px; place-items: center; perspective: 700px; overflow: hidden; border-radius: 16px; background: radial-gradient(circle at 50% 38%, #fff 0 18%, #eaf4ff 55%, #dbeeff 100%); }
+.character-stage { position: relative; display: grid; min-height: 260px; place-items: center; perspective: 700px; overflow: hidden; }
+.character-stage::before { content: ''; position: absolute; inset: 12% 8% 7%; background: radial-gradient(ellipse at 50% 58%, color-mix(in srgb, var(--color-signal-blue) 10%, transparent), transparent 66%); }
 .character { --skin: #ffd8b5; --shirt: #147ce5; position: relative; width: 108px; height: 205px; transform-style: preserve-3d; animation: idle 3.2s ease-in-out infinite; }
 .character__head, .character__body, .character__arm, .character__leg { position: absolute; transform-style: preserve-3d; box-shadow: inset -10px -8px 18px rgb(0 0 0 / 12%), 0 8px 14px rgb(20 90 150 / 10%); }
 .character__head { z-index: 3; top: 5px; left: 29px; width: 52px; height: 56px; border-radius: 42% 42% 48% 48%; background: var(--skin); transform: translateZ(18px); }
@@ -58,5 +59,6 @@ const motion = computed(() => (props.status ? STATUS_MOTIONS[props.status] : 'id
 @keyframes breathe { 50% { transform: scale3d(1.025, 1.025, 1.025) rotateY(-5deg); } }
 @keyframes tired { 50% { transform: translateY(3px) rotateX(8deg) rotateZ(2deg); } }
 @keyframes shadow { 50% { transform: scale(.88); opacity: .65; } }
+@media (max-width: 800px) { .character-stage { min-height: 230px; } .character-stage::before { inset-inline: 16%; } }
 @media (prefers-reduced-motion: reduce) { .character, .character *, .character-shadow { animation: none !important; } }
 </style>
