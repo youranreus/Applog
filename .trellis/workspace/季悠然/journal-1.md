@@ -659,3 +659,24 @@ Duolingo Client 超时调至 15s、timeout 重试 1 次、username→userId 缓�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 24: Polish Garmin Landing presentation
+
+**Date**: 2026-07-30
+**Task**: Polish Garmin Landing presentation
+**Branch**: `master`
+
+### Summary
+
+Moved Garmin cover distance badge to the right, removed duplicate map attribution and shared-element animation, expanded soccer metrics with bounded historical reparsing, and refined no-route card alignment.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `885c13e` | (see git log) |
+
+### Status
+
+[OK] **Completed**
