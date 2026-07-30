@@ -293,6 +293,26 @@ class NormalizeActivityTests(unittest.TestCase):
         self.assertEqual(health.summary_data["moderateIntensityMinutes"], 8)
         self.assertEqual(health.summary_data["vigorousIntensityMinutes"], 3)
 
+    def test_invalid_daily_summary_values_do_not_override_valid_fallbacks(self) -> None:
+        health = normalize_health_daily(
+            {
+                "daily_summary": {
+                    "totalSteps": -1,
+                    "dailyStepGoal": float("inf"),
+                    "bodyBatteryMostRecentValue": 101,
+                    "averageStressLevel": -1,
+                },
+                "steps": {"totalSteps": 3210, "dailyStepGoal": 8000},
+                "stress": {"averageStressLevel": 25},
+                "body_battery": {"bodyBatteryValuesArray": [[1, 67]]},
+            }
+        )
+
+        self.assertEqual(health.summary_data["steps"], 3210)
+        self.assertEqual(health.summary_data["stepGoal"], 8000)
+        self.assertEqual(health.summary_data["averageStressLevel"], 25)
+        self.assertEqual(health.summary_data["bodyBattery"], 67)
+
     def test_health_body_battery_falls_back_to_dynamic_feedback(self) -> None:
         health = normalize_health_daily(
             {

@@ -336,6 +336,20 @@ _DAILY_SUMMARY_METRICS: dict[str, tuple[str, ...]] = {
     "sleepSeconds": ("sleepingSeconds",),
 }
 
+_NON_NEGATIVE_HEALTH_METRICS = {
+    "steps",
+    "stepGoal",
+    "restingHeartRateBpm",
+    "moderateIntensityMinutes",
+    "vigorousIntensityMinutes",
+    "sleepSeconds",
+}
+_PERCENT_HEALTH_METRICS = {
+    "averageStressLevel",
+    "bodyBattery",
+    "sleepScore",
+}
+
 _LOCAL_BOUNDARY_KEYS = (
     "startTimestampLocal",
     "startTimeLocal",
@@ -361,6 +375,18 @@ def _find_field(value: object, keys: tuple[str, ...]) -> tuple[bool, object]:
         elif isinstance(current, list):
             queue.extend(current)
     return False, None
+
+
+def _health_metric_number(target: str, value: object) -> float | None:
+    """Normalize public-facing health metrics before applying source precedence."""
+    number = _finite_number(value)
+    if number is None:
+        return None
+    if target in _NON_NEGATIVE_HEALTH_METRICS and number < 0:
+        return None
+    if target in _PERCENT_HEALTH_METRICS and not 0 <= number <= 100:
+        return None
+    return number
 
 
 def _latest_body_battery(value: object) -> float | None:
@@ -416,11 +442,11 @@ def normalize_health_daily(payloads: dict[str, Any]) -> NormalizedHealthDaily:
     for target, (domain, aliases) in _HEALTH_METRICS.items():
         found, raw = _find_field(payloads.get(domain), aliases)
         if found:
-            summary[target] = _finite_number(raw)
+            summary[target] = _health_metric_number(target, raw)
     daily_summary = payloads.get("daily_summary")
     for target, aliases in _DAILY_SUMMARY_METRICS.items():
         found, raw = _find_field(daily_summary, aliases)
-        primary = _finite_number(raw) if found else None
+        primary = _health_metric_number(target, raw) if found else None
         if primary is not None:
             summary[target] = primary
     if "bodyBattery" not in summary:
