@@ -617,3 +617,24 @@ Duolingo Client 超时调至 15s、timeout 重试 1 次、username→userId 缓�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 22: Garmin 室内运动详情解析
+
+**Date**: 2026-07-30
+**Task**: Garmin 室内运动详情解析
+**Branch**: `master`
+
+### Summary
+
+修复 Garmin summaryDTO 嵌套结构解析，贯通室内活动心率、速度、步频、功率、训练效果和分段数据；新增无氧训练效果、训练负荷、步数公共字段，实现解析版本驱动的本地重解析与有界远程重抓，完成数据库同步、两轮真实回填及跨层测试验证。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `90e1eac` | (see git log) |
+
+### Status
+
+[OK] **Completed**
