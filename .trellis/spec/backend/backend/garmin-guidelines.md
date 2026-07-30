@@ -4,16 +4,98 @@
 
 ## Scenario: Public Landing today status
 
-- Public API: `GET /garmin/today` reads only `garmin_health_daily`; it never calls Garmin upstream.
-- Worker restores tokens through the library profile initialization path and archives `daily_summary` as the primary source for steps, target, resting heart rate, intensity minutes, stress and current body battery.
-- Health calendar dates use `GARMIN_TIME_ZONE` (default `Asia/Shanghai`), never UTC `date()` as a local-day substitute.
-- Public JSON allowlists calendar/freshness, six display metrics and server evaluation. It never returns `summaryData`, account identifiers, raw payloads, locations or credentials.
-- Step goal resolution is system `landingStepGoal` (integer 1,000–100,000) → Garmin goal → 8,000.
-- Evaluation weights: sleep 25, body battery 25, inverse stress 20, time-adjusted steps 15, time-adjusted intensity 15. Before 08:00, progress dimensions are ineligible; after 22:00 full-day targets apply.
-- Missing dimensions are omitted and remaining weights re-normalized. Fewer than three dimensions or less than 50% eligible weight produces a null evaluation, not the lowest status.
-- Sleep uses a real Garmin score when present, duration fallback otherwise, and never fabricates a Garmin score.
-- Landing always reserves the section: loading, collecting, partial, stale (>6h) and error states are distinct. Yesterday's row is never shown as today.
-- The character is dependency-free CSS 3D, consumes only the status union, has four looped motions plus neutral idle, no pointer interaction, and a reduced-motion static pose.
+### 1. Scope / Trigger
+
+- Trigger: Garmin daily-health ingestion, `garmin_health_daily`, the public today
+  endpoint, `landingStepGoal`, server evaluation, or the Landing today-status UI.
+- Data flow is worker → MySQL → NestJS allowlist → shared contract → Vue. The
+  public request never calls Garmin upstream.
+
+### 2. Signatures
+
+- Worker input: `daily_summary` plus optional health domains for the same Garmin
+  local calendar date.
+- DB: `garmin_health_daily.summaryData` remains private.
+- Public API: `GET /garmin/today` → `IGarminTodayStatus | null`.
+- System config: optional `landingStepGoal` integer from 1,000 through 100,000.
+
+### 3. Contracts
+
+- Restore tokens through the Garmin library login/profile initialization path;
+  loading token strings alone is insufficient.
+- Health dates use `GARMIN_TIME_ZONE` (default `Asia/Shanghai`), never UTC
+  `date()` as a local-day substitute.
+- Normalize every candidate before source precedence. A valid daily-summary value
+  outranks its domain fallback; an invalid primary behaves as missing and must not
+  overwrite a valid fallback. Numeric zero remains a valid observation.
+- `daily_summary` is primary for steps, target, resting heart rate, intensity
+  minutes, stress, and current body battery. Body-battery series provide the
+  latest valid fallback value.
+- Public JSON allowlists calendar/freshness, six display metrics, and server
+  evaluation. It never returns `summaryData`, account identifiers, raw payloads,
+  locations, or credentials.
+- Step goal resolution is system `landingStepGoal` → Garmin goal → 8,000.
+- Evaluation weights are sleep 25, body battery 25, inverse stress 20,
+  time-adjusted steps 15, and time-adjusted intensity 15. Before 08:00 progress
+  dimensions are ineligible; after 22:00 full-day targets apply.
+- Missing dimensions are omitted and remaining weights re-normalized. Fewer than
+  three dimensions or less than 50% eligible weight produces a null evaluation.
+- Sleep uses a real Garmin score when present, duration fallback otherwise, and
+  never fabricates a Garmin score.
+- Landing reserves the section for loading, collecting, partial, stale (>6h),
+  and error states. Yesterday's row is never shown as today. The dependency-free
+  CSS 3D character consumes only the status union, has no pointer interaction,
+  and becomes static under reduced-motion preference.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|---|---|
+| Candidate is missing, null, non-numeric, NaN, or infinite | Treat it as missing and try the lower-priority source |
+| Steps, goal, heart rate, intensity, or sleep duration is negative | Reject it and preserve a valid fallback |
+| Stress, Body Battery, or sleep score is outside 0–100 | Reject it and preserve a valid fallback |
+| Candidate is numeric zero | Preserve it; do not replace it with fallback data |
+| Fewer than three eligible dimensions or less than 50% eligible weight | Return a null evaluation with collecting semantics |
+| Snapshot date differs from Garmin-local today | Return null; never present yesterday as today |
+| Snapshot age exceeds six hours | Preserve today's values and set `stale: true` |
+| Saved `landingStepGoal` is invalid | Treat it as unset and use Garmin goal, then 8,000 |
+
+### 5. Good / Base / Bad Cases
+
+- Good: valid daily summary supplies all six metrics and produces one stable
+  four-level evaluation for an injected evaluation time.
+- Base: sleep score is absent but real duration is available; duration is shown
+  and scored while other missing dimensions are re-normalized.
+- Bad: storing `-1`, `Infinity`, or `101` as a preferred metric; converting a
+  missing dimension to zero; exposing raw `summaryData`; or showing yesterday's
+  snapshot as today.
+
+### 6. Tests Required
+
+- Worker tests assert standard token login initializes profile, Garmin-local
+  today/yesterday selection, intensity aliases, valid-zero retention, invalid
+  primary fallback, and latest valid Body Battery selection.
+- Backend tests assert goal precedence, score thresholds, time progress,
+  confidence, same-day/stale behavior, null/error handling, and the public
+  allowlist's privacy boundary.
+- Frontend tests assert null versus zero formatting and sleep discrimination;
+  responsive browser checks cover desktop, 800px, and 390px without horizontal
+  overflow, plus reduced-motion/static CSS fallbacks.
+
+### 7. Wrong vs Correct
+
+```python
+# Wrong: source precedence runs before validation, so an invalid primary wins.
+summary["bodyBattery"] = daily_summary.get("bodyBatteryMostRecentValue")
+
+# Correct: normalize each candidate first; only a valid primary can replace the
+# already-normalized domain fallback.
+primary = _health_metric_number(
+    "bodyBattery", daily_summary.get("bodyBatteryMostRecentValue")
+)
+if primary is not None:
+    summary["bodyBattery"] = primary
+```
 
 ## Scenario: Public Landing Garmin stats
 

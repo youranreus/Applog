@@ -1,1 +1,15 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/backend/index.md","reason":"NestJS service/controller/module quality gate and response DTO conventions"}
+{"file":".trellis/spec/backend/backend/garmin-guidelines.md","reason":"Worker to database to public allowlist to Landing contract, privacy and verification"}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Backend service structure and test conventions"}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Backend error logging boundary"}
+{"file":".trellis/spec/common/shared/index.md","reason":"Shared-package build and export quality gate"}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Backward-compatible optional base configuration field"}
+{"file":".trellis/spec/common/shared/type-safety.md","reason":"Cross-layer contract and literal-union conventions"}
+{"file":".trellis/spec/frontend/frontend/index.md","reason":"Vue and frontend quality gate"}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Landing component composition, accessibility and responsive behavior"}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"Alova request hook ownership"}
+{"file":".trellis/spec/frontend/frontend/type-safety.md","reason":"Shared Garmin types and config field consumption"}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Frontend lint, type-check and build requirements"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Full worker/common/backend/frontend/admin data-flow review"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Shared constants and normalization reuse review"}
+{"file":".trellis/tasks/07-30-landing-daily-status/research/garmin-health-field-availability.md","reason":"Verified upstream field names and missing-data assumptions"}
