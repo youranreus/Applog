@@ -680,3 +680,32 @@ Moved Garmin cover distance badge to the right, removed duplicate map attributio
 ### Status
 
 [OK] **Completed**
+
+
+## Session 25: Landing 今日状态展示
+
+**Date**: 2026-07-30
+**Task**: Landing 今日状态展示
+**Branch**: `master`
+
+### Summary
+
+完成 Landing 今日状态跨层实现与最终质量收尾：增加安全的 Garmin 今日健康白名单接口、评分与状态展示、CSS 3D 小人、后台步数目标配置、worker daily summary 归一化；补强无效首选值回退和 token profile 初始化测试，并完成响应式视觉验收。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `aebfd0b` | (see git log) |
+| `4d57e28` | (see git log) |
+| `35c5f93` | (see git log) |
+
+### Testing
+
+- [OK] worker pytest 84 passed
+- [OK] frontend unit 27 passed
+- [OK] backend tests/build/type-check and frontend build passed; full frontend lint remains blocked by pre-existing CalendarHeading.vue no-explicit-any
+
+### Status
+
+[OK] **Completed**
