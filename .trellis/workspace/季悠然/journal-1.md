@@ -596,3 +596,24 @@ Duolingo Client 超时调至 15s、timeout 重试 1 次、username→userId 缓�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 21: 腾讯地图封面迁移
+
+**Date**: 2026-07-30
+**Task**: 腾讯地图封面迁移
+**Branch**: `master`
+
+### Summary
+
+完成腾讯静态底图接入与像素对齐验证，调整红色粗线路径、方向箭头和16px边距，运行真实同步并通过人工验收；移除Martin、PMTiles、地图镜像、release工具及部署配置，生产地图链路收敛为腾讯云加本地overlay。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ee9abce` | (see git log) |
+
+### Status
+
+[OK] **Completed**
