@@ -104,7 +104,15 @@ const PRESETS: Record<string, { core: MetricKey[]; secondary: MetricKey[] }> = {
   },
   soccer: {
     core: ['duration', 'distance', 'calories'],
-    secondary: ['averageHeartRate', 'maxHeartRate', 'maxSpeed', 'trainingEffect'],
+    secondary: [
+      'averageHeartRate',
+      'maxHeartRate',
+      'maxSpeed',
+      'trainingEffect',
+      'anaerobicTrainingEffect',
+      'trainingLoad',
+      'steps',
+    ],
   },
   running: {
     core: ['distance', 'duration', 'pace'],

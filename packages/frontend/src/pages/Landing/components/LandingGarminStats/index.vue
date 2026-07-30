@@ -5,7 +5,6 @@ import GarminActivityDetailDialog from './GarminActivityDetailDialog.vue'
 import { useGarminActivityDetail } from './hooks/useGarminActivityDetail'
 import { useHorizontalScrollFades } from './hooks/useHorizontalScrollFades'
 import { useLandingGarminStatsPresentation } from './hooks/useLandingGarminStatsPresentation'
-import { useSharedElementTransition } from './hooks/useSharedElementTransition'
 import type { IGarminActivityView, IProps } from './types'
 
 defineOptions({ name: 'LandingGarminStats' })
@@ -17,7 +16,6 @@ const props = withDefaults(defineProps<IProps>(), {
 const { totalText, fetchedAtText, activities } = useLandingGarminStatsPresentation(props)
 const { scrollRef, canScrollLeft, canScrollRight, updateScrollFades } = useHorizontalScrollFades()
 const { detail, loading: detailLoading, error, load, clear } = useGarminActivityDetail()
-const transition = useSharedElementTransition()
 const selectedActivity = shallowRef<IGarminActivityView | null>(null)
 const sourceElement = shallowRef<HTMLElement | null>(null)
 const detailOpen = shallowRef(false)
@@ -31,7 +29,7 @@ watch(
   },
 )
 
-async function openActivity(activity: IGarminActivityView, element: HTMLElement): Promise<void> {
+function openActivity(activity: IGarminActivityView, element: HTMLElement): void {
   if (!activity.publicId || !activity.route) return
   if (closeTimer) {
     window.clearTimeout(closeTimer)
@@ -41,14 +39,10 @@ async function openActivity(activity: IGarminActivityView, element: HTMLElement)
   sourceElement.value = element
   detailOpen.value = true
   void load(activity.publicId)
-  await nextTick()
-  transition.open(element, document.querySelector<HTMLElement>('[data-garmin-detail-media]'))
 }
 
 function setDetailOpen(open: boolean): void {
   if (open) return
-  const destination = document.querySelector<HTMLElement>('[data-garmin-detail-media]')
-  transition.close(destination, sourceElement.value)
   detailOpen.value = false
   const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 330
   closeTimer = window.setTimeout(() => {

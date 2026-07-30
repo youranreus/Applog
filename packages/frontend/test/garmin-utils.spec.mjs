@@ -149,11 +149,75 @@ describe('Landing Garmin view utils', () => {
     assert.equal(metrics.length, 5)
   })
 
-  it('仅路线卡使用按钮语义，倾斜 transform 不再缩放', async () => {
-    const [cardSource, tiltSource, dialogSource] = await Promise.all([
+  it('足球详情展示有值的无氧效果、训练负荷和步数', () => {
+    const summary = {
+      publicId: 'soccer',
+      type: 'soccer',
+      typeDisplay: '足球',
+      date: '2026-07-28T00:00:00Z',
+      distanceMeters: 8_200,
+      durationSeconds: 5_400,
+      calories: 720,
+      locationName: null,
+      deviceSource: null,
+      route: null,
+      cover: null,
+      metrics: {
+        averagePaceSecondsPerKm: null,
+        averageHeartRateBpm: 148,
+        maxHeartRateBpm: 184,
+        averageCadencePerMinute: null,
+        averagePowerWatts: null,
+        trainingEffect: 3.8,
+        steps: 9_430,
+      },
+    }
+    const groups = getGarminMetricGroups(summary, {
+      ...summary,
+      movingDurationSeconds: 4_900,
+      averagePaceSecondsPerKm: null,
+      averageSpeedMetersPerSecond: null,
+      maxSpeedMetersPerSecond: 7.5,
+      averageHeartRateBpm: 148,
+      maxHeartRateBpm: 184,
+      elevationGainMeters: null,
+      averageCadencePerMinute: null,
+      averagePowerWatts: null,
+      trainingEffect: 3.8,
+      anaerobicTrainingEffect: 2.6,
+      activityTrainingLoad: 188,
+      bodyBatteryDelta: null,
+      steps: 9_430,
+      lapCount: null,
+      splits: [],
+    })
+
+    assert.deepEqual(
+      groups.secondary.map((metric) => metric.key),
+      [
+        'averageHeartRate',
+        'maxHeartRate',
+        'maxSpeed',
+        'trainingEffect',
+        'anaerobicTrainingEffect',
+        'trainingLoad',
+        'steps',
+      ],
+    )
+  })
+
+  it('仅路线卡使用按钮语义，倾斜 transform 不再缩放或飞入详情', async () => {
+    const [cardSource, coverSource, tiltSource, dialogSource, statsSource] = await Promise.all([
       readFile(
         new URL(
           '../src/pages/Landing/components/LandingGarminStats/GarminActivityCard.vue',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+      readFile(
+        new URL(
+          '../src/pages/Landing/components/LandingGarminStats/GarminActivityCover.vue',
           import.meta.url,
         ),
         'utf8',
@@ -172,12 +236,21 @@ describe('Landing Garmin view utils', () => {
         ),
         'utf8',
       ),
+      readFile(
+        new URL('../src/pages/Landing/components/LandingGarminStats/index.vue', import.meta.url),
+        'utf8',
+      ),
     ])
 
     assert.match(cardSource, /activity\.route \? 'button' : 'article'/)
     assert.match(cardSource, /activity\.route \? `查看\$\{activity\.typeDisplay\}详情` : undefined/)
+    assert.match(cardSource, /\.garmin-card__data-grid\s*\{[\s\S]*align-content: end/)
+    assert.doesNotMatch(cardSource, /\.garmin-card__data-header\s*\{[^}]*border-bottom/)
+    assert.match(coverSource, /\.garmin-cover__distance\s*\{[\s\S]*right: 0\.4rem/)
+    assert.doesNotMatch(coverSource, /garmin-cover__attribution/)
     assert.doesNotMatch(tiltSource, /scale\(/)
     assert.match(tiltSource, /rotateX/)
     assert.match(dialogSource, /max-\[800px\]:!w-\[calc\(100vw-1rem\)\]/)
+    assert.doesNotMatch(statsSource, /useSharedElementTransition|transition\.open|transition\.close/)
   })
 })

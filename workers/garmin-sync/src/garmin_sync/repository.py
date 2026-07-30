@@ -25,8 +25,9 @@ from .models import (
 from .payload_codec import EncryptedPayload, decrypt_payload, encrypt_payload
 
 LOCK_NAME = "applog_garmin_sync"
-DETAIL_PARSER_VERSION = 3
+DETAIL_PARSER_VERSION = 4
 DETAIL_REPARSE_ACTIVITY_TYPES = (
+    "soccer",
     "treadmill_running",
     "elliptical",
     "indoor_cardio",
@@ -267,7 +268,7 @@ class MySQLRepository:
                 "SELECT id, sourceActivityId FROM garmin_private_activity "
                 "WHERE detailStatus IN ('pending', 'failed') OR "
                 "((detailParserVersion IS NULL OR detailParserVersion <> %s) "
-                "AND activityType IN (%s, %s, %s, %s, %s)) "
+                "AND activityType IN (%s, %s, %s, %s, %s, %s)) "
                 "ORDER BY CASE WHEN EXISTS (SELECT 1 FROM garmin_private_payload "
                 "payload WHERE payload.domain = 'activity' "
                 "AND payload.ownerKey = CAST(garmin_private_activity.id AS CHAR) "

@@ -162,8 +162,6 @@ function activate(): void {
 .garmin-card__data-header {
   display: grid;
   gap: 0.2rem;
-  padding-bottom: 0.7rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--landing-muted) 15%, transparent);
 }
 
 .garmin-card__data-header time,
@@ -177,9 +175,9 @@ function activate(): void {
   display: grid;
   flex: 1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
+  align-content: end;
   gap: 0.8rem 0.55rem;
-  padding-top: 0.85rem;
+  padding-top: 1rem;
 }
 
 .garmin-card__datum {

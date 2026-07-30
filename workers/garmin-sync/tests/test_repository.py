@@ -81,7 +81,7 @@ def test_stream_cursor_sql_quotes_mysql_reserved_cursor_column():
     assert "UPDATE `cursor` = VALUES(`cursor`)" in upsert_sql
 
 
-def test_indoor_cycling_is_reparsed_for_card_metrics():
+def test_metric_activity_types_are_reparsed_for_landing_metrics():
     captured = {}
 
     class Cursor:
@@ -101,9 +101,10 @@ def test_indoor_cycling_is_reparsed_for_card_metrics():
     repository = MySQLRepository(SimpleNamespace(cursor=lambda: Cursor()), b"token-key")
     repository.pending_activity_details(2)
 
-    assert "activityType IN (%s, %s, %s, %s, %s)" in captured["sql"]
+    assert "activityType IN (%s, %s, %s, %s, %s, %s)" in captured["sql"]
     assert captured["params"] == (
         DETAIL_PARSER_VERSION,
+        "soccer",
         "treadmill_running",
         "elliptical",
         "indoor_cardio",

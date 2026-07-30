@@ -40,9 +40,6 @@ const coverUrl = computed(() =>
     <span v-if="activity.distanceText" class="garmin-cover__distance">
       {{ activity.distanceText }}
     </span>
-    <span v-if="activity.cover?.attribution" class="garmin-cover__attribution">
-      {{ activity.cover.attribution }}
-    </span>
   </div>
 </template>
 
@@ -81,8 +78,7 @@ const coverUrl = computed(() =>
   fill: #fff;
 }
 
-.garmin-cover__distance,
-.garmin-cover__attribution {
+.garmin-cover__distance {
   position: absolute;
   z-index: 1;
   overflow: hidden;
@@ -95,25 +91,12 @@ const coverUrl = computed(() =>
 }
 
 .garmin-cover__distance {
+  right: 0.4rem;
   bottom: 0.4rem;
-  left: 0.4rem;
   max-width: calc(100% - 0.8rem);
   padding: 0.16rem 0.4rem;
   border-radius: 5px;
   font-size: 0.625rem;
   font-weight: 600;
-}
-
-.garmin-cover__attribution {
-  right: 0.25rem;
-  bottom: 0.25rem;
-  max-width: 62%;
-  padding: 0.08rem 0.2rem;
-  font-size: 0.45rem;
-}
-
-.garmin-cover__distance + .garmin-cover__attribution {
-  bottom: auto;
-  top: 0.25rem;
 }
 </style>

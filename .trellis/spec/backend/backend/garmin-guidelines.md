@@ -53,13 +53,17 @@ finite number/null boundary. Old snapshots without `detailData` return all-null 
 - No-route cards: render no WebP, SVG, `ActivityTypeCover`, point map, or other
   cover. Render a non-interactive `article` with title/date plus at most five
   non-null type-preset metrics. It must not expose a detail aria-label or respond
-  to click/Enter/Space.
+  to click/Enter/Space. Keep the title/date at the top and bottom-align the metric
+  grid without a divider between them.
 - Route card metrics use small icons: time, location?, distance?, calories?,
-  duration. Distance (when present) is a bottom-left cover tag.
+  duration. Distance (when present) is a bottom-right cover tag. Generated map
+  attribution is baked into the image, so the frontend must not overlay it again.
 - `indoor_cycling` card priority: duration, calories, average heart rate,
   average power, cadence; label cycling cadence「踏频」rather than「步频」.
 - Pointer-fine cards retain bounded perspective rotation but must not scale;
   touch and reduced-motion environments remain static.
+- Opening and closing activity details uses the Dialog's native transition only;
+  do not clone, move, or scale the card cover as a shared element.
 - No per-card device source line (`Garmin · …`).
 - Elliptical (`elliptical`) never shows distance even if upstream provides meters.
 - The detail Dialog is teleported. Width/max-width overrides must be expressed
@@ -90,7 +94,8 @@ finite number/null boundary. Old snapshots without `detailData` return all-null 
 ### 6. Tests Required
 
 - Worker: TYPE_LABELS for elliptical / track_running / soccer / cycling / indoor
-  cycling; indoor cycling is included in bounded archived-detail reparsing.
+  cycling; soccer and indoor cycling are included in bounded archived-detail
+  reparsing so newly exposed Landing metrics can be backfilled.
 - Backend: public DTO projects only the seven card metric fields; JSON must not
   contain splits, raw payload, `latitude` / `longitude` / `sourceActivityId`.
 - Frontend utils: `formatDistance` / `formatCalories` return null when absent;
