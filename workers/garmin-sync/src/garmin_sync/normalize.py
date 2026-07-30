@@ -181,19 +181,37 @@ def _metric(source: dict[str, Any], *keys: str) -> float | None:
 
 
 def normalize_activity_detail(
-    summary: object, splits: object = None
+    summary: object,
+    splits: object = None,
+    typed_splits: object = None,
+    split_summaries: object = None,
 ) -> NormalizedActivityDetail:
     """Extract stable nullable metrics from synthetic-compatible source shapes."""
-    source = summary if isinstance(summary, dict) else {}
+    envelope = summary if isinstance(summary, dict) else {}
+    nested = envelope.get("summaryDTO")
+    source = nested if isinstance(nested, dict) else envelope
+    metadata = envelope.get("metadataDTO")
+    metadata = metadata if isinstance(metadata, dict) else {}
     split_rows: list[object] = []
-    if isinstance(splits, list):
-        split_rows = splits
-    elif isinstance(splits, dict):
-        for key in ("lapDTOs", "splitDTOs", "splits"):
-            candidate = splits.get(key)
-            if isinstance(candidate, list):
-                split_rows = candidate
-                break
+    for candidate_source, keys in (
+        (splits, ("lapDTOs", "splitDTOs", "splits")),
+        (typed_splits, ("splits", "splitDTOs")),
+        (split_summaries, ("splitSummaries", "splits")),
+        (envelope, ("splitSummaries",)),
+    ):
+        if isinstance(candidate_source, list):
+            split_rows = candidate_source
+        elif isinstance(candidate_source, dict):
+            split_rows = next(
+                (
+                    candidate_source[key]
+                    for key in keys
+                    if isinstance(candidate_source.get(key), list)
+                ),
+                [],
+            )
+        if split_rows:
+            break
     compact_splits: list[dict[str, Any]] = []
     for index, row in enumerate(split_rows[:12], start=1):
         if not isinstance(row, dict):
@@ -216,19 +234,30 @@ def normalize_activity_detail(
             }
         )
     lap_count = _metric(source, "lapCount", "numberOfLaps")
+    if lap_count is None:
+        lap_count = _metric(metadata, "lapCount", "numberOfLaps")
+    steps = _metric(source, "steps")
     return NormalizedActivityDetail(
         moving_duration_seconds=_metric(source, "movingDuration"),
-        average_speed_meters_per_second=_metric(source, "averageSpeed"),
+        average_speed_meters_per_second=_metric(
+            source, "averageSpeed", "averageMovingSpeed"
+        ),
         max_speed_meters_per_second=_metric(source, "maxSpeed"),
         average_heart_rate_bpm=_metric(source, "averageHR", "averageHeartRate"),
         max_heart_rate_bpm=_metric(source, "maxHR", "maxHeartRate"),
         elevation_gain_meters=_metric(source, "elevationGain", "totalAscent"),
         average_cadence_per_minute=_metric(
-            source, "averageRunningCadenceInStepsPerMinute", "averageBikingCadence"
+            source,
+            "averageRunCadence",
+            "averageRunningCadenceInStepsPerMinute",
+            "averageBikingCadence",
         ),
-        average_power_watts=_metric(source, "avgPower", "averagePower"),
-        training_effect=_metric(source, "aerobicTrainingEffect", "trainingEffect"),
+        average_power_watts=_metric(source, "averagePower", "avgPower"),
+        training_effect=_metric(source, "trainingEffect", "aerobicTrainingEffect"),
+        anaerobic_training_effect=_metric(source, "anaerobicTrainingEffect"),
+        activity_training_load=_metric(source, "activityTrainingLoad"),
         body_battery_delta=_metric(source, "differenceBodyBattery"),
+        steps=round(steps) if steps is not None and steps >= 0 else None,
         lap_count=(
             round(lap_count) if lap_count is not None and lap_count >= 0 else None
         ),

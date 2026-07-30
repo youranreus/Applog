@@ -42,7 +42,10 @@ export interface IGarminLandingActivityDetail {
   averageCadencePerMinute: number | null;
   averagePowerWatts: number | null;
   trainingEffect: number | null;
+  anaerobicTrainingEffect: number | null;
+  activityTrainingLoad: number | null;
   bodyBatteryDelta: number | null;
+  steps: number | null;
   lapCount: number | null;
   splits: IGarminActivitySplit[];
 }

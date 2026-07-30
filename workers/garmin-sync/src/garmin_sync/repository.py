@@ -25,6 +25,17 @@ from .models import (
 from .payload_codec import EncryptedPayload, decrypt_payload, encrypt_payload
 
 LOCK_NAME = "applog_garmin_sync"
+DETAIL_PARSER_VERSION = 2
+DETAIL_REPARSE_ACTIVITY_TYPES = (
+    "treadmill_running",
+    "elliptical",
+    "indoor_cardio",
+    "stair_climbing",
+)
+
+
+class ArchivedPayloadUnreadable(Exception):
+    """An archived activity payload cannot be authenticated or decoded."""
 
 
 def _mysql_datetime(value: datetime) -> datetime:
@@ -253,12 +264,65 @@ class MySQLRepository:
         with self._connection.cursor() as cursor:
             cursor.execute(
                 "SELECT id, sourceActivityId FROM garmin_private_activity "
-                "WHERE detailStatus IN ('pending', 'failed') "
-                "ORDER BY startedAtGmt DESC, id DESC LIMIT %s",
-                (limit,),
+                "WHERE detailStatus IN ('pending', 'failed') OR "
+                "((detailParserVersion IS NULL OR detailParserVersion <> %s) "
+                "AND activityType IN (%s, %s, %s, %s)) "
+                "ORDER BY CASE WHEN EXISTS (SELECT 1 FROM garmin_private_payload "
+                "payload WHERE payload.domain = 'activity' "
+                "AND payload.ownerKey = CAST(garmin_private_activity.id AS CHAR) "
+                "AND payload.payloadKind = 'summary') THEN 0 ELSE 1 END, "
+                "startedAtGmt DESC, id DESC LIMIT %s",
+                (DETAIL_PARSER_VERSION, *DETAIL_REPARSE_ACTIVITY_TYPES, limit),
             )
             rows = cursor.fetchall()
         return [(int(row[0]), str(row[1])) for row in rows]
+
+    def load_archived_activity_detail_payloads(
+        self, private_activity_id: int
+    ) -> tuple[dict[str, Any], str]:
+        """Decrypt only the domains needed for a local parser-version upgrade."""
+        from cryptography.exceptions import InvalidTag
+
+        if self._data_encryption_key is None:
+            return {}, "pending"
+        kinds = ("summary", "splits", "typed_splits", "split_summaries")
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT detailStatus FROM garmin_private_activity WHERE id = %s",
+                (private_activity_id,),
+            )
+            activity = cursor.fetchone()
+            cursor.execute(
+                "SELECT ownerKey, payloadKind, ciphertext, nonce, authTag, "
+                "contentHash, contentType, compression, encryptionVersion "
+                "FROM garmin_private_payload WHERE domain = 'activity' "
+                "AND ownerKey = %s AND payloadKind IN (%s, %s, %s, %s)",
+                (str(private_activity_id), *kinds),
+            )
+            rows = cursor.fetchall()
+        payloads: dict[str, Any] = {}
+        try:
+            for row in rows:
+                kind = str(row[1])
+                payloads[kind] = decrypt_payload(
+                    EncryptedPayload(
+                        bytes(row[2]),
+                        bytes(row[3]),
+                        bytes(row[4]),
+                        str(row[5]),
+                        str(row[6]),
+                        str(row[7]),
+                        int(row[8]),
+                    ),
+                    self._data_encryption_key,
+                    domain="activity",
+                    owner_key=str(row[0]),
+                    payload_kind=kind,
+                )
+        except (InvalidTag, ValueError) as error:
+            raise ArchivedPayloadUnreadable from error
+        status = str(activity[0]) if activity else "pending"
+        return payloads, status
 
     def get_activity_weather_payload(self, source_activity_id: str) -> Any | None:
         """Decrypt one archived weather payload inside the trusted worker boundary."""
@@ -346,8 +410,10 @@ class MySQLRepository:
                    averageSpeedMetersPerSecond, maxSpeedMetersPerSecond,
                    averageHeartRateBpm, maxHeartRateBpm, elevationGainMeters,
                    averageCadencePerMinute, averagePowerWatts, trainingEffect,
-                   bodyBatteryDelta, lapCount, splitData)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   anaerobicTrainingEffect, activityTrainingLoad,
+                   bodyBatteryDelta, steps, lapCount, splitData)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                   movingDurationSeconds = VALUES(movingDurationSeconds),
                   averageSpeedMetersPerSecond = VALUES(averageSpeedMetersPerSecond),
@@ -358,8 +424,11 @@ class MySQLRepository:
                   averageCadencePerMinute = VALUES(averageCadencePerMinute),
                   averagePowerWatts = VALUES(averagePowerWatts),
                   trainingEffect = VALUES(trainingEffect),
+                  anaerobicTrainingEffect = VALUES(anaerobicTrainingEffect),
+                  activityTrainingLoad = VALUES(activityTrainingLoad),
                   bodyBatteryDelta = VALUES(bodyBatteryDelta),
-                  lapCount = VALUES(lapCount), splitData = VALUES(splitData)
+                  steps = VALUES(steps), lapCount = VALUES(lapCount),
+                  splitData = VALUES(splitData)
                 """,
                 (
                     private_activity_id,
@@ -372,15 +441,19 @@ class MySQLRepository:
                     detail.average_cadence_per_minute,
                     detail.average_power_watts,
                     detail.training_effect,
+                    detail.anaerobic_training_effect,
+                    detail.activity_training_load,
                     detail.body_battery_delta,
+                    detail.steps,
                     detail.lap_count,
                     json.dumps(detail.splits or [], separators=(",", ":")),
                 ),
             )
             cursor.execute(
                 "UPDATE garmin_private_activity SET detailStatus = %s, "
-                "updatedAt = CURRENT_TIMESTAMP(3) WHERE id = %s",
-                (status, private_activity_id),
+                "detailParserVersion = %s, updatedAt = CURRENT_TIMESTAMP(3) "
+                "WHERE id = %s",
+                (status, DETAIL_PARSER_VERSION, private_activity_id),
             )
 
     def upsert_health_day(

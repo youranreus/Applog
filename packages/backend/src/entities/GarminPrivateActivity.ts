@@ -55,6 +55,9 @@ export class GarminPrivateActivityEntity {
   })
   detailStatus: GarminActivityDetailStatus;
 
+  @Column({ type: 'smallint', unsigned: true, nullable: true })
+  detailParserVersion: number | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

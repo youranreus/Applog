@@ -80,7 +80,10 @@ describe('Landing Garmin view utils', () => {
       averageCadencePerMinute: null,
       averagePowerWatts: null,
       trainingEffect: null,
+      anaerobicTrainingEffect: 1.2,
+      activityTrainingLoad: 42,
       bodyBatteryDelta: null,
+      steps: 1200,
       lapCount: null,
       splits: [],
     }
@@ -95,5 +98,11 @@ describe('Landing Garmin view utils', () => {
     )
     assert.equal(groups.core.find((metric) => metric.key === 'calories')?.value, '0 kcal')
     assert.equal(groups.core.find((metric) => metric.key === 'averageHeartRate')?.value, '0 bpm')
+    assert.equal(
+      groups.secondary.find((metric) => metric.key === 'anaerobicTrainingEffect')?.value,
+      '1',
+    )
+    assert.equal(groups.secondary.find((metric) => metric.key === 'trainingLoad')?.value, '42')
+    assert.equal(groups.secondary.find((metric) => metric.key === 'steps')?.value, '1200 步')
   })
 })

@@ -374,6 +374,91 @@ const snapshot = await snapshotRepository.findOne({
 if (!snapshot) throw new BusinessException('活动封面不存在')
 ```
 
+## Scenario: Indoor activity detail normalization
+
+### 1. Scope / Trigger
+
+- Trigger: Garmin activity `summary`/split payload shapes, normalized detail
+  fields, parser-version backfill, or indoor metric presentation changes.
+
+### 2. Signatures
+
+- Worker input: `summary.summaryDTO`, optional `metadataDTO`, `splits.lapDTOs`,
+  `typed_splits.splits`, and `split_summaries.splitSummaries`.
+- DB: `garmin_activity_detail` nullable metrics plus
+  `garmin_private_activity.detailParserVersion`.
+- Public detail adds nullable `anaerobicTrainingEffect`,
+  `activityTrainingLoad`, and `steps`.
+
+### 3. Contracts
+
+- `summaryDTO` is the current primary metric source. A top-level summary is a
+  compatibility fallback only; it must never overwrite an explicit nested zero
+  or null.
+- Split priority is exactly `lapDTOs` → typed splits → split summaries. Use one
+  source only and expose at most 12 allowlisted rows.
+- Missing source metrics stay null. Preserve numeric zero. Do not infer heart
+  rate, power, cadence, steps, or training effects from another metric.
+- A parser-version upgrade first authenticates and reparses archived summary and
+  splits without a Garmin request. Missing summary or AEAD authentication failure
+  enters the existing bounded remote detail queue.
+- Parser-version migration is limited to treadmill, elliptical, indoor cardio,
+  and stair-climbing activities. Pending/failed detail work for other types keeps
+  the normal queue behavior.
+- Public responses continue to rebuild an explicit allowlist. Raw payloads,
+  samples, FIT, private ids, coordinates, timestamps, and encryption metadata
+  never cross the worker boundary.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required behavior |
+|---|---|
+| `summaryDTO` is present | Normalize it instead of reading metric keys from the envelope |
+| Metric is absent, null, non-numeric, NaN, or infinite | Persist and publish null |
+| Metric is valid zero | Preserve zero and allow the UI to display it |
+| Multiple split domains exist | Select the highest-priority non-empty domain; do not merge |
+| Archived payload fails AEAD/hash/decode | Fail closed and remotely refetch that activity within the detail budget |
+| Archived summary is absent | Remotely refetch within the detail budget |
+| Conditional Garmin domain fails | Preserve successful domains and keep detail status partial/retryable |
+
+### 5. Good / Base / Bad Cases
+
+- Good: a treadmill `summaryDTO` yields heart rate, cadence, power, aerobic and
+  anaerobic effects, training load, Body Battery delta, steps, and lap splits.
+- Base: indoor cardio lacks power/cadence; those fields remain null while common
+  heart-rate and training fields publish normally.
+- Bad: reading only top-level `averageHR`, converting missing steps to zero,
+  merging lapDTOs with typed splits, or bypassing `InvalidTag` authentication.
+
+### 6. Tests Required
+
+- Worker synthetic fixtures for treadmill, elliptical, indoor cardio, and stair
+  climbing; nested precedence, valid zero, invalid numeric values, every mapped
+  metric, split priority, and the 12-row cap.
+- Sync tests prove local reparse makes no Garmin call and unreadable archive data
+  falls back to one bounded remote refetch.
+- Backend tests assert the three new fields pass the allowlist while private
+  fields remain absent; frontend tests assert null omission and zero retention.
+- A read-only production dry-run reports only type-level candidate/field counts,
+  never activity identifiers or values.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```python
+source = summary
+heart_rate = source.get("averageHR")  # current payload stores summaryDTO.averageHR
+```
+
+#### Correct
+
+```python
+nested = summary.get("summaryDTO")
+source = nested if isinstance(nested, dict) else summary
+heart_rate = _metric(source, "averageHR", "averageHeartRate")
+```
+
 ## Scenario: Tencent static basemap provider
 
 ### 1. Scope / Trigger

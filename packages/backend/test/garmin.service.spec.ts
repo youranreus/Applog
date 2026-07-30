@@ -156,6 +156,9 @@ describe('GarminService public landing snapshot', () => {
           calories: 300,
           detailData: {
             averageHeartRateBpm: 150,
+            anaerobicTrainingEffect: 1.5,
+            activityTrainingLoad: 64,
+            steps: 3200,
             latitude: 22.5,
             rawPayload: { secret: true },
             splits: [{ index: 1, durationSeconds: 300, longitude: 114 }],
@@ -173,6 +176,9 @@ describe('GarminService public landing snapshot', () => {
     const result = await service.getActivityDetail('public-1');
     const json = JSON.stringify(result);
     assert.equal(result.averageHeartRateBpm, 150);
+    assert.equal(result.anaerobicTrainingEffect, 1.5);
+    assert.equal(result.activityTrainingLoad, 64);
+    assert.equal(result.steps, 3200);
     assert.equal(result.splits[0]?.durationSeconds, 300);
     assert.equal(json.includes('sourceActivityId'), false);
     assert.equal(json.includes('latitude'), false);

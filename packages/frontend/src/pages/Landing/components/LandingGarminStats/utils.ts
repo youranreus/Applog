@@ -70,7 +70,10 @@ type MetricKey =
   | 'cadence'
   | 'power'
   | 'trainingEffect'
+  | 'anaerobicTrainingEffect'
+  | 'trainingLoad'
   | 'bodyBattery'
+  | 'steps'
   | 'laps'
 
 const PRESETS: Record<string, { core: MetricKey[]; secondary: MetricKey[] }> = {
@@ -99,7 +102,16 @@ const PRESETS: Record<string, { core: MetricKey[]; secondary: MetricKey[] }> = {
   },
   treadmill_running: {
     core: ['distance', 'duration', 'pace'],
-    secondary: ['averageHeartRate', 'maxHeartRate', 'cadence', 'power', 'trainingEffect'],
+    secondary: [
+      'averageHeartRate',
+      'maxHeartRate',
+      'cadence',
+      'power',
+      'trainingEffect',
+      'anaerobicTrainingEffect',
+      'trainingLoad',
+      'steps',
+    ],
   },
   cycling: {
     core: ['distance', 'duration', 'averageSpeed'],
@@ -107,15 +119,36 @@ const PRESETS: Record<string, { core: MetricKey[]; secondary: MetricKey[] }> = {
   },
   elliptical: {
     core: ['duration', 'calories', 'averageHeartRate'],
-    secondary: ['maxHeartRate', 'cadence', 'trainingEffect'],
+    secondary: [
+      'maxHeartRate',
+      'cadence',
+      'trainingEffect',
+      'anaerobicTrainingEffect',
+      'trainingLoad',
+      'steps',
+    ],
   },
   indoor_cardio: {
     core: ['duration', 'calories', 'averageHeartRate'],
-    secondary: ['maxHeartRate', 'trainingEffect', 'bodyBattery'],
+    secondary: [
+      'maxHeartRate',
+      'trainingEffect',
+      'anaerobicTrainingEffect',
+      'trainingLoad',
+      'bodyBattery',
+      'steps',
+    ],
   },
   stair_climbing: {
     core: ['duration', 'calories', 'averageHeartRate'],
-    secondary: ['maxHeartRate', 'cadence', 'trainingEffect'],
+    secondary: [
+      'maxHeartRate',
+      'cadence',
+      'trainingEffect',
+      'anaerobicTrainingEffect',
+      'trainingLoad',
+      'steps',
+    ],
   },
 }
 
@@ -146,7 +179,15 @@ export function getGarminMetricGroups(
     cadence: numericMetric('cadence', '平均步频', detail?.averageCadencePerMinute, ' /min'),
     power: numericMetric('power', '平均功率', detail?.averagePowerWatts, ' W'),
     trainingEffect: numericMetric('trainingEffect', '训练效果', detail?.trainingEffect, ''),
+    anaerobicTrainingEffect: numericMetric(
+      'anaerobicTrainingEffect',
+      '无氧训练效果',
+      detail?.anaerobicTrainingEffect,
+      '',
+    ),
+    trainingLoad: numericMetric('trainingLoad', '训练负荷', detail?.activityTrainingLoad, ''),
     bodyBattery: numericMetric('bodyBattery', '身体电量变化', detail?.bodyBatteryDelta, ''),
+    steps: numericMetric('steps', '步数', detail?.steps, ' 步'),
     laps: numericMetric('laps', '圈数', detail?.lapCount, ''),
   }
   const select = (keys: MetricKey[]) =>

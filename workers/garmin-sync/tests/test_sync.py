@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from unittest.mock import patch
 
 from garmin_sync.cover import ActivityCover
+from garmin_sync.repository import ArchivedPayloadUnreadable
 from garmin_sync.sync import SyncService
 
 
@@ -259,6 +260,93 @@ def test_activity_backfill_indexes_whole_page_before_bounded_detail_queue():
     assert repository.indexed == [10, 11, 12, 13, 14]
     assert repository.details == [(14, "partial"), (13, "partial")]
     assert repository.advanced is not None
+
+
+def test_parser_upgrade_reuses_archived_payload_without_garmin_request():
+    class ArchiveAdapter:
+        def get_activity_payloads(self, activity_id):
+            raise AssertionError(f"unexpected Garmin request for {activity_id}")
+
+    class ArchiveRepository:
+        def get_stream_cursor(self, stream_key):
+            return None, True
+
+        def upsert_private_activity(self, item, *, seen_at):
+            raise AssertionError
+
+        def store_private_payload(self, **payload):
+            return True
+
+        def activity_needs_detail(self, private_activity_id):
+            return True
+
+        def mark_activity_detail_pending(self, private_activity_id):
+            return None
+
+        def advance_stream(self, *args, **kwargs):
+            return None
+
+        def pending_activity_details(self, limit):
+            return [(7, "source-7")][:limit]
+
+        def load_archived_activity_detail_payloads(self, private_id):
+            assert private_id == 7
+            return ({"summary": {"summaryDTO": {"averageHR": 151}}}, "complete")
+
+        def upsert_activity_detail(self, private_id, detail, *, status):
+            self.saved = (private_id, detail.average_heart_rate_bpm, status)
+
+    repository = ArchiveRepository()
+    service = SyncService(ArchiveAdapter(), repository)
+    with patch.dict("os.environ", {"GARMIN_PRIVATE_ARCHIVE_ENABLED": "true"}):
+        service._archive_private_activity_slice([], datetime(2026, 7, 28, tzinfo=UTC))
+
+    assert repository.saved == (7, 151, "complete")
+
+
+def test_unreadable_archive_falls_back_to_bounded_garmin_refetch():
+    class ArchiveAdapter:
+        def get_activity_payloads(self, activity_id):
+            assert activity_id == "source-8"
+            self.requested = True
+            return {"summary": {"summaryDTO": {"averageHR": 149}}}
+
+    class ArchiveRepository:
+        def get_stream_cursor(self, stream_key):
+            return None, True
+
+        def upsert_private_activity(self, item, *, seen_at):
+            raise AssertionError
+
+        def activity_needs_detail(self, private_activity_id):
+            return True
+
+        def mark_activity_detail_pending(self, private_activity_id):
+            return None
+
+        def advance_stream(self, *args, **kwargs):
+            return None
+
+        def pending_activity_details(self, limit):
+            return [(8, "source-8")][:limit]
+
+        def load_archived_activity_detail_payloads(self, private_id):
+            raise ArchivedPayloadUnreadable
+
+        def store_private_payload(self, **payload):
+            return True
+
+        def upsert_activity_detail(self, private_id, detail, *, status):
+            self.saved = (private_id, detail.average_heart_rate_bpm, status)
+
+    adapter = ArchiveAdapter()
+    repository = ArchiveRepository()
+    service = SyncService(adapter, repository)
+    with patch.dict("os.environ", {"GARMIN_PRIVATE_ARCHIVE_ENABLED": "true"}):
+        service._archive_private_activity_slice([], datetime(2026, 7, 28, tzinfo=UTC))
+
+    assert adapter.requested is True
+    assert repository.saved == (8, 149, "partial")
 
 
 def test_health_backfill_cursor_does_not_advance_on_partial_domain_failure():

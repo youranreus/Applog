@@ -38,7 +38,16 @@ export class GarminActivityDetailEntity {
   trainingEffect: number | null;
 
   @Column({ type: 'double', nullable: true })
+  anaerobicTrainingEffect: number | null;
+
+  @Column({ type: 'double', nullable: true })
+  activityTrainingLoad: number | null;
+
+  @Column({ type: 'double', nullable: true })
   bodyBatteryDelta: number | null;
+
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  steps: number | null;
 
   @Column({ type: 'int', unsigned: true, nullable: true })
   lapCount: number | null;

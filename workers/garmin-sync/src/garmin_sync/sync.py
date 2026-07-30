@@ -20,6 +20,7 @@ from .normalize import (
     normalize_health_daily,
     normalize_private_activity,
 )
+from .repository import ArchivedPayloadUnreadable
 from .route import build_route_preview
 
 ROUTE_BATCH_SIZE = 12
@@ -284,9 +285,33 @@ class SyncService:
         for private_id, source_activity_id in repository.pending_activity_details(
             PRIVATE_DETAIL_BATCH_SIZE
         ):
-            payloads = self._adapter.get_activity_payloads(
-                source_activity_id
-            )
+            payloads: dict[str, object] = {}
+            previous_status = "pending"
+            if hasattr(repository, "load_archived_activity_detail_payloads"):
+                try:
+                    payloads, previous_status = (
+                        repository.load_archived_activity_detail_payloads(private_id)
+                    )
+                except ArchivedPayloadUnreadable:
+                    payloads = {}
+            if "summary" in payloads:
+                detail = normalize_activity_detail(
+                    payloads.get("summary"),
+                    payloads.get("splits"),
+                    payloads.get("typed_splits"),
+                    payloads.get("split_summaries"),
+                )
+                restored_status = (
+                    previous_status if previous_status != "pending" else "complete"
+                )
+                repository.upsert_activity_detail(
+                    private_id,
+                    detail,
+                    status=restored_status,
+                )
+                detail_by_source_id[source_activity_id] = detail
+                continue
+            payloads = self._adapter.get_activity_payloads(source_activity_id)
             archived_kinds: set[str] = set()
             for kind, payload in payloads.items():
                 try:
@@ -303,7 +328,10 @@ class SyncService:
                     if str(error) != "garmin_payload_too_large":
                         raise
             detail = normalize_activity_detail(
-                payloads.get("summary"), payloads.get("splits")
+                payloads.get("summary"),
+                payloads.get("splits"),
+                payloads.get("typed_splits"),
+                payloads.get("split_summaries"),
             )
             repository.upsert_activity_detail(
                 private_id,
@@ -449,7 +477,10 @@ class SyncService:
             "averageCadencePerMinute": detail.average_cadence_per_minute,
             "averagePowerWatts": detail.average_power_watts,
             "trainingEffect": detail.training_effect,
+            "anaerobicTrainingEffect": detail.anaerobic_training_effect,
+            "activityTrainingLoad": detail.activity_training_load,
             "bodyBatteryDelta": detail.body_battery_delta,
+            "steps": detail.steps,
             "lapCount": detail.lap_count,
             "splits": detail.splits or [],
         }

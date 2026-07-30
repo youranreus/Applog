@@ -155,6 +155,83 @@ class NormalizeActivityTests(unittest.TestCase):
         self.assertEqual(detail.lap_count, 2)
         self.assertEqual(detail.splits[0]["averagePaceSecondsPerKm"], 400)
 
+    def test_normalizes_nested_indoor_summary_and_preserves_zero(self) -> None:
+        detail = normalize_activity_detail(
+            {
+                "summaryDTO": {
+                    "movingDuration": 1_700,
+                    "averageSpeed": 2.5,
+                    "maxSpeed": 3.2,
+                    "averageHR": 0,
+                    "maxHR": 178,
+                    "averageRunCadence": 164,
+                    "averagePower": 245,
+                    "trainingEffect": 3.1,
+                    "anaerobicTrainingEffect": 1.4,
+                    "activityTrainingLoad": 92,
+                    "differenceBodyBattery": -8,
+                    "steps": 4_321,
+                },
+                "metadataDTO": {"lapCount": 3},
+            }
+        )
+
+        self.assertEqual(detail.moving_duration_seconds, 1_700)
+        self.assertEqual(detail.average_heart_rate_bpm, 0)
+        self.assertEqual(detail.max_heart_rate_bpm, 178)
+        self.assertEqual(detail.average_cadence_per_minute, 164)
+        self.assertEqual(detail.average_power_watts, 245)
+        self.assertEqual(detail.training_effect, 3.1)
+        self.assertEqual(detail.anaerobic_training_effect, 1.4)
+        self.assertEqual(detail.activity_training_load, 92)
+        self.assertEqual(detail.body_battery_delta, -8)
+        self.assertEqual(detail.steps, 4_321)
+        self.assertEqual(detail.lap_count, 3)
+
+    def test_split_sources_use_one_priority_order_and_limit_twelve(self) -> None:
+        detail = normalize_activity_detail(
+            {"splitSummaries": [{"distance": 99, "duration": 99}]},
+            {"lapDTOs": [{"distance": index, "duration": 10} for index in range(15)]},
+            {"splits": [{"distance": 88, "duration": 88}]},
+            {"splitSummaries": [{"distance": 77, "duration": 77}]},
+        )
+
+        self.assertEqual(len(detail.splits), 12)
+        self.assertEqual(detail.splits[0]["distanceMeters"], 0)
+        self.assertEqual(detail.splits[-1]["distanceMeters"], 11)
+
+    def test_nested_summary_does_not_fall_back_over_explicit_null_or_zero(self) -> None:
+        detail = normalize_activity_detail(
+            {
+                "averageHR": 150,
+                "steps": 900,
+                "summaryDTO": {"averageHR": 0, "steps": None},
+            }
+        )
+
+        self.assertEqual(detail.average_heart_rate_bpm, 0)
+        self.assertIsNone(detail.steps)
+
+    def test_indoor_activity_summary_shapes_keep_unavailable_metrics_null(self) -> None:
+        cases = {
+            "treadmill_running": {
+                "averageRunCadence": 162,
+                "averagePower": 230,
+                "steps": 3_900,
+            },
+            "elliptical": {"averageHR": 142, "trainingEffect": 2.7},
+            "indoor_cardio": {"maxHR": 175, "differenceBodyBattery": -6},
+            "stair_climbing": {},
+        }
+        for activity_type, summary_dto in cases.items():
+            with self.subTest(activity_type=activity_type):
+                detail = normalize_activity_detail({"summaryDTO": summary_dto})
+                expected_power = 230 if activity_type == "treadmill_running" else None
+                self.assertEqual(detail.average_power_watts, expected_power)
+                if activity_type == "stair_climbing":
+                    self.assertIsNone(detail.average_heart_rate_bpm)
+                    self.assertIsNone(detail.steps)
+
     def test_normalizes_health_summary_zero_null_and_real_boundaries(self) -> None:
         health = normalize_health_daily(
             {

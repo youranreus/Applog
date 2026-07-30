@@ -179,7 +179,10 @@ export class GarminService {
       averageCadencePerMinute: numberOrNull(data.averageCadencePerMinute),
       averagePowerWatts: numberOrNull(data.averagePowerWatts),
       trainingEffect: numberOrNull(data.trainingEffect),
+      anaerobicTrainingEffect: numberOrNull(data.anaerobicTrainingEffect),
+      activityTrainingLoad: numberOrNull(data.activityTrainingLoad),
       bodyBatteryDelta: numberOrNull(data.bodyBatteryDelta),
+      steps: numberOrNull(data.steps),
       lapCount: numberOrNull(data.lapCount),
       splits,
     };

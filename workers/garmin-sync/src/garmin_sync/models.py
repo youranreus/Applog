@@ -53,7 +53,10 @@ class NormalizedActivityDetail:
     average_cadence_per_minute: float | None = None
     average_power_watts: float | None = None
     training_effect: float | None = None
+    anaerobic_training_effect: float | None = None
+    activity_training_load: float | None = None
     body_battery_delta: float | None = None
+    steps: int | None = None
     lap_count: int | None = None
     splits: list[dict[str, Any]] | None = None
 
