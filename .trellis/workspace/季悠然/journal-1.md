@@ -730,3 +730,24 @@ Moved Garmin cover distance badge to the right, removed duplicate map attributio
 ### Status
 
 [OK] **Completed**
+
+
+## Session 27: Garmin yesterday landing score
+
+**Date**: 2026-08-02
+**Task**: Garmin yesterday landing score
+**Branch**: `master`
+
+### Summary
+
+Switched the Landing health status to a deterministic full-day score from the Garmin-local yesterday snapshot, migrated the public API and shared/frontend contracts, kept visitor copy date-neutral, and verified backend, frontend, worker, lint, build, and responsive behavior.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a2a0e90` | (see git log) |
+
+### Status
+
+[OK] **Completed**
