@@ -1,47 +1,61 @@
-# 调研 Landing 3D 人物渲染方案
+# Landing 菲比动画角色
 
 ## Goal
 
-为 Landing「生活切片」中的人物展示选择可落地的 Web 3D 渲染与角色模型来源，重点回答：有哪些主流引擎可选、哪些模型共享网站资源丰富、各自的授权与工程代价是什么。
+用 `legeling/awesome-codex-pet` 的 `feibi--vanfff` 二维 Sprite Sheet 替换 Landing「生活切片」中现有的纯 CSS 人物，以较低的运行成本呈现与 Garmin 今日状态对应的动画角色。
 
 ## Confirmed Facts
 
-- 前端使用 Vue 3 + Vite，目前没有 Three.js、Babylon.js、PlayCanvas、`<model-viewer>` 或其他 WebGL 依赖。
-- 当前人物由纯 HTML/CSS 绘制，展示区域约 260px 高。
-- 人物需要映射 Garmin 的四种状态：状态很好、状态不错、活着、挣扎中，并保留空闲态。
-- Landing 强调安静、克制、低干扰；需要兼容移动端和 `prefers-reduced-motion`。
-- 本任务只产出调研与选型建议，不修改产品代码。
+- 前端使用 Vue 3 + Vite，人物组件位于 `packages/frontend/src/pages/Landing/components/LandingTodayStatus/TodayCharacter.vue`。
+- 人物区域桌面端约 260px 高，移动端约 230px 高；外层已提供今日状态的可访问文本。
+- 菲比是 Codex Pet v1 资产：`spritesheet.webp` 为 1536×1872、8 列×9 行、每格 192×208、带透明通道。
+- 九行标准动作依次为 `idle`、`running-right`、`running-left`、`waving`、`jumping`、`failed`、`waiting`、`running`、`review`，每行动画帧数和时序不同。
+- 官方安装脚本只把资产写入 `~/.codex/pets/feibi--vanfff/`，不能作为 Web 项目的运行时依赖。
+- `submission.json` 只声明作者允许收入 Awesome Codex Pet gallery，没有给出明确的商业网站再分发许可。
 
 ## Requirements
 
-1. 比较主流 Web 3D 方案的定位、Vue/Vite 集成、包体与运行成本、glTF/GLB/VRM 支持、动画能力和适用场景。
-2. 调研提供丰富人物模型或动作资源的网站，区分免费下载、付费市场、自定义生成与开放许可资源。
-3. 明确模型授权、署名、再分发、商业使用和用户生成模型条款等风险。
-4. 给出适合当前 Landing 的分层推荐，并说明最小验证方案。
-5. 最终方向采用可定制的个人化角色，而非通用现成模型快速上线。
-6. 用户自行在 VRoid Studio 准备最终 `.vrm` 模型；实施不以官方示例模型代替最终资产验收。
+1. 将菲比的 `spritesheet.webp` 作为项目自有静态资源部署，不从 `~/.codex` 读取，不在浏览器运行安装脚本，也不从 GitHub 热链。
+2. 实现稳定的 Garmin 状态到菲比动作映射：
+   - 无数据 → `waiting`
+   - 状态很好 → `jumping`
+   - 状态不错 → `waving`
+   - 活着 → `idle`
+   - 挣扎中 → `failed`
+3. 按上游 v1 规格裁切 8×9 网格，并使用每行动作自己的有效帧数和时序；状态切换后从目标动作首帧开始。
+4. 四个 Garmin 有值状态分别映射到四组动作素材；每组首帧作为该状态的静止态。
+5. 角色默认保持静止，只在约 7 秒间隔后播放一轮动作；鼠标悬停期间播放动作，移出后回到静止首帧。
+6. 保持当前 `TodayCharacter` 组件接口和 `LandingTodayStatus` 数据流，不修改后端、Garmin API 或共享状态类型。
+7. `prefers-reduced-motion: reduce` 下停在对应动作的稳定首帧，不运行循环定时器。
+8. 图片加载失败时显示安静的静态占位/降级表面，不能影响今日指标和 Landing 其余内容。
+9. 角色尺寸比初版更紧凑，在桌面与移动视口保持完整、清晰、不裁头脚、不挤压右侧状态数据。
+10. 保留菲比作者、来源 URL、资产版本与校验信息；公开部署前必须确认网站使用与再分发许可。
 
 ## Acceptance Criteria
 
-- [x] 至少覆盖 Three.js、Babylon.js、PlayCanvas 和 `<model-viewer>` 四类代表性方案。
-- [x] 至少覆盖五个有角色或动画资源的模型平台，并提供官方来源链接。
-- [x] 推荐结论能够回答“优先试哪个引擎、优先从哪里获得模型、什么情况下换另一方案”。
-- [x] 调研结果保存在任务目录的 `research/` 下。
+- [ ] Landing 正常加载时显示菲比，不再显示现有 CSS 拼装人物。
+- [ ] 五种输入状态分别播放计划中的五个动作，状态变化不需要重新下载图片。
+- [ ] 四个 Garmin 有值状态分别使用独立动作组，并以该组首帧作为静止态。
+- [ ] 非悬停时仅按间隔播放单轮动作，悬停时播放，移出后恢复静止。
+- [ ] Sprite Sheet 只作为一个静态资源加载，不新增 Three.js、Canvas/WebGL 或动画库依赖。
+- [ ] 减少动态效果下人物保持静止，且无持续动画定时器。
+- [ ] 资产加载失败时状态文本和指标仍正常可见，控制台无未处理错误。
+- [ ] 桌面与移动端视觉检查通过，角色在固定展示区域内无明显裁切、变形或布局跳动。
+- [ ] 状态动作映射与帧配置有聚焦的单元测试。
+- [ ] 前端 lint、类型检查、单元测试和生产构建通过。
+- [ ] 项目中保存资产来源、作者、上游 commit/校验值和许可待确认说明。
 
 ## Out of Scope
 
-- 不购买或下载具体模型。
-- 不实现 3D 渲染组件。
-- 不决定最终人物美术风格或替换当前 CSS 人物。
+- 不安装 Three.js、`@pixiv/three-vrm` 或其他 3D 运行时。
+- 不实现自由移动、鼠标追踪、16 方向视线或跨页面宠物系统。
+- 不修改菲比原画、补绘动作或升级为 Codex Pet v2。
+- 不让后台用户上传或切换角色。
+- 本任务不代替作者对公开网站部署的授权；未确认前只完成本地集成与技术验收。
 
 ## Key Decisions
 
-- 角色来源采用 VRoid Studio 自建人物，确保形象辨识度与许可边界清晰。
-- 运行时采用 Three.js + `@pixiv/three-vrm`，不以 `<model-viewer>`、Babylon.js 或 PlayCanvas 作为正式实现。
-- VRM 模型及动作作为项目自有静态资产部署，不依赖第三方在线模型服务。
-- 用户负责提供最终 VRM 模型并确认其中服装、发型、纹理等素材允许公开网站部署；工程实现负责运行时集成和许可记录落点。
-- 必须保留静态海报或现有 CSS 人物作为加载失败、WebGL 不可用和低动态偏好的降级展示。
-
-## Research
-
-- [Web 3D 人物渲染与模型生态调研](./research/web-3d-character-options.md)
+- 放弃 VRM/Three.js，采用菲比 v1 Sprite Sheet。
+- 资产进入前端静态资源目录，官方 Codex 安装脚本不进入 AppLog 构建或运行流程。
+- 动作配置抽成小型、可测试的页面本地模块；Vue 组件负责按配置推进帧。
+- 许可确认是生产发布门槛，不阻塞本地实现。

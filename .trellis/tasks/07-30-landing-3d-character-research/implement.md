@@ -1,39 +1,52 @@
-# Landing 个人化 VRM 人物实施计划
+# Landing 菲比动画角色实施计划
 
-## Phase 1: Asset prototype
+## Phase 1: Asset And Contract
 
-- [ ] 用户在 VRoid Studio 中创建自有角色，并提供最终可部署的 VRM 与授权信息；未收到前不以示例模型替代最终验收。
-- [ ] 生成静态 poster 图，作为加载与失败降级。
-- [ ] 准备四类状态动画，完成 VRM humanoid 重定向验证。
-- [ ] 在独立原型中确认模型、材质、透明背景和动作均可正确渲染。
+- [x] 从固定的上游版本下载 `feibi--vanfff/spritesheet.webp`，校验尺寸、透明通道和 SHA-256。
+- [x] 将资产放入 `packages/frontend/public/` 下的角色专用目录。
+- [x] 添加来源、作者、上游版本、校验值和许可待确认记录。
+- [x] 保留上游原始质量，不做有损压缩；浏览器验收确认透明边缘在当前浅色背景正常。
 
-## Phase 2: Runtime integration
+## Phase 2: Testable Animation Model
 
-- [ ] 为前端增加 Three.js 与 `@pixiv/three-vrm` 依赖。
-- [ ] 在 `LandingTodayStatus` 内实现局部、懒加载的 VRM 渲染组件。
-- [ ] 实现 Garmin 状态到 AnimationClip 的稳定映射和交叉淡化。
-- [ ] 实现 ResizeObserver、视口暂停、页面后台暂停和卸载清理。
-- [ ] 保留 poster/CSS fallback 与可访问状态文本。
+- [x] 创建页面本地 Sprite 配置模块，定义 v1 网格、九行动作帧时序和 Garmin 五态映射。
+- [x] 提供纯函数计算动作配置、下一帧与背景位置。
+- [x] 添加 Node 单元测试，覆盖五态映射、循环边界和网格位置。
 
-## Phase 3: Visual and performance pass
+## Phase 3: Vue Integration
 
-- [ ] 在桌面、移动端验证构图，不恢复卡片、边框或分割线。
-- [ ] 验证 loading、unavailable、stale、无状态和五种动画状态。
-- [ ] 验证 `prefers-reduced-motion`、WebGL 不可用和模型加载失败。
-- [ ] 检查模型与代码分块体积、离屏 RAF、控制台错误和内存释放。
-- [ ] 若成本超出阅读体验预算，优化资产；仍不合格则保持 fallback。
+- [x] 用 Sprite viewport 替换 `TodayCharacter.vue` 现有 CSS 拼装人物。
+- [x] 实现图片预加载、动作切换重置、逐帧 timer 和卸载清理。
+- [x] 实现 reduced-motion 动态监听并确保该模式不持续调度 timer。
+- [x] 实现加载失败降级和稳定尺寸，保留现有可访问名称。
+- [x] 调整桌面/移动样式，使 192:208 角色完整落在现有展示区域。
+- [x] 将持续循环改为“首帧静止、间隔播放一轮、悬停播放、移出复位”。
+- [x] 将角色缩小为桌面约 196px、移动约 176px。
+
+## Phase 4: Verification
+
+- [x] 通过映射测试验证无数据、状态很好、状态不错、活着、挣扎中五种输入。
+- [x] 通过组件生命周期实现与质量复查验证图片失败、快速切换、卸载和 reduced-motion。
+- [x] 运行 1440px 桌面与 390px 移动端视觉检查，无裁切、文本重叠、布局跳动或横向溢出。
+- [x] 浏览器控制台无错误，Sprite Sheet 使用本地 URL，未引入新运行时依赖。
+- [x] 在 `ASSET.md` 和任务元数据中记录公开部署前的许可确认状态。
 
 ## Validation
 
 ```bash
+pnpm --filter @applog/frontend run test:unit
 pnpm --filter @applog/frontend run lint
 pnpm --filter @applog/frontend run type-check
 pnpm --filter @applog/frontend run build
 git diff --check
 ```
 
-还需执行真实浏览器桌面/移动端视觉回归、减少动态效果回归和低性能设备抽查。
+使用本地开发服务器执行真实浏览器桌面/移动端截图检查，并验证 `prefers-reduced-motion` 与资源失败场景。
 
-## Rollback Point
+## Risky Files And Rollback
 
-在删除或停用现有 CSS 人物前设置明确回滚点。VRM 方案未通过美术、性能和降级验收时，不替换线上默认人物。
+- `packages/frontend/src/pages/Landing/components/LandingTodayStatus/TodayCharacter.vue`
+- 新增的页面本地 Sprite 配置模块及单测
+- `packages/frontend/public/` 下的菲比资产目录
+
+上述范围可独立回滚。许可、视觉或体积验收失败时恢复现有 CSS 人物，不影响 Garmin 数据链路。

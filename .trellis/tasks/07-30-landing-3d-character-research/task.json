@@ -1,12 +1,12 @@
 {
   "id": "landing-3d-character-research",
-  "name": "landing-3d-character-research",
-  "title": "调研 Landing 3D 人物渲染方案",
-  "description": "",
-  "status": "planning",
-  "dev_type": null,
-  "scope": null,
-  "package": null,
+  "name": "landing-feibi-character",
+  "title": "Landing 接入菲比动画角色",
+  "description": "使用菲比 v1 Sprite Sheet 替换 Landing 今日状态的 CSS 人物",
+  "status": "in_progress",
+  "dev_type": "frontend",
+  "scope": "packages/frontend/src/pages/Landing/components/LandingTodayStatus",
+  "package": "frontend",
   "priority": "P2",
   "creator": "季悠然",
   "assignee": "季悠然",
@@ -20,7 +20,10 @@
   "subtasks": [],
   "children": [],
   "parent": null,
-  "relatedFiles": [],
-  "notes": "",
+  "relatedFiles": [
+    "packages/frontend/src/pages/Landing/components/LandingTodayStatus/TodayCharacter.vue",
+    "packages/frontend/test"
+  ],
+  "notes": "公开部署前需确认菲比作者 vanfff 对网站使用与资产再分发的授权。",
   "meta": {}
 }

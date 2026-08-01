@@ -1,83 +1,91 @@
-# Landing 个人化 VRM 人物技术设计
+# Landing 菲比动画角色技术设计
 
 ## Architecture
 
-在现有 `LandingTodayStatus/TodayCharacter.vue` 的组件边界内替换人物渲染层，不改变 Garmin 状态 API、`LandingTodayStatus` 数据流或指标组件。
+保持现有组件边界，只替换 `TodayCharacter.vue` 内部人物渲染：
 
 ```text
-IGarminTodayStatus.evaluation.status
-                    ↓
-          TodayCharacter state adapter
-                    ↓
-       VRM renderer + animation controller
-                    ↓
-        canvas / poster fallback surface
+GarminTodayStatus | null
+          ↓
+状态动作配置（纯 TypeScript）
+          ↓
+帧计时器 / reduced-motion 策略
+          ↓
+固定比例 DOM Sprite viewport
+          ↓
+本地 spritesheet.webp
 ```
 
-### Runtime
+不修改 `LandingTodayStatus/index.vue`、API、Pinia 或共享类型。
 
-- `three`：场景、相机、灯光、WebGLRenderer、AnimationMixer。
-- `@pixiv/three-vrm`：加载和标准化 VRM humanoid。
-- `GLTFLoader`：加载 VRM/动作资源。
-- 不引入完整游戏引擎或在线编辑器运行时。
-- 是否使用 TresJS 延后到原型验证；默认直接封装 Three.js，避免单场景额外抽象。
+## Asset Contract
 
-## Asset Pipeline
+- 静态资产：菲比 `spritesheet.webp`
+- 上游标识：`feibi--vanfff`
+- Codex Pet 版本：v1
+- 图集：1536×1872，8 列×9 行
+- 单元格：192×208
+- 透明背景：是
+- 上游 SHA-256：`a9557926850b37c2b877c8777896366435c6b190f77876dff7d0ca296edca04a`
 
-1. 使用 VRoid Studio 创建个人化角色。
-2. 用户提供最终 VRM，并在提交前确认服装、发型、纹理等全部资产允许网站公开展示和随构建部署；不使用示例模型代替最终资产验收。
-3. 为角色准备 idle、celebrate、breathe、tired 四类动画。
-4. 在离线工具链中完成动画重定向、裁剪和验证，避免浏览器承担不必要的格式转换。
-5. 优化纹理、材质、骨骼和文件大小；输出模型、动画及 poster 图。
+资源保存在前端公开静态目录下的角色专用子目录，并附来源/许可说明。运行时 URL 使用 Vite 的基础路径兼容方式，不能假设应用总部署在域名根目录。
 
-模型文件不直接从 VRoid Hub 热链，不依赖第三方 API。
+## State And Animation Contract
 
-## State Mapping
+| Garmin 状态 | 菲比行 | 动作 | 用途 |
+|---|---:|---|---|
+| 无数据 | 6 | waiting | 等待今日快照 |
+| 状态很好 | 4 | jumping | 明确的高能量反馈 |
+| 状态不错 | 3 | waving | 轻快但不过度兴奋 |
+| 活着 | 0 | idle | 安静的基础状态 |
+| 挣扎中 | 5 | failed | 疲惫/失败语义 |
 
-| Garmin 状态 | 动画语义 |
-|---|---|
-| 无数据 | idle |
-| 状态很好 | celebrate |
-| 状态不错 | upbeat idle 或轻微 walk |
-| 活着 | breathe |
-| 挣扎中 | tired |
+动作配置记录行号、有效帧数与逐帧时长，数据以仓库 `generate-pet-previews.py` 的 v1 合约为基准。状态切换重置到新动作首帧。首帧同时作为该动作组的静止态；非悬停时等待约 7 秒后只播放一轮，鼠标悬停期间连续播放，移出后立即回到首帧。
 
-状态变化通过 AnimationMixer 交叉淡化，不重新加载模型。动画不存在时回退 idle。
+配置和“给定当前帧求下一帧”的逻辑放在页面本地 TypeScript 模块，便于 Node 单元测试。只有一处消费，不增加跨页面抽象。
 
-## Rendering Lifecycle
+## Rendering
 
-- 仅当人物区域接近视口时异步加载 Three.js 相关代码与 VRM 资产。
-- canvas 使用透明背景，服从现有 Landing 排版，不创建独立卡片表面。
-- 使用 `ResizeObserver` 同步容器尺寸和设备像素比上限。
-- 页面隐藏、人物离开视口或用户启用减少动态效果时暂停渲染循环。
-- 组件卸载时清理 RAF、Observer、renderer、geometry、material、texture 和 mixer 引用。
+- 使用固定 `aspect-ratio: 192 / 208` 的角色 viewport，尺寸由容器约束。
+- Sprite 元素使用 `background-image`，`background-size: 800% 900%`。
+- 水平位置按 `column / 7`、垂直位置按 `row / 8` 计算百分比，避免缩放后出现像素偏移。
+- 使用 Vue 响应式状态和两个可取消 `setTimeout` 分别管理逐帧播放与静止间隔；组件卸载、动作切换、鼠标移出或 reduced-motion 变化时先清理旧 timer。
+- 角色 viewport 收紧为桌面约 196px、移动约 176px，同时保留 192:208 比例。
+- 图片预加载成功后再显示动画表面；失败时保持静态降级。
 
-## Fallback and Accessibility
+## Motion And Accessibility
 
-- canvas 不作为唯一语义来源；外层继续使用当前状态的可访问名称。
-- 模型加载前显示 poster；失败、WebGL 不可用或资源超时继续显示 poster/现有 CSS 人物。
-- `prefers-reduced-motion: reduce` 使用静态中性姿态，不播放循环动画。
-- 3D 资源失败不得影响今日指标、文章和后续 Landing 内容。
+- 使用 `matchMedia('(prefers-reduced-motion: reduce)')` 或项目已有 VueUse 能力监听动态变化。
+- reduced-motion 下固定动作首帧，不创建后续 timer。
+- 外层继续使用当前状态的 `aria-label` 和 `role="img"`；Sprite 本身标为装饰，避免重复朗读。
+- 不新增交互、按钮或说明文字。
 
-## Performance Budget
+## Failure And Fallback
 
-原型阶段记录而不预设虚假的绝对阈值，至少比较：
+- 资源加载失败只切换组件内部视觉状态，不抛出未处理异常。
+- 降级表面保持相同宽高，避免布局跳动，可使用简洁静态轮廓或中性占位。
+- 失败不改变状态标题、分数、指标或 stale/unavailable 行为。
 
-- Three.js 代码分块与 VRM/动作资源的传输体积。
-- 桌面及一台移动设备的首次可见时间、稳定帧率和内存趋势。
-- 页面离屏/后台时 GPU 与 RAF 是否停止。
+## Compatibility And Performance
 
-若资源或运行成本明显破坏 Landing 的安静阅读体验，优先降低纹理、材质和动画复杂度；仍不合格则保留 CSS/poster，不强行上线 3D。
+- 不新增 npm 依赖，不创建 WebGL/Canvas 上下文。
+- 单一 WebP 当前约 2.1MB；实现阶段评估无损转有损/近无损优化是否可在无明显视觉损失下降低体积，优化后必须保留视觉检查与新校验值。
+- 静态资源使用长期缓存时应依靠构建文件名或显式版本路径；更新资产时同步更新来源记录。
+- 支持当前项目覆盖的现代浏览器；WebP 已在目标浏览器范围内可用。
 
-## Compatibility and Rollback
+## Licensing And Attribution
 
-- 不修改后端与共享类型，无数据迁移。
-- 新渲染器保持在 `TodayCharacter.vue` 边界内，可通过还原组件或功能开关回退。
-- 首次实现采用隔离原型/可替换组件，不直接删除现有 CSS 人物，直至视觉与性能验收通过。
+记录：
 
-## Risks
+- 仓库：`https://github.com/legeling/awesome-codex-pet`
+- 资产：`pets/feibi--vanfff`
+- 作者：`vanfff`
+- 原始来源：`https://codex-pets.net/share/feibi`
+- 固定上游版本：`510d293f675cc6d166e3851b3b836fbcf5155e0b`
+- 当前许可陈述：公开 Codex Pets 投稿，但仓库未提供明确的再分发许可证
 
-- VRoid 导出角色的服装、发型或纹理可能有独立授权，必须逐项留档。
-- Mixamo 动画与 VRM humanoid 骨架并非天然一致，可能需要 Blender 或专用转换工具进行重定向。
-- VRM 通常比当前 CSS 人物显著增加传输和 GPU 成本。
-- 二次元角色如果细节过多，可能与 Landing 克制风格冲突；美术验收是上线门槛。
+该陈述不足以自动推导 AppLog 的商业网站再分发权。实现可在本地完成，但合并到公开部署分支前需获得作者确认或改用许可明确的替代资产。
+
+## Rollback
+
+变更集中在 `TodayCharacter.vue`、页面本地配置/测试和角色静态资产目录。若视觉、性能或许可未通过，可还原组件并删除该资产目录，不涉及后端或数据迁移。

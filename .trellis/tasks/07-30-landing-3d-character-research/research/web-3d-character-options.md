@@ -103,3 +103,43 @@
 - CGTrader Characters: <https://www.cgtrader.com/3d-models/character>
 - TurboSquid Characters: <https://www.turbosquid.com/Search/3D-Models/character>
 
+## Codex Pets 轻量方案核对
+
+本次从 `legeling/awesome-codex-pet` 仓库及其 `hatch-pet` 约定核对到，Codex Pets 不是 3D 模型运行时，而是面向 2D 角色素材的确定性打包与播放管线：
+
+- 角色最终打包为固定 **8 × 11 Sprite Sheet**，而不是 VRM/GLB。
+- 资源需要覆盖 **9 个标准动画行**，每行再提供 **16 个视线/朝向方向**；播放器按动作、方向和帧索引选择网格单元。
+- 资产带 `spriteVersionNumber: 2` 等版本元数据，并要求确定性组装、视觉 QA 和可复现打包。
+- Web 端实现可退化为一个固定尺寸的 DOM 元素，通过 `background-image`、`background-size`、`background-position` 和 CSS `steps()` 播放帧；不需要 WebGL、Three.js、模型加载器或骨骼系统。
+- “非像素风”也可以走这条管线，Sprite Sheet 只是交付格式；源素材可以是角色插画或渲染出的透明 PNG 帧。关键约束是每帧尺寸、网格布局、动作/方向索引和透明边界一致。
+
+### CodeNoNo 复用核对
+
+用户指定的 `codenono--dq02` 可以作为首页原型资产使用，但官方安装脚本只服务 Codex 本身，不会自动接入 AppLog：
+
+- 安装器只下载 `pet.json` 与 `spritesheet.webp`，写入 `$CODEX_HOME/pets/codenono--dq02/`，默认即 `~/.codex/pets/codenono--dq02/`。
+- CodeNoNo 是 **v1** 资产：1536×1872、8 列 × 9 行、带 alpha 的无动画 WebP；实际仓库元数据未声明 v2 方向行。
+- 九行是仓库约定的标准动作，包含 `idle`、`waving`、`running-right`、`running-left`、`jumping`、`falling`、`review`、`running`、`tired` 等语义。Garmin 四态需要做动作映射，而不是期待素材里有同名状态。
+- `submission.json` 的许可字段是“Original submission; permission granted for inclusion in the awesome-codex-pet gallery via issue #9”，并非一个明确的 MIT/CC 商业再分发许可。将其随 AppLog 公开部署前，应向作者确认网站商业使用和再分发权限，并保留作者与来源链接。
+- 最稳妥的工程做法是把 Sprite Sheet 复制到 `packages/frontend/public/`，在 `TodayCharacter.vue` 中按 v1 的 8×9 网格裁帧；不执行安装脚本，也不依赖用户本机的 `~/.codex` 目录。
+
+### 最终资产选择：菲比
+
+在验证 CodeNoNo 路线可行后，用户将首页角色调整为 `feibi--vanfff`。菲比沿用相同的 Codex Pet v1 播放契约，因此实现架构、Garmin 状态映射、逐帧计时和 reduced-motion 策略无需改变，只替换固定资产与角色命名：
+
+- 资产标识：`feibi--vanfff`，显示名“菲比”，作者 `vanfff`。
+- 图集为 1536×1872、8 列×9 行、每格 192×208 的带 alpha 无损 WebP。
+- 固定上游 commit：`510d293f675cc6d166e3851b3b836fbcf5155e0b`。
+- SHA-256：`a9557926850b37c2b877c8777896366435c6b190f77876dff7d0ca296edca04a`。
+- 社区来源：`https://codex-pets.net/share/feibi`。
+- 官方安装命令仍只面向 Codex 本地宠物目录；AppLog 将图集固定复制到 `packages/frontend/public/feibi-v1/`，不在运行时执行安装脚本。
+- 上游未提供明确的资产再分发许可证，因此本地技术集成可以完成，公开部署仍需作者授权。
+
+对 AppLog 的建议：不必照搬 8×11/16 方向的完整 Codex Pets 规格。首页只有一个约 260px 的人物、四种 Garmin 状态和空闲态，建议先采用一个更小的兼容子集：
+
+1. 每个状态一行 4～8 帧，正面或三分之二视角即可；先用 5 个动作行（idle、great、good、alive、struggling）。
+2. 将每个状态导出为透明 PNG 序列或一张 Sprite Sheet，Vue 组件只负责状态到行/帧的映射。
+3. 用 CSS `steps()` 播放，`prefers-reduced-motion` 时固定到首帧；加载失败时继续使用现有 CSS 人物。
+4. 如果后续需要用户自定义角色，可把“角色源图 → 帧生成/裁切 → Sprite Sheet → manifest”独立成离线资产管线，运行时保持纯 DOM/CSS。
+
+这条路线比 VRM/Three.js 更轻：没有 WebGL 上下文、没有 3D 资源和动画混合依赖，首屏可只加载一张压缩 Sprite Sheet；代价是不能自由旋转视角或复用骨骼动作，角色姿态需要在资产阶段预先绘制。

@@ -1,64 +1,256 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { GARMIN_TODAY_STATUS, type GarminTodayStatus } from '@applog/common'
+import { computed, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
+import type { GarminTodayStatus } from '@applog/common'
+import {
+  FEIBI_ACTIONS,
+  getFeibiAction,
+  getFeibiBackgroundPosition,
+  getNextFeibiFrame,
+} from './feibi-sprite'
 
 const props = defineProps<{ status: GarminTodayStatus | null }>()
-const STATUS_MOTIONS: Record<GarminTodayStatus, string> = {
-  [GARMIN_TODAY_STATUS.GREAT]: 'great',
-  [GARMIN_TODAY_STATUS.GOOD]: 'good',
-  [GARMIN_TODAY_STATUS.ALIVE]: 'alive',
-  [GARMIN_TODAY_STATUS.STRUGGLING]: 'struggling',
+
+type SpriteVisualState = 'loading' | 'ready' | 'failed'
+
+const SPRITESHEET_URL = `${import.meta.env.BASE_URL}feibi-v1/spritesheet.webp`
+const IDLE_INTERVAL_MS = 7000
+const visualState = shallowRef<SpriteVisualState>('loading')
+const frame = shallowRef(0)
+const prefersReducedMotion = shallowRef(false)
+const isHovered = shallowRef(false)
+const isPlaying = shallowRef(false)
+const action = computed(() => getFeibiAction(props.status))
+const spriteStyle = computed(() => ({
+  backgroundImage: `url("${SPRITESHEET_URL}")`,
+  backgroundPosition: getFeibiBackgroundPosition(FEIBI_ACTIONS[action.value].row, frame.value),
+}))
+
+let animationTimer: ReturnType<typeof setTimeout> | undefined
+let idleTimer: ReturnType<typeof setTimeout> | undefined
+let mediaQuery: MediaQueryList | undefined
+let preloader: HTMLImageElement | undefined
+
+function clearTimers() {
+  if (animationTimer !== undefined) {
+    clearTimeout(animationTimer)
+    animationTimer = undefined
+  }
+  if (idleTimer !== undefined) {
+    clearTimeout(idleTimer)
+    idleTimer = undefined
+  }
 }
-const motion = computed(() => (props.status ? STATUS_MOTIONS[props.status] : 'idle'))
+
+function scheduleIdleAnimation() {
+  if (
+    visualState.value !== 'ready'
+    || prefersReducedMotion.value
+    || isHovered.value
+    || isPlaying.value
+  ) return
+
+  idleTimer = setTimeout(playAction, IDLE_INTERVAL_MS)
+}
+
+function scheduleFrame() {
+  const currentAction = action.value
+  const currentFrame = frame.value
+  const duration = FEIBI_ACTIONS[currentAction].frameDurations[currentFrame]
+
+  animationTimer = setTimeout(() => {
+    const nextFrame = getNextFeibiFrame(currentAction, currentFrame)
+    if (nextFrame === 0) {
+      frame.value = 0
+      isPlaying.value = false
+      if (isHovered.value) {
+        playAction()
+      } else {
+        scheduleIdleAnimation()
+      }
+      return
+    }
+
+    frame.value = nextFrame
+    scheduleFrame()
+  }, duration)
+}
+
+function playAction() {
+  clearTimers()
+  if (visualState.value !== 'ready' || prefersReducedMotion.value) return
+
+  frame.value = 0
+  isPlaying.value = true
+  scheduleFrame()
+}
+
+function resetToStillFrame() {
+  clearTimers()
+  frame.value = 0
+  isPlaying.value = false
+}
+
+function handleMouseEnter() {
+  isHovered.value = true
+  playAction()
+}
+
+function handleMouseLeave() {
+  isHovered.value = false
+  resetToStillFrame()
+  scheduleIdleAnimation()
+}
+
+function updateMotionPreference(event: MediaQueryListEvent | MediaQueryList) {
+  prefersReducedMotion.value = event.matches
+}
+
+function preloadSprite() {
+  const image = new Image()
+  preloader = image
+
+  image.onload = () => {
+    if (preloader !== image) return
+    visualState.value = 'ready'
+    if (isHovered.value) {
+      playAction()
+    } else {
+      scheduleIdleAnimation()
+    }
+  }
+  image.onerror = () => {
+    if (preloader !== image) return
+    visualState.value = 'failed'
+    resetToStillFrame()
+  }
+  image.src = SPRITESHEET_URL
+}
+
+watch(
+  action,
+  () => {
+    resetToStillFrame()
+    scheduleIdleAnimation()
+  },
+  { flush: 'sync' },
+)
+
+watch(prefersReducedMotion, (reducedMotion) => {
+  resetToStillFrame()
+  if (reducedMotion) {
+    return
+  }
+  if (isHovered.value) {
+    playAction()
+  } else {
+    scheduleIdleAnimation()
+  }
+})
+
+onMounted(() => {
+  mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  updateMotionPreference(mediaQuery)
+  mediaQuery.addEventListener('change', updateMotionPreference)
+  preloadSprite()
+})
+
+onBeforeUnmount(() => {
+  clearTimers()
+  mediaQuery?.removeEventListener('change', updateMotionPreference)
+  if (preloader) {
+    preloader.onload = null
+    preloader.onerror = null
+    preloader = undefined
+  }
+})
 </script>
 
 <template>
-  <div class="character-stage" :aria-label="status ? `当前状态：${status}` : '今日状态数据收集中'" role="img">
-    <div class="character-shadow" />
-    <div class="character" :class="`character--${motion}`">
-      <div class="character__head"><i /><i /></div>
-      <div class="character__body" />
-      <div class="character__arm character__arm--left" />
-      <div class="character__arm character__arm--right" />
-      <div class="character__leg character__leg--left" />
-      <div class="character__leg character__leg--right" />
-    </div>
+  <div
+    class="character-stage"
+    :aria-label="status ? `当前状态：${status}` : '今日状态数据收集中'"
+    role="img"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
+    <div v-if="visualState === 'ready'" class="character-sprite" :style="spriteStyle" aria-hidden="true" />
+    <div v-else class="character-fallback" aria-hidden="true" />
   </div>
 </template>
 
 <style scoped>
-.character-stage { position: relative; display: grid; min-height: 260px; place-items: center; perspective: 700px; overflow: hidden; }
-.character-stage::before { content: ''; position: absolute; inset: 12% 8% 7%; background: radial-gradient(ellipse at 50% 58%, color-mix(in srgb, var(--color-signal-blue) 10%, transparent), transparent 66%); }
-.character { --skin: #ffd8b5; --shirt: #147ce5; position: relative; width: 108px; height: 205px; transform-style: preserve-3d; animation: idle 3.2s ease-in-out infinite; }
-.character__head, .character__body, .character__arm, .character__leg { position: absolute; transform-style: preserve-3d; box-shadow: inset -10px -8px 18px rgb(0 0 0 / 12%), 0 8px 14px rgb(20 90 150 / 10%); }
-.character__head { z-index: 3; top: 5px; left: 29px; width: 52px; height: 56px; border-radius: 42% 42% 48% 48%; background: var(--skin); transform: translateZ(18px); }
-.character__head::before { content: ''; position: absolute; inset: 0 0 58% 0; border-radius: 45% 45% 20% 20%; background: #3a2d27; transform: translateZ(3px); }
-.character__head i { position: absolute; top: 28px; left: 14px; width: 5px; height: 6px; border-radius: 50%; background: #262626; transform: translateZ(5px); }
-.character__head i + i { left: 34px; }
-.character__body { z-index: 2; top: 61px; left: 24px; width: 62px; height: 79px; border-radius: 20px 20px 14px 14px; background: linear-gradient(135deg, #4aa3ff, var(--shirt)); transform: translateZ(9px); }
-.character__arm { z-index: 1; top: 69px; width: 20px; height: 82px; border-radius: 12px; background: linear-gradient(var(--shirt) 0 55%, var(--skin) 56%); transform-origin: 50% 10%; }
-.character__arm--left { left: 9px; transform: rotateZ(8deg) rotateY(-14deg); }
-.character__arm--right { right: 7px; transform: rotateZ(-8deg) rotateY(14deg); }
-.character__leg { top: 132px; width: 25px; height: 70px; border-radius: 10px 10px 13px 13px; background: linear-gradient(#34506f 0 72%, #fff 73% 87%, #26384f 88%); transform-origin: 50% 5%; }
-.character__leg--left { left: 27px; }
-.character__leg--right { right: 25px; }
-.character-shadow { position: absolute; bottom: 25px; width: 115px; height: 24px; border-radius: 50%; background: rgb(41 91 133 / 20%); filter: blur(7px); animation: shadow 3.2s ease-in-out infinite; }
-.character--great { animation-name: celebrate; animation-duration: 1.25s; }
-.character--great .character__arm--right { animation: wave .7s ease-in-out infinite alternate; }
-.character--good { animation-name: walk; animation-duration: 1.8s; }
-.character--good .character__arm--left, .character--good .character__leg--right { animation: stride 1.1s ease-in-out infinite alternate; }
-.character--good .character__arm--right, .character--good .character__leg--left { animation: stride 1.1s ease-in-out infinite alternate-reverse; }
-.character--alive { animation-name: breathe; animation-duration: 4s; }
-.character--struggling { animation-name: tired; animation-duration: 4.8s; }
-.character--struggling .character__head { transform: translateZ(18px) rotateX(16deg); }
-@keyframes idle { 50% { transform: translateY(-5px) rotateY(5deg); } }
-@keyframes celebrate { 50% { transform: translateY(-18px) rotateY(-12deg); } }
-@keyframes wave { to { transform: rotateZ(-145deg) rotateY(14deg); } }
-@keyframes walk { 50% { transform: translateY(-6px) rotateY(12deg); } }
-@keyframes stride { to { transform: rotateZ(24deg); } }
-@keyframes breathe { 50% { transform: scale3d(1.025, 1.025, 1.025) rotateY(-5deg); } }
-@keyframes tired { 50% { transform: translateY(3px) rotateX(8deg) rotateZ(2deg); } }
-@keyframes shadow { 50% { transform: scale(.88); opacity: .65; } }
-@media (max-width: 800px) { .character-stage { min-height: 230px; } .character-stage::before { inset-inline: 16%; } }
-@media (prefers-reduced-motion: reduce) { .character, .character *, .character-shadow { animation: none !important; } }
+.character-stage {
+  position: relative;
+  display: grid;
+  min-height: 224px;
+  place-items: center;
+  isolation: isolate;
+}
+
+.character-stage::before {
+  position: absolute;
+  inset: 12% 8% 7%;
+  z-index: -1;
+  content: '';
+  background: radial-gradient(ellipse at 50% 58%, color-mix(in srgb, var(--color-signal-blue) 10%, transparent), transparent 66%);
+}
+
+.character-sprite,
+.character-fallback {
+  width: min(100%, 196px);
+  aspect-ratio: 192 / 208;
+}
+
+.character-sprite {
+  background-repeat: no-repeat;
+  background-size: 800% 900%;
+}
+
+.character-fallback {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--landing-muted) 22%, transparent);
+  border-radius: 42% 42% 36% 36%;
+  background: linear-gradient(145deg, color-mix(in srgb, white 90%, var(--color-signal-blue)), color-mix(in srgb, var(--color-signal-blue) 14%, white));
+  box-shadow: inset 0 -18px 28px rgb(20 90 150 / 8%), 0 12px 28px rgb(20 90 150 / 9%);
+}
+
+.character-fallback::before {
+  position: absolute;
+  top: 29%;
+  left: 22%;
+  width: 56%;
+  height: 29%;
+  border: 1px solid color-mix(in srgb, var(--landing-muted) 20%, transparent);
+  border-radius: 30%;
+  content: '';
+  background: color-mix(in srgb, var(--color-signal-blue) 12%, white);
+  box-shadow: inset 0 0 0 8px rgb(255 255 255 / 36%);
+}
+
+.character-fallback::after {
+  position: absolute;
+  top: 40%;
+  left: 37%;
+  width: 26%;
+  height: 5%;
+  border-radius: 999px;
+  content: '';
+  background: color-mix(in srgb, var(--color-signal-blue) 50%, white);
+}
+
+@media (max-width: 800px) {
+  .character-stage {
+    min-height: 204px;
+  }
+
+  .character-stage::before {
+    inset-inline: 16%;
+  }
+
+  .character-sprite,
+  .character-fallback {
+    width: min(100%, 176px);
+  }
+}
 </style>

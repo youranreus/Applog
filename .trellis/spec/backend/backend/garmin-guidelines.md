@@ -44,7 +44,9 @@
   never fabricates a Garmin score.
 - Landing reserves the section for loading, collecting, partial, stale (>6h),
   and error states. Yesterday's row is never shown as today. The dependency-free
-  CSS 3D character consumes only the status union, has no pointer interaction,
+  pinned local v1 Sprite Sheet character consumes only the status union, uses
+  hover only as an optional motion trigger (with no controls or data effects),
+  loads from a pinned local static asset, falls back without affecting metrics,
   and becomes static under reduced-motion preference.
 
 ### 4. Validation & Error Matrix
@@ -78,9 +80,10 @@
 - Backend tests assert goal precedence, score thresholds, time progress,
   confidence, same-day/stale behavior, null/error handling, and the public
   allowlist's privacy boundary.
-- Frontend tests assert null versus zero formatting and sleep discrimination;
-  responsive browser checks cover desktop, 800px, and 390px without horizontal
-  overflow, plus reduced-motion/static CSS fallbacks.
+- Frontend tests assert null versus zero formatting, sleep discrimination, and
+  status-to-sprite action/frame contracts; responsive browser checks cover
+  desktop, 800px, and 390px without horizontal overflow, plus reduced-motion
+  and static asset-failure fallbacks.
 
 ### 7. Wrong vs Correct
 
