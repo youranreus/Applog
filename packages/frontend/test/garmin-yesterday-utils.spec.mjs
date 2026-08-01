@@ -4,10 +4,10 @@ import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
 const { formatMetric, formatSleep } = await jiti.import(
-  '../src/pages/Landing/components/LandingTodayStatus/utils.ts',
+  '../src/pages/Landing/components/LandingYesterdayStatus/utils.ts',
 )
 
-describe('Landing Garmin today formatting', () => {
+describe('Landing Garmin yesterday formatting', () => {
   it('preserves observed zero and marks only null missing', () => {
     assert.equal(formatMetric(0, ' 步'), '0 步')
     assert.equal(formatMetric(null, ' 步'), '—')

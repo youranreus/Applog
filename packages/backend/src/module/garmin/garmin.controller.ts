@@ -2,7 +2,7 @@ import { Controller, Get, Param, Res, VERSION_NEUTRAL } from '@nestjs/common';
 import type {
   IGarminLandingActivityDetail,
   IGarminLandingStats,
-  IGarminTodayStatus,
+  IGarminYesterdayStatus,
 } from '@applog/common';
 import { GarminService } from './garmin.service';
 
@@ -21,10 +21,10 @@ export class GarminController {
     return this.garminService.getLandingStats();
   }
 
-  /** Return today's allowlisted health projection without upstream reads. */
-  @Get('today')
-  getToday(): Promise<IGarminTodayStatus | null> {
-    return this.garminService.getTodayStatus();
+  /** Return yesterday's allowlisted health projection without upstream reads. */
+  @Get('yesterday')
+  getYesterday(): Promise<IGarminYesterdayStatus | null> {
+    return this.garminService.getYesterdayStatus();
   }
 
   /** Lazy public detail lookup by non-source-derived identifier. */

@@ -6,13 +6,13 @@ import LandingRecentPosts from './components/LandingRecentPosts.vue'
 import LandingSlogan from './components/LandingSlogan.vue'
 import LandingDuolingoStats from './components/LandingDuolingoStats.vue'
 import LandingGarminStats from './components/LandingGarminStats/index.vue'
-import LandingTodayStatus from './components/LandingTodayStatus/index.vue'
+import LandingYesterdayStatus from './components/LandingYesterdayStatus/index.vue'
 import { LANDING_DEFAULTS } from './constants'
 import { useLanding } from './hooks/useLanding'
 import { useLandingMeta } from './hooks/useLandingMeta'
 import { useLandingDuolingoStats } from './hooks/useLandingDuolingoStats'
 import { useLandingGarminStats } from './hooks/useLandingGarminStats'
-import { useLandingTodayStatus } from './hooks/useLandingTodayStatus'
+import { useLandingYesterdayStatus } from './hooks/useLandingYesterdayStatus'
 import type { ILandingSocialLink } from './types'
 import { normalizeLandingLink, resolveLandingText } from './utils'
 import { useSystemStore } from '@/stores/useSystemStore'
@@ -29,10 +29,10 @@ const { weather, onlineVisitors, uptimeText } = useLandingMeta()
 const { stats: duolingoStats, loading: duolingoLoading } = useLandingDuolingoStats()
 const { stats: garminStats, loading: garminLoading } = useLandingGarminStats()
 const {
-  status: todayStatus,
-  loading: todayLoading,
-  unavailable: todayUnavailable,
-} = useLandingTodayStatus()
+  status: yesterdayStatus,
+  loading: yesterdayLoading,
+  unavailable: yesterdayUnavailable,
+} = useLandingYesterdayStatus()
 const SITE_URL = import.meta.env.VITE_SITE_URL || ''
 
 const siteTitle = computed(() => {
@@ -89,10 +89,10 @@ useWebSiteJsonLd({
         :social-links="socialLinks"
       />
       <LandingRecentPosts :posts="recentPosts" :loading="postsLoading" :has-error="hasPostError" />
-      <LandingTodayStatus
-        :status="todayStatus"
-        :loading="todayLoading"
-        :unavailable="todayUnavailable"
+      <LandingYesterdayStatus
+        :status="yesterdayStatus"
+        :loading="yesterdayLoading"
+        :unavailable="yesterdayUnavailable"
       />
       <LandingGarminStats
         v-if="garminLoading || garminStats"

@@ -2,12 +2,13 @@
 
 > Cross-layer contract for the systemd Python worker, public NestJS snapshot API, and Landing activity cards.
 
-## Scenario: Public Landing today status
+## Scenario: Public Landing yesterday status
 
 ### 1. Scope / Trigger
 
-- Trigger: Garmin daily-health ingestion, `garmin_health_daily`, the public today
-  endpoint, `landingStepGoal`, server evaluation, or the Landing today-status UI.
+- Trigger: Garmin daily-health ingestion, `garmin_health_daily`, the public
+  yesterday endpoint, `landingStepGoal`, server evaluation, or the Landing
+  yesterday-status UI.
 - Data flow is worker → MySQL → NestJS allowlist → shared contract → Vue. The
   public request never calls Garmin upstream.
 
@@ -16,7 +17,7 @@
 - Worker input: `daily_summary` plus optional health domains for the same Garmin
   local calendar date.
 - DB: `garmin_health_daily.summaryData` remains private.
-- Public API: `GET /garmin/today` → `IGarminTodayStatus | null`.
+- Public API: `GET /garmin/yesterday` → `IGarminYesterdayStatus | null`.
 - System config: optional `landingStepGoal` integer from 1,000 through 100,000.
 
 ### 3. Contracts
@@ -36,14 +37,14 @@
   locations, or credentials.
 - Step goal resolution is system `landingStepGoal` → Garmin goal → 8,000.
 - Evaluation weights are sleep 25, body battery 25, inverse stress 20,
-  time-adjusted steps 15, and time-adjusted intensity 15. Before 08:00 progress
-  dimensions are ineligible; after 22:00 full-day targets apply.
+  full-day steps 15, and full-day intensity 15. The score is independent of
+  request time because it evaluates one completed local day.
 - Missing dimensions are omitted and remaining weights re-normalized. Fewer than
   three dimensions or less than 50% eligible weight produces a null evaluation.
 - Sleep uses a real Garmin score when present, duration fallback otherwise, and
   never fabricates a Garmin score.
-- Landing reserves the section for loading, collecting, partial, stale (>6h),
-  and error states. Yesterday's row is never shown as today. The dependency-free
+- Landing reserves the section for loading, missing, partial, stale (>6h),
+  and error states. The dependency-free
   pinned local v1 Sprite Sheet character consumes only the status union, uses
   hover only as an optional motion trigger (with no controls or data effects),
   loads from a pinned local static asset, falls back without affecting metrics,
@@ -58,14 +59,14 @@
 | Stress, Body Battery, or sleep score is outside 0–100 | Reject it and preserve a valid fallback |
 | Candidate is numeric zero | Preserve it; do not replace it with fallback data |
 | Fewer than three eligible dimensions or less than 50% eligible weight | Return a null evaluation with collecting semantics |
-| Snapshot date differs from Garmin-local today | Return null; never present yesterday as today |
-| Snapshot age exceeds six hours | Preserve today's values and set `stale: true` |
+| Snapshot for Garmin-local yesterday is missing | Return null; never fall back to today or an older date |
+| Snapshot age exceeds six hours | Preserve yesterday's values and set `stale: true` |
 | Saved `landingStepGoal` is invalid | Treat it as unset and use Garmin goal, then 8,000 |
 
 ### 5. Good / Base / Bad Cases
 
 - Good: valid daily summary supplies all six metrics and produces one stable
-  four-level evaluation for an injected evaluation time.
+  four-level evaluation independent of request time.
 - Base: sleep score is absent but real duration is available; duration is shown
   and scored while other missing dimensions are re-normalized.
 - Bad: storing `-1`, `Infinity`, or `101` as a preferred metric; converting a
@@ -77,8 +78,8 @@
 - Worker tests assert standard token login initializes profile, Garmin-local
   today/yesterday selection, intensity aliases, valid-zero retention, invalid
   primary fallback, and latest valid Body Battery selection.
-- Backend tests assert goal precedence, score thresholds, time progress,
-  confidence, same-day/stale behavior, null/error handling, and the public
+- Backend tests assert goal precedence, score thresholds, full-day scoring,
+  confidence, yesterday/stale behavior, null/error handling, and the public
   allowlist's privacy boundary.
 - Frontend tests assert null versus zero formatting, sleep discrimination, and
   status-to-sprite action/frame contracts; responsive browser checks cover

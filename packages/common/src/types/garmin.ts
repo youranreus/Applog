@@ -88,43 +88,43 @@ export interface IGarminLandingStats {
   stale: boolean;
 }
 
-export const GARMIN_TODAY_STATUS = {
+export const GARMIN_YESTERDAY_STATUS = {
   GREAT: '活得很好！',
   GOOD: '活得不错',
   ALIVE: '活着',
   STRUGGLING: '努力活着',
 } as const;
 
-export type GarminTodayStatus =
-  (typeof GARMIN_TODAY_STATUS)[keyof typeof GARMIN_TODAY_STATUS];
+export type GarminYesterdayStatus =
+  (typeof GARMIN_YESTERDAY_STATUS)[keyof typeof GARMIN_YESTERDAY_STATUS];
 
-export type GarminTodaySleepMetric =
+export type GarminYesterdaySleepMetric =
   | { kind: 'score'; score: number }
   | { kind: 'duration'; seconds: number }
   | { kind: 'missing' };
 
-export interface IGarminTodayMetrics {
+export interface IGarminYesterdayMetrics {
   steps: number | null;
   stepGoal: number;
   restingHeartRateBpm: number | null;
   intensityMinutes: number | null;
   averageStressLevel: number | null;
   bodyBattery: number | null;
-  sleep: GarminTodaySleepMetric;
+  sleep: GarminYesterdaySleepMetric;
 }
 
-export interface IGarminTodayEvaluation {
-  status: GarminTodayStatus | null;
+export interface IGarminYesterdayEvaluation {
+  status: GarminYesterdayStatus | null;
   score: number | null;
   confidence: number;
   evaluatedAt: string;
 }
 
 /** Public allowlisted daily health projection for Landing. */
-export interface IGarminTodayStatus {
+export interface IGarminYesterdayStatus {
   calendarDate: string;
   fetchedAt: string;
   stale: boolean;
-  metrics: IGarminTodayMetrics;
-  evaluation: IGarminTodayEvaluation;
+  metrics: IGarminYesterdayMetrics;
+  evaluation: IGarminYesterdayEvaluation;
 }

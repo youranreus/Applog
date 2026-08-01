@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
-import type { GarminTodayStatus } from '@applog/common'
+import type { GarminYesterdayStatus } from '@applog/common'
 import {
   FEIBI_ACTIONS,
   getFeibiAction,
@@ -8,7 +8,7 @@ import {
   getNextFeibiFrame,
 } from './feibi-sprite'
 
-const props = defineProps<{ status: GarminTodayStatus | null }>()
+const props = defineProps<{ status: GarminYesterdayStatus | null }>()
 
 type SpriteVisualState = 'loading' | 'ready' | 'failed'
 
@@ -43,11 +43,12 @@ function clearTimers() {
 
 function scheduleIdleAnimation() {
   if (
-    visualState.value !== 'ready'
-    || prefersReducedMotion.value
-    || isHovered.value
-    || isPlaying.value
-  ) return
+    visualState.value !== 'ready' ||
+    prefersReducedMotion.value ||
+    isHovered.value ||
+    isPlaying.value
+  )
+    return
 
   idleTimer = setTimeout(playAction, IDLE_INTERVAL_MS)
 }
@@ -168,12 +169,17 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="character-stage"
-    :aria-label="status ? `当前状态：${status}` : '今日状态数据收集中'"
+    :aria-label="status ? `当前状态：${status}` : '状态数据收集中'"
     role="img"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
-    <div v-if="visualState === 'ready'" class="character-sprite" :style="spriteStyle" aria-hidden="true" />
+    <div
+      v-if="visualState === 'ready'"
+      class="character-sprite"
+      :style="spriteStyle"
+      aria-hidden="true"
+    />
     <div v-else class="character-fallback" aria-hidden="true" />
   </div>
 </template>
@@ -192,7 +198,11 @@ onBeforeUnmount(() => {
   inset: 12% 8% 7%;
   z-index: -1;
   content: '';
-  background: radial-gradient(ellipse at 50% 58%, color-mix(in srgb, var(--color-signal-blue) 10%, transparent), transparent 66%);
+  background: radial-gradient(
+    ellipse at 50% 58%,
+    color-mix(in srgb, var(--color-signal-blue) 10%, transparent),
+    transparent 66%
+  );
 }
 
 .character-sprite,
@@ -211,8 +221,14 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--landing-muted) 22%, transparent);
   border-radius: 42% 42% 36% 36%;
-  background: linear-gradient(145deg, color-mix(in srgb, white 90%, var(--color-signal-blue)), color-mix(in srgb, var(--color-signal-blue) 14%, white));
-  box-shadow: inset 0 -18px 28px rgb(20 90 150 / 8%), 0 12px 28px rgb(20 90 150 / 9%);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, white 90%, var(--color-signal-blue)),
+    color-mix(in srgb, var(--color-signal-blue) 14%, white)
+  );
+  box-shadow:
+    inset 0 -18px 28px rgb(20 90 150 / 8%),
+    0 12px 28px rgb(20 90 150 / 9%);
 }
 
 .character-fallback::before {

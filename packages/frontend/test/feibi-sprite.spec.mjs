@@ -3,13 +3,8 @@ import { describe, it } from 'node:test'
 import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
-const {
-  FEIBI_ACTIONS,
-  FEIBI_GRID,
-  getFeibiAction,
-  getFeibiBackgroundPosition,
-  getNextFeibiFrame,
-} = await jiti.import('../src/pages/Landing/components/LandingTodayStatus/feibi-sprite.ts')
+const { FEIBI_ACTIONS, FEIBI_GRID, getFeibiAction, getFeibiBackgroundPosition, getNextFeibiFrame } =
+  await jiti.import('../src/pages/Landing/components/LandingYesterdayStatus/feibi-sprite.ts')
 
 describe('Feibi sprite model', () => {
   it('maps Garmin states and missing data to the intended upstream actions', () => {

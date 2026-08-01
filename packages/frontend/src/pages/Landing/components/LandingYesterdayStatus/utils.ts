@@ -1,4 +1,4 @@
-import type { GarminTodaySleepMetric } from '@applog/common'
+import type { GarminYesterdaySleepMetric } from '@applog/common'
 
 /** Format a nullable numeric metric without collapsing observed zero. */
 export function formatMetric(value: number | null, suffix: string): string {
@@ -6,7 +6,7 @@ export function formatMetric(value: number | null, suffix: string): string {
 }
 
 /** Format the discriminated sleep metric with a truthful duration fallback. */
-export function formatSleep(sleep: GarminTodaySleepMetric): { label: string; value: string } {
+export function formatSleep(sleep: GarminYesterdaySleepMetric): { label: string; value: string } {
   if (sleep.kind === 'score') return { label: '睡眠评分', value: `${Math.round(sleep.score)} 分` }
   if (sleep.kind === 'duration') {
     const totalMinutes = Math.round(sleep.seconds / 60)

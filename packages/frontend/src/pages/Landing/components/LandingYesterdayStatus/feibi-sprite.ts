@@ -1,4 +1,4 @@
-import { GARMIN_TODAY_STATUS, type GarminTodayStatus } from '@applog/common'
+import { GARMIN_YESTERDAY_STATUS, type GarminYesterdayStatus } from '@applog/common'
 
 export const FEIBI_GRID = {
   columns: 8,
@@ -22,15 +22,15 @@ export const FEIBI_ACTIONS = {
 export type FeibiAction = keyof typeof FEIBI_ACTIONS
 export type FeibiActionConfig = (typeof FEIBI_ACTIONS)[FeibiAction]
 
-const STATUS_ACTIONS: Record<GarminTodayStatus, FeibiAction> = {
-  [GARMIN_TODAY_STATUS.GREAT]: 'jumping',
-  [GARMIN_TODAY_STATUS.GOOD]: 'waving',
-  [GARMIN_TODAY_STATUS.ALIVE]: 'idle',
-  [GARMIN_TODAY_STATUS.STRUGGLING]: 'failed',
+const STATUS_ACTIONS: Record<GarminYesterdayStatus, FeibiAction> = {
+  [GARMIN_YESTERDAY_STATUS.GREAT]: 'jumping',
+  [GARMIN_YESTERDAY_STATUS.GOOD]: 'waving',
+  [GARMIN_YESTERDAY_STATUS.ALIVE]: 'idle',
+  [GARMIN_YESTERDAY_STATUS.STRUGGLING]: 'failed',
 }
 
 /** Returns the sprite action for the public Garmin status, including the no-data state. */
-export function getFeibiAction(status: GarminTodayStatus | null): FeibiAction {
+export function getFeibiAction(status: GarminYesterdayStatus | null): FeibiAction {
   return status ? STATUS_ACTIONS[status] : 'waiting'
 }
 

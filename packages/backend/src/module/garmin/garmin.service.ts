@@ -5,8 +5,8 @@ import type {
   IGarminActivitySplit,
   IGarminLandingActivityDetail,
   IGarminLandingStats,
-  IGarminTodayMetrics,
-  IGarminTodayStatus,
+  IGarminYesterdayMetrics,
+  IGarminYesterdayStatus,
 } from '@applog/common';
 import {
   GarminActivityCoverEntity,
@@ -15,7 +15,10 @@ import {
   GarminHealthDailyEntity,
 } from '@/entities';
 import { SystemConfigService } from '@/module/system-config/system-config.service';
-import { evaluateGarminToday, getGarminLocalClock } from './garmin-today.utils';
+import {
+  evaluateGarminYesterday,
+  getGarminYesterdayDate,
+} from './garmin-yesterday.utils';
 import { In, IsNull, Not, Repository } from 'typeorm';
 
 const GARMIN_STALE_AFTER_MS = 6 * 60 * 60 * 1000;
@@ -39,14 +42,14 @@ export class GarminService {
     private readonly systemConfigService: SystemConfigService,
   ) {}
 
-  /** Read today's private snapshot through an explicit public allowlist. */
-  async getTodayStatus(): Promise<IGarminTodayStatus | null> {
+  /** Read yesterday's private snapshot through an explicit public allowlist. */
+  async getYesterdayStatus(): Promise<IGarminYesterdayStatus | null> {
     try {
       const timeZone = process.env.GARMIN_TIME_ZONE || 'Asia/Shanghai';
       const now = this.now();
-      const localClock = getGarminLocalClock(now, timeZone);
+      const calendarDate = getGarminYesterdayDate(now, timeZone);
       const [health, state, baseConfig] = await Promise.all([
-        this.healthRepository.findOne({ where: { calendarDate: localClock.date } }),
+        this.healthRepository.findOne({ where: { calendarDate } }),
         this.stateRepository.findOne({ where: { id: 1 } }),
         this.systemConfigService.getBaseConfigRaw(),
       ]);
@@ -58,7 +61,7 @@ export class GarminService {
       const vigorous = this.numberOrNull(data.vigorousIntensityMinutes);
       const sleepScore = this.boundedNumber(data.sleepScore, 0, 100);
       const sleepSeconds = this.nonNegativeNumber(data.sleepSeconds);
-      const metrics: IGarminTodayMetrics = {
+      const metrics: IGarminYesterdayMetrics = {
         steps: this.nonNegativeNumber(data.steps),
         stepGoal: configuredGoal ?? garminGoal ?? 8000,
         restingHeartRateBpm: this.nonNegativeNumber(data.restingHeartRateBpm),
@@ -68,24 +71,26 @@ export class GarminService {
             : Math.max(0, moderate ?? 0) + Math.max(0, vigorous ?? 0) * 2,
         averageStressLevel: this.boundedNumber(data.averageStressLevel, 0, 100),
         bodyBattery: this.boundedNumber(data.bodyBattery, 0, 100),
-        sleep: sleepScore !== null
-          ? { kind: 'score', score: sleepScore }
-          : sleepSeconds !== null
-            ? { kind: 'duration', seconds: sleepSeconds }
-            : { kind: 'missing' },
+        sleep:
+          sleepScore !== null
+            ? { kind: 'score', score: sleepScore }
+            : sleepSeconds !== null
+              ? { kind: 'duration', seconds: sleepSeconds }
+              : { kind: 'missing' },
       };
       const fetchedAt = health.updatedAt;
       return {
         calendarDate: health.calendarDate,
         fetchedAt: fetchedAt.toISOString(),
         stale:
-          state.status !== 'healthy' || now.getTime() - fetchedAt.getTime() > GARMIN_STALE_AFTER_MS,
+          state.status !== 'healthy' ||
+          now.getTime() - fetchedAt.getTime() > GARMIN_STALE_AFTER_MS,
         metrics,
-        evaluation: evaluateGarminToday(metrics, now, localClock.hour),
+        evaluation: evaluateGarminYesterday(metrics, now),
       };
     } catch (error) {
-      this.logUnexpected('Garmin 今日状态读取失败', error);
-      throw new BusinessException('今日状态暂时不可用，请稍后重试');
+      this.logUnexpected('Garmin 昨日状态读取失败', error);
+      throw new BusinessException('昨日状态暂时不可用，请稍后重试');
     }
   }
 
@@ -269,14 +274,21 @@ export class GarminService {
     return number !== null && number >= 0 ? number : null;
   }
 
-  private boundedNumber(value: unknown, min: number, max: number): number | null {
+  private boundedNumber(
+    value: unknown,
+    min: number,
+    max: number,
+  ): number | null {
     const number = this.numberOrNull(value);
     return number !== null && number >= min && number <= max ? number : null;
   }
 
   private validGoal(value: unknown): number | null {
     const number = this.numberOrNull(value);
-    return number !== null && Number.isInteger(number) && number >= 1000 && number <= 100000
+    return number !== null &&
+      Number.isInteger(number) &&
+      number >= 1000 &&
+      number <= 100000
       ? number
       : null;
   }
