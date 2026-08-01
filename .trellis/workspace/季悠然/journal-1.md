@@ -709,3 +709,24 @@ Moved Garmin cover distance badge to the right, removed duplicate map attributio
 ### Status
 
 [OK] **Completed**
+
+
+## Session 26: Landing 菲比帧动画角色
+
+**Date**: 2026-08-01
+**Task**: Landing 菲比帧动画角色
+**Branch**: `master`
+
+### Summary
+
+使用菲比 v1 Sprite Sheet 替换 Landing CSS 人物，建立 Garmin 状态动作映射，并实现静止、间隔及悬停播放、reduced-motion 和失败降级。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d345086` | (see git log) |
+
+### Status
+
+[OK] **Completed**
