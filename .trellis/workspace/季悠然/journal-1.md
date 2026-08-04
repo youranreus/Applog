@@ -42,7 +42,7 @@
 
 ### Status
 
-[OK] **Completed**
+**In Progress** - implementation and static verification are complete; real OIDC and database acceptance remain pending.
 
 ### Next Steps
 
@@ -751,3 +751,43 @@ Switched the Landing health status to a deterministic full-day score from the Ga
 ### Status
 
 [OK] **Completed**
+
+
+## Session 28: Applog OIDC 登录流程改造
+
+**Date**: 2026-08-05
+**Task**: Applog OIDC 登录流程改造
+**Branch**: `master`
+
+### Summary
+
+将 Applog 登录迁移到 H OIDC Authorization Code + S256 PKCE，由后端托管 transaction/callback/completion，并完成身份渐进绑定、opaque string 作者 ID 兼容和前端登录链路替换；代码与静态验证已完成，任务保留 in_progress 等待真实环境验收。
+
+### Main Changes
+
+- 新增后端 OIDC Discovery、PKCE、state/nonce、ID Token 校验及加密短期 Cookie
+- 以 issuer + sub 绑定身份，数字 sub 渐进绑定旧 ssoId 用户并保留本地角色
+- 前端移除旧 ticket SSO，改用后端 OIDC login/callback/complete 流程
+- Post、Page、Comment 作者 ID 全链路兼容 opaque string
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7d9a45b` | (see git log) |
+
+### Testing
+
+- [OK] backend unit 82/82、lint、build 通过
+- [OK] frontend unit 31/31、type-check、build 通过
+- [OK] root pnpm build、本次前端专项 lint、git diff --check 通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 在隔离 MySQL 或数据库快照验证 nullable 字段、组合唯一索引和旧管理员渐进绑定
+- 在 H 测试子应用登记后端 callback 并完成真实 Discovery/PKCE 登录
+- 检查浏览器 URL、storage、network、console 不泄露 verifier、token 或 client secret
