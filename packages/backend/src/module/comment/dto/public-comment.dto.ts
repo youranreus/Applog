@@ -1,5 +1,5 @@
 export interface IPublicCommentAuthorDto {
-  id?: number;
+  id?: number | string;
   name: string;
   avatar?: string;
   site?: string;

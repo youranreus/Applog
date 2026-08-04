@@ -1,12 +1,10 @@
 import type { IPagination } from './post'
 
 export type CommentStatus = 'pending' | 'approved' | 'rejected'
-export type ICommentTarget =
-  | { type: 'post'; id: number }
-  | { type: 'page'; id: number }
+export type ICommentTarget = { type: 'post'; id: number } | { type: 'page'; id: number }
 
 export interface ICommentAuthor {
-  id?: number
+  id?: number | string
   name: string
   avatar?: string
   site?: string

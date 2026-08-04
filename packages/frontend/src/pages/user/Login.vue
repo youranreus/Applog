@@ -16,7 +16,7 @@ const userStore = useUserStore();
 
 /**
  * 处理登录按钮点击
- * 调用 userStore.login() 跳转到 SSO 登录页面
+ * 调用 userStore.login() 跳转到后端托管的 OIDC 登录入口
  * 如果 URL 中有 redirect 参数，保存到 sessionStorage，登录成功后跳转回原页面
  */
 function handleLogin(): void {
@@ -29,7 +29,7 @@ function handleLogin(): void {
 
     userStore.login();
   } catch (error) {
-    console.error('跳转 SSO 登录失败:', error);
+    console.error('跳转 OIDC 登录失败:', error);
   }
 }
 </script>
@@ -42,7 +42,7 @@ function handleLogin(): void {
           <h2 class="text-2xl font-bold mb-4">登录</h2>
 
           <p class="text-sm text-muted-foreground mb-4">
-            嘿，我们使用 SSO 登录，点击下一步按钮进行登录
+            使用 H 账号登录，授权完成后会返回这里
           </p>
 
           <Button class="w-full" @click="handleLogin">

@@ -1,4 +1,4 @@
-import type { IPagination, IPaginationMeta } from './post';
+import type { IPagination, IPaginationMeta } from './post'
 
 /**
  * 页面详情类型
@@ -6,41 +6,41 @@ import type { IPagination, IPaginationMeta } from './post';
  */
 export interface IPageDetail {
   /** 页面 ID */
-  id: number;
+  id: number
   /** 页面标题 */
-  title: string;
+  title: string
   /** 页面内容 */
-  content: string;
+  content: string
   /** 页面摘要 */
-  summary?: string;
+  summary?: string
   /** 封面图片 */
-  cover?: string;
+  cover?: string
   /** 页面唯一标识（用于路由） */
-  slug: string;
+  slug: string
   /** 页面状态 */
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'published' | 'archived'
   /** 浏览次数 */
-  viewCount: number;
+  viewCount: number
   /** 是否展示于导航栏 */
-  showInNav: boolean;
+  showInNav: boolean
   /** 是否展示于 Footer */
-  showInFooter: boolean;
+  showInFooter: boolean
   /** 作者 ID */
-  authorId: number;
+  authorId: number
   /** 作者信息（可选） */
   author?: {
-    id: number;
-    name: string;
-    avatar?: string;
-  };
+    id: number | string
+    name: string
+    avatar?: string
+  }
   /** 标签列表 */
-  tags?: string[];
+  tags?: string[]
   /** 扩展信息 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, unknown>
   /** 创建时间 */
-  createdAt: Date;
+  createdAt: Date
   /** 更新时间 */
-  updatedAt: Date;
+  updatedAt: Date
 }
 
 /**
@@ -49,37 +49,37 @@ export interface IPageDetail {
  */
 export interface IPageListItem {
   /** 页面 ID */
-  id: number;
+  id: number
   /** 页面标题 */
-  title: string;
+  title: string
   /** 页面摘要 */
-  summary?: string;
+  summary?: string
   /** 封面图片 */
-  cover?: string;
+  cover?: string
   /** 页面唯一标识（用于路由） */
-  slug: string;
+  slug: string
   /** 页面状态 */
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'published' | 'archived'
   /** 浏览次数 */
-  viewCount: number;
+  viewCount: number
   /** 是否展示于导航栏 */
-  showInNav: boolean;
+  showInNav: boolean
   /** 是否展示于 Footer */
-  showInFooter: boolean;
+  showInFooter: boolean
   /** 作者 ID */
-  authorId: number;
+  authorId: number
   /** 作者信息（可选） */
   author?: {
-    id: number;
-    name: string;
-    avatar?: string;
-  };
+    id: number | string
+    name: string
+    avatar?: string
+  }
   /** 标签列表 */
-  tags?: string[];
+  tags?: string[]
   /** 创建时间 */
-  createdAt: Date;
+  createdAt: Date
   /** 更新时间 */
-  updatedAt: Date;
+  updatedAt: Date
 }
 
 /**
@@ -88,21 +88,21 @@ export interface IPageListItem {
  */
 export interface IQueryPage {
   /** 页码（从 1 开始） */
-  page?: number;
+  page?: number
   /** 每页数量 */
-  limit?: number;
+  limit?: number
   /** 搜索关键字（匹配标题和摘要） */
-  keyword?: string;
+  keyword?: string
   /** 标签筛选 */
-  tags?: string[];
+  tags?: string[]
   /** 是否包含未发布内容（仅管理端 + admin 生效） */
-  includeUnpublished?: boolean;
+  includeUnpublished?: boolean
 }
 
 /**
  * 页面状态类型
  */
-export type PageStatus = 'draft' | 'published' | 'archived';
+export type PageStatus = 'draft' | 'published' | 'archived'
 
 /**
  * 创建页面 DTO
@@ -110,25 +110,25 @@ export type PageStatus = 'draft' | 'published' | 'archived';
  */
 export interface ICreatePageDto {
   /** 页面标题 */
-  title: string;
+  title: string
   /** 页面内容 */
-  content: string;
+  content: string
   /** 页面摘要 */
-  summary?: string;
+  summary?: string
   /** 封面图片 */
-  cover?: string;
+  cover?: string
   /** 页面唯一标识（用于路由） */
-  slug: string;
+  slug: string
   /** 页面状态 */
-  status?: PageStatus;
+  status?: PageStatus
   /** 是否展示于导航栏 */
-  showInNav?: boolean;
+  showInNav?: boolean
   /** 是否展示于 Footer */
-  showInFooter?: boolean;
+  showInFooter?: boolean
   /** 标签列表 */
-  tags?: string[];
+  tags?: string[]
   /** 扩展信息 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, unknown>
 }
 
 /**
@@ -137,29 +137,28 @@ export interface ICreatePageDto {
  */
 export interface IUpdatePageDto {
   /** 页面标题 */
-  title?: string;
+  title?: string
   /** 页面内容 */
-  content?: string;
+  content?: string
   /** 页面摘要 */
-  summary?: string;
+  summary?: string
   /** 封面图片 */
-  cover?: string;
+  cover?: string
   /** 页面唯一标识（用于路由） */
-  slug?: string;
+  slug?: string
   /** 页面状态 */
-  status?: PageStatus;
+  status?: PageStatus
   /** 是否展示于导航栏 */
-  showInNav?: boolean;
+  showInNav?: boolean
   /** 是否展示于 Footer */
-  showInFooter?: boolean;
+  showInFooter?: boolean
   /** 标签列表 */
-  tags?: string[];
+  tags?: string[]
   /** 扩展信息 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, unknown>
 }
 
 /**
  * 导出分页相关类型（从 post.ts 重新导出，便于使用）
  */
-export type { IPagination, IPaginationMeta };
-
+export type { IPagination, IPaginationMeta }

@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UserEntity, PostEntity, PageEntity, CommentEntity } from '@/entities';
 import { ConfigService } from '@nestjs/config';
-import { UserAPI } from '@reus-able/sso-utils';
 import { isNil } from 'lodash';
 import * as jwt from 'jsonwebtoken';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
@@ -13,7 +12,8 @@ import type {
   IUserOverviewDto,
 } from './dto';
 import type { UpdateUserDto } from './dto';
-import { mapSsoRoleToUserRole, mapUserRoleToJwtRole } from '@/utils/types';
+import { mapUserRoleToJwtRole, USER_ROLES } from '@/utils/types';
+import type { OidcClaims } from './oidc.service';
 
 @Injectable()
 export class UserService {
@@ -32,18 +32,7 @@ export class UserService {
   @Inject(HLOGGER_TOKEN)
   private logger: HLogger;
 
-  private userApi: ReturnType<typeof UserAPI>;
-
-  public constructor(private config: ConfigService) {
-    const apiEnv = {
-      SSO_ID: this.config.get<string>('SSO_ID'),
-      SSO_URL: this.config.get<string>('SSO_URL'),
-      SSO_SECRET: this.config.get<string>('SSO_SECRET'),
-      SSO_REDIRECT: this.config.get<string>('SSO_REDIRECT'),
-    };
-
-    this.userApi = UserAPI(apiEnv);
-  }
+  public constructor(private config: ConfigService) {}
 
   private log(text: string) {
     this.logger.log(text, UserService.name);
@@ -58,108 +47,45 @@ export class UserService {
   }
 
   /**
-   * 用户登录
-   * @param ticket SSO ticket
-   * @returns 登录响应（包含用户信息和 token）
+   * 将经过协议校验的 OIDC claims 绑定到本地用户并签发 Applog JWT。
    */
-  async login(ticket: string): Promise<ILoginResponseDto> {
-    this.log(`开始处理登录请求，ticket: ${ticket}`);
-
-    // 步骤1: 使用 ticket 换取 access_token
-    this.log(`正在通过 ticket 获取 access_token...`);
-    let tokenRes;
+  async loginWithOidc(claims: OidcClaims): Promise<ILoginResponseDto> {
+    let user = await this.userRepo.findOne({
+      where: { oidcIssuer: claims.iss, oidcSubject: claims.sub },
+    });
+    if (!user && /^\d+$/.test(claims.sub)) {
+      const legacy = await this.userRepo.findOne({
+        where: { ssoId: Number(claims.sub) },
+      });
+      if (legacy && !legacy.oidcIssuer && !legacy.oidcSubject) user = legacy;
+    }
+    const email = claims.email;
+    if (!user) {
+      user = this.userRepo.create({
+        ssoId: null,
+        oidcIssuer: claims.iss,
+        oidcSubject: claims.sub,
+        name: claims.nickname || email.split('@')[0] || '用户',
+        email,
+        avatar: claims.picture || null,
+        role: USER_ROLES.USER,
+      });
+    } else {
+      user.oidcIssuer = claims.iss;
+      user.oidcSubject = claims.sub;
+      user.email = email;
+      user.name = claims.nickname || user.name;
+      user.avatar = claims.picture || user.avatar;
+    }
     try {
-      const response = await this.userApi.authorizeToken(ticket);
-      tokenRes = response.data;
-      this.log(`成功获取 access_token`);
-    } catch (e) {
-      this.error(`获取 access_token 失败: ${e.message}`);
-      tokenRes = e.response?.data || { code: -1, msg: '获取 token 失败' };
-    }
-
-    if (tokenRes.code !== 0) {
-      this.warn(`Token 验证失败: ${tokenRes?.msg}`);
-      throw new BusinessException(tokenRes?.msg || 'SSO 认证失败，请重试');
-    }
-
-    const { access_token } = tokenRes.data;
-    this.log(`Access token 获取成功`);
-
-    // 步骤2: 使用 access_token 获取用户信息
-    this.log(`正在获取 SSO 用户信息...`);
-    let userInfo;
-    try {
-      const response = await this.userApi.getUserInfo(`Bearer ${access_token}`);
-      userInfo = response.data;
-      this.log(`成功获取 SSO 用户信息`);
-    } catch (e) {
-      this.error(`获取用户信息失败: ${e.message}`);
-      userInfo = e.response?.data || { code: -1, msg: '获取用户信息失败' };
-    }
-
-    if (userInfo.code !== 0) {
-      this.warn(`获取用户信息失败: ${userInfo?.msg}`);
-      throw new BusinessException(userInfo?.msg || '获取用户信息失败，请重试');
-    }
-
-    const { email, id, avatar, name, role: ssoRole } = userInfo.data;
-    const userRole = mapSsoRoleToUserRole(ssoRole);
-    this.log(
-      `SSO 用户信息: id=${id}, email=${email}, name=${name}, role=${ssoRole}(${userRole})`,
-    );
-
-    // 步骤3: 查询本地数据库用户
-    this.log(`查询本地用户数据，ssoId: ${id}`);
-    const dbUser = await this.userRepo.findOne({ where: { ssoId: id } });
-
-    if (isNil(dbUser)) {
-      // 新用户，创建记录
-      this.log(`用户 #${id} 不存在，创建新用户记录`);
-
-      try {
-        const newUser = this.userRepo.create({
-          ssoId: id,
-          name: name || email.split('@')[0], // 如果没有 name，使用 email 前缀
-          email,
-          avatar: avatar || null,
-          role: userRole,
-        });
-
-        const savedUser = await this.userRepo.save(newUser);
-        this.log(
-          `新用户 #${id} 创建成功，数据库 ID: ${savedUser.id}, 角色: ${userRole}`,
-        );
-
-        // 生成 JWT token
-        const token = this.generateToken(savedUser);
-        this.log(`为用户 #${id} 生成 JWT token 成功`);
-
-        return {
-          user: savedUser.getData(),
-          token,
-        };
-      } catch (error) {
-        this.error(`创建新用户失败: ${error.message}`);
-        throw new BusinessException('创建用户失败，请稍后重试');
-      }
-    }
-
-    // 现有用户，更新信息
-    this.log(`用户 #${id} 已存在`);
-
-    try {
-      // 生成 JWT token
-      const token = this.generateToken(dbUser);
-      this.log(`用户 #${id} 登录成功`);
-
-      return {
-        user: dbUser.getData(),
-        token,
-      };
+      user = await this.userRepo.save(user);
     } catch (error) {
-      this.error(`更新用户信息失败: ${error.message}`);
-      throw new BusinessException('更新用户信息失败，请稍后重试');
+      user = await this.userRepo.findOne({
+        where: { oidcIssuer: claims.iss, oidcSubject: claims.sub },
+      });
+      if (!user) throw error;
     }
+    return { user: user.getData(), token: this.generateToken(user) };
   }
 
   /**
@@ -192,7 +118,7 @@ export class UserService {
         expiresIn: '3d',
       });
       this.log(
-        `JWT token 生成成功，数据库ID: ${user.id}，SSO ID: ${user.ssoId}，有效期: 3 天`,
+        `JWT token 生成成功，数据库ID: ${user.id}，外部身份已绑定: ${Boolean(user.oidcSubject)}，有效期: 3 天`,
       );
       return token;
     } catch (error) {

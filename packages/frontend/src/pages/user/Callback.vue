@@ -1,62 +1,46 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useUserStore } from '@/stores/useUserStore';
-import type { ISsoCallbackParams } from '@/types/user';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/useUserStore'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 
 /**
  * 路由实例
  */
-const route = useRoute();
-const router = useRouter();
+const route = useRoute()
+const router = useRouter()
 
 /**
  * 用户 Store
  */
-const userStore = useUserStore();
+const userStore = useUserStore()
 
 /**
  * 错误信息
  */
-const error = ref<string | null>(null);
+const error = ref<string | null>(null)
 
 /**
- * 处理 SSO 回调
- * 从 URL 参数中获取 code，调用 userStore.handleSsoCallback() 处理登录
+ * 处理后端已经验证完成的 OIDC 回调
  * 成功后跳转到首页，失败则显示错误信息
  */
 async function handleCallback(): Promise<void> {
   try {
-    // 从 URL 参数中获取 code
-    const code = route.query.code as string | undefined;
-    const state = route.query.state as string | undefined;
-
-    if (!code) {
-      throw new Error('缺少 SSO 回调参数 code');
-    }
-
-    // 构建回调参数
-    const params: ISsoCallbackParams = {
-      code,
-      ...(state && { state }),
-    };
-
-    // 调用 userStore 处理 SSO 回调
-    await userStore.handleSsoCallback(params);
+    if (route.query.error) throw new Error('登录失败，请重新开始登录')
+    await userStore.handleOidcCallback()
 
     // 成功后跳转：如果有保存的 redirect 参数，跳转到原页面，否则跳转到首页
-    const redirect = sessionStorage.getItem('login_redirect');
+    const redirect = sessionStorage.getItem('login_redirect')
     if (redirect) {
-      sessionStorage.removeItem('login_redirect');
-      await router.push(decodeURIComponent(redirect));
+      sessionStorage.removeItem('login_redirect')
+      await router.push(decodeURIComponent(redirect))
     } else {
-      await router.push('/');
+      await router.push('/')
     }
   } catch (err) {
-    console.error('处理 SSO 回调失败:', err);
-    error.value = err instanceof Error ? err.message : '处理 SSO 回调失败';
+    console.error('处理 OIDC 回调失败:', err)
+    error.value = err instanceof Error ? err.message : '处理 SSO 回调失败'
   }
 }
 
@@ -64,8 +48,8 @@ async function handleCallback(): Promise<void> {
  * 组件挂载时自动处理回调
  */
 onMounted(() => {
-  handleCallback();
-});
+  handleCallback()
+})
 </script>
 
 <template>
@@ -75,18 +59,11 @@ onMounted(() => {
         <CardContent>
           <h2 class="text-2xl font-bold mb-4">登录</h2>
 
-          <p v-if="!error" class="text-sm text-muted-foreground">
-            正在处理登录...
-          </p>
+          <p v-if="!error" class="text-sm text-muted-foreground">正在处理登录...</p>
           <template v-else>
             <p class="mb-4 text-destructive">{{ error }}</p>
 
-            <Button
-              class="w-full"
-              @click="handleCallback"
-            >
-              重试
-            </Button>
+            <Button class="w-full" @click="router.push('/user/login')"> 重新登录 </Button>
           </template>
         </CardContent>
       </Card>

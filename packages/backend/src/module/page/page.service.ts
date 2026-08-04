@@ -4,7 +4,7 @@ import { Repository, Brackets } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
-import { PageEntity } from '@/entities';
+import { getUserPublicId, PageEntity } from '@/entities';
 import type {
   CreatePageDto,
   UpdatePageDto,
@@ -280,7 +280,9 @@ export class PageService {
           'page.tags',
           'page.createdAt',
           'page.updatedAt',
+          'author.id',
           'author.ssoId',
+          'author.oidcSubject',
           'author.name',
           'author.avatar',
         ]);
@@ -353,7 +355,7 @@ export class PageService {
         authorId: page.authorId,
         author: page.author
           ? {
-              id: page.author.ssoId,
+              id: getUserPublicId(page.author),
               name: page.author.name,
               avatar: page.author.avatar,
             }

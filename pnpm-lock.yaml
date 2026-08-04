@@ -50,9 +50,6 @@ importers:
       '@reus-able/nestjs':
         specifier: 1.1.8
         version: 1.1.8(class-transformer@0.5.1)(class-validator@0.14.2)
-      '@reus-able/sso-utils':
-        specifier: ^1.0.0
-        version: 1.0.0
       '@reus-able/types':
         specifier: 1.0.5
         version: 1.0.5(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -83,6 +80,9 @@ importers:
       nestjs-typeorm-paginate:
         specifier: ^4.0.4
         version: 4.1.0(@nestjs/common@10.4.20(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(typeorm@0.3.26(mongodb@6.18.0)(mysql2@3.14.3)(redis@4.7.1)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@20.19.11)(typescript@5.1.6)))
+      openid-client:
+        specifier: ^6.8.4
+        version: 6.8.4
       reflect-metadata:
         specifier: ^0.2.1
         version: 0.2.2
@@ -1251,9 +1251,6 @@ packages:
 
   '@reus-able/nestjs@1.1.8':
     resolution: {integrity: sha512-NEQpuTcxYhnUTvRvayYVpOfX5IgMH0jBlFYfDN2wsousczs5E2VBAashgsJs5An7auTtVPiiaJYpMTVo0nY8GQ==}
-
-  '@reus-able/sso-utils@1.0.0':
-    resolution: {integrity: sha512-7JlXR/NNn1z8G2AdSgtOj4e6IN2LHwje1fJjhJYvqjw1tOKBhVufjF7ULNuLTUQEkfpOcQMbw1sJB/KTWDSs+w==}
 
   '@reus-able/types@1.0.5':
     resolution: {integrity: sha512-AFs2zFp/tvRg5rKiPVo54iefIuNjITHtD7//JdiTTrYPPNDCgCa/4yHBlJIcblCzD2/ynV6VIIkXS40gRaPF6w==}
@@ -4271,6 +4268,9 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  oauth4webapi@3.8.6:
+    resolution: {integrity: sha512-iwemM91xz8nryHti2yTmg5fhyEMVOkOXwHNqbvcATjyajb5oQxCQzrNOA6uElRHuMhQQTKUyFKV9y/CNyg25BQ==}
+
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
     engines: {node: '>=0.10.0'}
@@ -4325,6 +4325,9 @@ packages:
   open@11.0.0:
     resolution: {integrity: sha512-smsWv2LzFjP03xmvFoJ331ss6h+jixfA4UUV/Bsiyuu4YJPfN+FIQGOIiv4w9/+MoHkfkJ22UIaQWRVFRfH6Vw==}
     engines: {node: '>=20'}
+
+  openid-client@6.8.4:
+    resolution: {integrity: sha512-QSw0BA08piujetEwfZsHoTrDpMEha7GDZDicQqVwX4u0ChCjefvjDB++TZ8BTg76UpwhzIQgdvvfgfl3HpCSAw==}
 
   option-validator@2.0.6:
     resolution: {integrity: sha512-tmZDan2LRIRQyhUGvkff68/O0R8UmF+Btmiiz0SmSw2ng3CfPZB9wJlIjHpe/MKUZqyIZkVIXCrwr1tIN+0Dzg==}
@@ -7056,12 +7059,6 @@ snapshots:
       - class-validator
       - encoding
       - supports-color
-
-  '@reus-able/sso-utils@1.0.0':
-    dependencies:
-      axios: 1.11.0
-    transitivePeerDependencies:
-      - debug
 
   '@reus-able/types@1.0.5(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
     dependencies:
@@ -10458,6 +10455,8 @@ snapshots:
       pathe: 2.0.3
       tinyexec: 1.2.4
 
+  oauth4webapi@3.8.6: {}
+
   object-assign@4.1.1: {}
 
   object-hash@2.2.0: {}
@@ -10515,6 +10514,11 @@ snapshots:
       is-inside-container: 1.0.0
       powershell-utils: 0.1.0
       wsl-utils: 0.3.1
+
+  openid-client@6.8.4:
+    dependencies:
+      jose: 6.2.3
+      oauth4webapi: 3.8.6
 
   option-validator@2.0.6:
     dependencies:

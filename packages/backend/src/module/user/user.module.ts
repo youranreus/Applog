@@ -3,10 +3,11 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { UserEntity, PostEntity, PageEntity, CommentEntity } from '@/entities';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { OidcService } from './oidc.service';
 
 @Module({
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService, OidcService],
   imports: [
     TypeOrmModule.forFeature([
       UserEntity,

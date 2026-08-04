@@ -13,6 +13,7 @@ import { DataSource, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { paginate, type Pagination } from 'nestjs-typeorm-paginate';
 import {
   CommentEntity,
+  getUserPublicId,
   PageEntity,
   PostEntity,
   SystemConfigEntity,
@@ -512,7 +513,7 @@ export class CommentService {
       status: comment.status === 'pending' ? 'pending' : 'approved',
       author: comment.author
         ? {
-            id: comment.author.ssoId,
+            id: getUserPublicId(comment.author),
             name: comment.author.name,
             avatar:
               comment.author.avatar?.trim() ||
@@ -541,7 +542,7 @@ export class CommentService {
       authorId: comment.authorId,
       author: comment.author
         ? {
-            id: comment.author.ssoId,
+            id: getUserPublicId(comment.author),
             name: comment.author.name,
             avatar: comment.author.avatar,
           }

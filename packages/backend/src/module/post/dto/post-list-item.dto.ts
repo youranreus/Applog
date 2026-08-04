@@ -12,7 +12,7 @@ export interface IPostListItemDto {
   viewCount: number;
   authorId: number;
   author?: {
-    id: number;
+    id: number | string;
     name: string;
     avatar?: string;
   };

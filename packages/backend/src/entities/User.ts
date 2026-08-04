@@ -4,11 +4,12 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import type { UserRole } from '@/utils/types';
 
 export interface UserExportData {
-  id: number;
+  id: number | string;
   name: string;
   email: string;
   avatar?: string;
@@ -17,8 +18,17 @@ export interface UserExportData {
   updatedAt: Date;
 }
 
+export function getUserPublicId(
+  user: Pick<UserEntity, 'id' | 'ssoId' | 'oidcSubject'>,
+): number | string {
+  return user.oidcSubject ?? user.ssoId ?? user.id;
+}
+
 @Entity({
   name: 'users',
+})
+@Index('IDX_users_oidc_identity', ['oidcIssuer', 'oidcSubject'], {
+  unique: true,
 })
 export class UserEntity {
   @PrimaryGeneratedColumn()
@@ -41,10 +51,17 @@ export class UserEntity {
   avatar: string;
 
   @Column({
-    nullable: false,
+    type: 'int',
+    nullable: true,
     unique: true,
   })
-  ssoId: number;
+  ssoId: number | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  oidcIssuer: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  oidcSubject: string | null;
 
   @Column({
     type: 'varchar',
@@ -62,7 +79,7 @@ export class UserEntity {
 
   public getData(): UserExportData {
     return {
-      id: this.ssoId,
+      id: this.getPublicId(),
       name: this.name,
       email: this.email,
       avatar: this.avatar,
@@ -70,5 +87,9 @@ export class UserEntity {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
+  }
+
+  public getPublicId(): number | string {
+    return getUserPublicId(this);
   }
 }

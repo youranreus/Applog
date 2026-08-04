@@ -8,7 +8,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { UserEntity } from './User';
+import { getUserPublicId, UserEntity } from './User';
 import { PostEntity } from './Post';
 import { PageEntity } from './Page';
 
@@ -19,7 +19,7 @@ export interface CommentExportData {
   pageId?: number;
   authorId?: number;
   author?: {
-    id: number;
+    id: number | string;
     name: string;
     avatar?: string;
   };
@@ -196,7 +196,7 @@ export class CommentEntity {
 
     if (includeAuthor && this.author) {
       data.author = {
-        id: this.author.ssoId,
+        id: getUserPublicId(this.author),
         name: this.author.name,
         avatar: this.author.avatar,
       };

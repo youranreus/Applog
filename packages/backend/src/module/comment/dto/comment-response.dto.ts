@@ -5,7 +5,7 @@ import type { CommentExportData } from '@/entities';
  */
 export interface ICommentResponseDto extends CommentExportData {
   author?: {
-    id: number;
+    id: number | string;
     name: string;
     avatar?: string;
   };

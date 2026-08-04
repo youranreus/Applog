@@ -1,4 +1,3 @@
-export { exchangeSsoToken } from './exchangeSsoToken';
-export { getUserInfo } from './getUserInfo';
-export { getUserOverview } from './getUserOverview';
-
+export { completeOidcLogin } from './completeOidcLogin'
+export { getUserInfo } from './getUserInfo'
+export { getUserOverview } from './getUserOverview'

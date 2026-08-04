@@ -8,7 +8,7 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { UserEntity } from './User';
+import { getUserPublicId, UserEntity } from './User';
 import { CommentEntity } from './Comment';
 
 export interface PageExportData {
@@ -24,7 +24,7 @@ export interface PageExportData {
   showInFooter: boolean;
   authorId: number;
   author?: {
-    id: number;
+    id: number | string;
     name: string;
     avatar?: string;
   };
@@ -162,7 +162,7 @@ export class PageEntity {
 
     if (includeAuthor && this.author) {
       data.author = {
-        id: this.author.ssoId,
+        id: getUserPublicId(this.author),
         name: this.author.name,
         avatar: this.author.avatar,
       };

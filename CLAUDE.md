@@ -123,7 +123,9 @@ The `MarkdownRenderer` component (`src/components/ui/markdown-renderer/`) uses `
 
 **Backend** (`packages/backend/.env`):
 ```
-SSO_URL, SSO_ID, SSO_SECRET, SSO_REDIRECT  # SSO OAuth integration
+OIDC_ISSUER, OIDC_CLIENT_ID                 # H OIDC Discovery and client ID
+OIDC_CLIENT_SECRET                          # Optional; confidential clients only
+OIDC_REDIRECT_URI, OIDC_SESSION_SECRET      # Exact backend callback and 32+ byte secret
 FRONT_URL                                   # Frontend origin
 MYSQL_SERVER, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
 TOKEN_SECRET, SALTROUND
@@ -134,15 +136,12 @@ SYSTEM_ADMIN_ROLE_VALUE                     # Numeric role value for admin users
 
 **Frontend** (`packages/frontend/.env`):
 ```
-VITE_SSO_LOGIN_URL
-VITE_SSO_CALLBACK_URL
-VITE_SSO_CLIENT_ID
 VITE_API_BASE_URL    # Backend URL, defaults to http://localhost:4000
 ```
 
 ## Key Conventions
 
-- **SSO authentication**: The backend integrates with an external SSO service (`@reus-able/sso-utils`). Users authenticate via SSO redirect flow (`/user/login` → `/user/callback`).
+- **OIDC authentication**: The backend owns H Discovery, Authorization Code + S256 PKCE, callback validation, and the short-lived completion cookie. The frontend starts at `/user/oidc/login` and consumes `/user/oidc/complete`; upstream tokens never enter browser storage.
 - **Admin role**: Role-based access uses a numeric `role` value compared against `SYSTEM_ADMIN_ROLE_VALUE`. In the frontend, `roles: ['admin']` in route meta triggers the permission guard.
 - **System config**: Key-value store in DB. Keys prefixed with `SYSTEM_` (configurable) are read-only for non-admins.
 - **Backend path alias**: `@/` maps to `src/` in backend TypeScript (via `tsconfig-paths`).

@@ -26,10 +26,11 @@ resources:
       environmentVariables:
         PATH: >-
           /opt/nodejs20/bin:/usr/local/bin/apache-maven/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/ruby/bin
-        SSO_URL: ${env(SSO_URL)}
-        SSO_ID: ${env(SSO_ID)}
-        SSO_SECRET: ${env(SSO_SECRET)}
-        SSO_REDIRECT: ${env(SSO_REDIRECT)}
+        OIDC_ISSUER: ${env(OIDC_ISSUER)}
+        OIDC_CLIENT_ID: ${env(OIDC_CLIENT_ID)}
+        OIDC_CLIENT_SECRET: ${env(OIDC_CLIENT_SECRET)}
+        OIDC_REDIRECT_URI: ${env(OIDC_REDIRECT_URI)}
+        OIDC_SESSION_SECRET: ${env(OIDC_SESSION_SECRET)}
         FRONT_URL: ${env(FRONT_URL)}
         MYSQL_SERVER: ${env(MYSQL_SERVER)}
         MYSQL_PORT: ${env(MYSQL_PORT)}

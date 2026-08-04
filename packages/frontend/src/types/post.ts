@@ -3,22 +3,22 @@
  * 对应后端的 IPostListItemDto
  */
 export interface IPostListItem {
-  id: number;
-  slug: string;
-  title: string;
-  summary?: string;
-  cover?: string;
-  status: 'draft' | 'published' | 'archived';
-  viewCount: number;
-  authorId: number;
+  id: number
+  slug: string
+  title: string
+  summary?: string
+  cover?: string
+  status: 'draft' | 'published' | 'archived'
+  viewCount: number
+  authorId: number
   author?: {
-    id: number;
-    name: string;
-    avatar?: string;
-  };
-  tags?: string[];
-  createdAt: Date;
-  updatedAt: Date;
+    id: number | string
+    name: string
+    avatar?: string
+  }
+  tags?: string[]
+  createdAt: Date
+  updatedAt: Date
 }
 
 /**
@@ -26,12 +26,12 @@ export interface IPostListItem {
  * 对应后端的 QueryPostDto
  */
 export interface IQueryPost {
-  page?: number;
-  limit?: number;
-  keyword?: string;
-  tags?: string[];
+  page?: number
+  limit?: number
+  keyword?: string
+  tags?: string[]
   /** 是否包含未发布内容（仅管理端 + admin 生效） */
-  includeUnpublished?: boolean;
+  includeUnpublished?: boolean
 }
 
 /**
@@ -39,11 +39,11 @@ export interface IQueryPost {
  * 对应 nestjs-typeorm-paginate 的 PaginationMeta
  */
 export interface IPaginationMeta {
-  itemCount: number;
-  totalItems: number;
-  itemsPerPage: number;
-  totalPages: number;
-  currentPage: number;
+  itemCount: number
+  totalItems: number
+  itemsPerPage: number
+  totalPages: number
+  currentPage: number
 }
 
 /**
@@ -52,20 +52,20 @@ export interface IPaginationMeta {
  * @template T - 列表项类型
  */
 export interface IPagination<T> {
-  items: T[];
-  meta: IPaginationMeta;
+  items: T[]
+  meta: IPaginationMeta
   links?: {
-    first?: string;
-    previous?: string;
-    next?: string;
-    last?: string;
-  };
+    first?: string
+    previous?: string
+    next?: string
+    last?: string
+  }
 }
 
 /**
  * 文章状态类型
  */
-export type PostStatus = 'draft' | 'published' | 'archived';
+export type PostStatus = 'draft' | 'published' | 'archived'
 
 /**
  * 文章详情类型
@@ -73,37 +73,37 @@ export type PostStatus = 'draft' | 'published' | 'archived';
  */
 export interface IPostDetail {
   /** 文章 ID */
-  id: number;
+  id: number
   /** 文章 slug */
-  slug: string;
+  slug: string
   /** 文章标题 */
-  title: string;
+  title: string
   /** 文章内容 */
-  content: string;
+  content: string
   /** 文章摘要 */
-  summary?: string;
+  summary?: string
   /** 封面图片 */
-  cover?: string;
+  cover?: string
   /** 文章状态 */
-  status: PostStatus;
+  status: PostStatus
   /** 浏览次数 */
-  viewCount: number;
+  viewCount: number
   /** 作者 ID */
-  authorId: number;
+  authorId: number
   /** 作者信息（可选） */
   author?: {
-    id: number;
-    name: string;
-    avatar?: string;
-  };
+    id: number | string
+    name: string
+    avatar?: string
+  }
   /** 标签列表 */
-  tags?: string[];
+  tags?: string[]
   /** 扩展信息 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, unknown>
   /** 创建时间 */
-  createdAt: Date;
+  createdAt: Date
   /** 更新时间 */
-  updatedAt: Date;
+  updatedAt: Date
 }
 
 /**
@@ -112,21 +112,21 @@ export interface IPostDetail {
  */
 export interface ICreatePostDto {
   /** 文章 slug */
-  slug: string;
+  slug: string
   /** 文章标题 */
-  title: string;
+  title: string
   /** 文章内容 */
-  content: string;
+  content: string
   /** 文章摘要 */
-  summary?: string;
+  summary?: string
   /** 封面图片 */
-  cover?: string;
+  cover?: string
   /** 文章状态 */
-  status?: PostStatus;
+  status?: PostStatus
   /** 标签列表 */
-  tags?: string[];
+  tags?: string[]
   /** 扩展信息 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, unknown>
 }
 
 /**
@@ -135,21 +135,21 @@ export interface ICreatePostDto {
  */
 export interface IUpdatePostDto {
   /** 文章 slug */
-  slug?: string;
+  slug?: string
   /** 文章标题 */
-  title?: string;
+  title?: string
   /** 文章内容 */
-  content?: string;
+  content?: string
   /** 文章摘要 */
-  summary?: string;
+  summary?: string
   /** 封面图片 */
-  cover?: string;
+  cover?: string
   /** 文章状态 */
-  status?: PostStatus;
+  status?: PostStatus
   /** 标签列表 */
-  tags?: string[];
+  tags?: string[]
   /** 扩展信息 */
-  extra?: Record<string, unknown>;
+  extra?: Record<string, unknown>
 }
 
 /**
@@ -158,9 +158,9 @@ export interface IUpdatePostDto {
  */
 export interface IPostBasicInfo {
   /** 文章 slug */
-  slug: string;
+  slug: string
   /** 文章标题 */
-  title: string;
+  title: string
   /** 发布日期 */
-  createdAt: string;
+  createdAt: string
 }

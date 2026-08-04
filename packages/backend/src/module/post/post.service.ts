@@ -4,7 +4,7 @@ import { Repository, Brackets } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BusinessException, HLogger, HLOGGER_TOKEN } from '@reus-able/nestjs';
 import type { UserJwtPayload } from '@reus-able/types';
-import { PostEntity } from '@/entities';
+import { getUserPublicId, PostEntity } from '@/entities';
 import { CommentService } from '../comment/comment.service';
 import type {
   CreatePostDto,
@@ -374,7 +374,9 @@ export class PostService {
           'post.tags',
           'post.createdAt',
           'post.updatedAt',
+          'author.id',
           'author.ssoId',
+          'author.oidcSubject',
           'author.name',
           'author.avatar',
         ]);
@@ -445,7 +447,7 @@ export class PostService {
         authorId: post.authorId,
         author: post.author
           ? {
-              id: post.author.ssoId,
+              id: getUserPublicId(post.author),
               name: post.author.name,
               avatar: post.author.avatar,
             }

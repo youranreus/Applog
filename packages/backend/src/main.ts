@@ -22,7 +22,10 @@ async function bootstrap() {
     type: VersioningType.URI,
   });
 
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.FRONT_URL || 'http://localhost:5173',
+    credentials: true,
+  });
 
   app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());

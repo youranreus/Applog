@@ -14,7 +14,7 @@ export interface IPageListItemDto {
   showInFooter: boolean;
   authorId: number;
   author?: {
-    id: number;
+    id: number | string;
     name: string;
     avatar?: string;
   };
