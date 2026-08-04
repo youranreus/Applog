@@ -42,7 +42,7 @@
 
 ### Status
 
-**In Progress** - implementation and static verification are complete; real OIDC and database acceptance remain pending.
+[OK] **Completed**
 
 ### Next Steps
 
@@ -784,7 +784,7 @@ Switched the Landing health status to a deterministic full-day score from the Ga
 
 ### Status
 
-[OK] **Completed**
+**In Progress** - implementation and static verification are complete; real OIDC and database acceptance remain pending.
 
 ### Next Steps
 
