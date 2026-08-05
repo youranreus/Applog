@@ -95,7 +95,9 @@ export class UserController {
           this.oidcService.completionTtl(),
         ),
       ]);
-      return reply.redirect(`${frontUrl}/user/callback`);
+      const callbackUrl = new URL('/user/callback', `${frontUrl}/`);
+      callbackUrl.searchParams.set('returnPath', transaction.returnPath);
+      return reply.redirect(callbackUrl.toString());
     } catch (error) {
       this.oidcService.logCallbackFailure(error);
       reply.header('Set-Cookie', clearTransaction);

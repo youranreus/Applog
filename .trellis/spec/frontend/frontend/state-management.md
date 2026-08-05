@@ -14,7 +14,7 @@ Global/cross-route state uses Pinia setup stores (`defineStore(id, () => { ... }
 
 | Store | Path | Responsibility |
 |-------|------|----------------|
-| `useUserStore` | `stores/useUserStore/` | Auth user, token, SSO login/callback, `initializeAuth()` |
+| `useUserStore` | `stores/useUserStore/` | Auth user, Applog token, backend-owned OIDC login/completion, `initializeAuth()` |
 | `useSystemStore` | `stores/useSystemStore/` | Base system config from `@applog/common` key |
 | `useLayoutStore` | `stores/useLayoutStore/` | Nav pages, `notify()` queue for Sonner bridge |
 | `usePostListStore` | `stores/usePostListStore/` | Public post list filters/pagination |

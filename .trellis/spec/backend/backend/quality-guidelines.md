@@ -59,7 +59,9 @@ Env load order (`packages/backend/src/utils/const.ts` → `ENV_LIST`):
 
 Read via injected `ConfigService.get<T>('KEY', default)`.
 
-Important keys: `MYSQL_*`, `SSO_*`, `TOKEN_SECRET`, `SYSTEM_CONFIG_PREFIX`, `SYSTEM_ADMIN_ROLE_VALUE`, `FRONT_URL`.
+Important keys: `MYSQL_*`, `OIDC_ISSUER`, `OIDC_CLIENT_ID`, optional `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`, `OIDC_SESSION_SECRET`, `TOKEN_SECRET`, `SYSTEM_CONFIG_PREFIX`, `SYSTEM_ADMIN_ROLE_VALUE`, `FRONT_URL`.
+
+OIDC discovery, token exchange, PKCE, nonce, and ID Token verification stay in the backend. Browser code may only start `/user/oidc/login` and consume the one-time `/user/oidc/complete` result; it must never receive upstream tokens or client secrets.
 
 ---
 

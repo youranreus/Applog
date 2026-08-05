@@ -117,12 +117,14 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * 跳转到 SSO 登录页面
-   * 拼接 client_id 和 callback_url 参数
+   * 跳转到后端托管的 OIDC 登录入口
+   * 将规范化的站内返回路径绑定到服务端 transaction
    * @returns void
    */
-  function login(): void {
-    window.location.href = `${API_BASE_URL}/user/oidc/login`
+  function login(returnPath = '/'): void {
+    const loginUrl = new URL(`${API_BASE_URL}/user/oidc/login`, window.location.origin)
+    loginUrl.searchParams.set('returnPath', returnPath)
+    window.location.href = loginUrl.toString()
   }
 
   /**
@@ -131,8 +133,7 @@ export const useUserStore = defineStore('user', () => {
    * 响应拦截器会自动提取 data 字段，返回 ILoginResponseDto 类型
    *
    * 逻辑说明：
-   * 1. 使用函数形式传入请求方法，接受 ticket 参数
-   * 2. 设置为 immediate: false，需要手动调用 send 触发请求
+   * 使用 immediate: false，等待 callback 页面手动消费一次性 completion
    */
   const { send: exchangeToken } = useRequest(() => completeOidcLogin(), {
     immediate: false, // 不立即请求，需要手动触发
@@ -142,7 +143,7 @@ export const useUserStore = defineStore('user', () => {
    * 处理 OIDC 完成回调
    * 上游授权码已由后端处理，此处只消费加密完成会话。
    * @returns Promise<void>
-   * @throws {Error} 当 SSO 回调处理失败时抛出异常
+   * @throws {Error} 当 OIDC completion 处理失败时抛出异常
    */
   async function handleOidcCallback(): Promise<void> {
     loading.value = true
@@ -223,7 +224,7 @@ export const useUserStore = defineStore('user', () => {
 
   /**
    * 用户登出
-   * 清除本地状态和存储，然后跳转到 SSO 登出页面（如果有配置）
+   * 清除本地认证状态和存储
    * @returns Promise<void>
    */
   async function logout(): Promise<void> {

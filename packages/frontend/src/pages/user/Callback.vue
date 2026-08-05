@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/useUserStore'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { normalizeReturnPath } from '@/utils/normalize-return-path'
 
 /**
  * 路由实例
@@ -30,17 +31,12 @@ async function handleCallback(): Promise<void> {
     if (route.query.error) throw new Error('登录失败，请重新开始登录')
     await userStore.handleOidcCallback()
 
-    // 成功后跳转：如果有保存的 redirect 参数，跳转到原页面，否则跳转到首页
-    const redirect = sessionStorage.getItem('login_redirect')
-    if (redirect) {
-      sessionStorage.removeItem('login_redirect')
-      await router.push(decodeURIComponent(redirect))
-    } else {
-      await router.push('/')
-    }
+    const returnPath =
+      typeof route.query.returnPath === 'string' ? route.query.returnPath : undefined
+    await router.push(normalizeReturnPath(returnPath))
   } catch (err) {
     console.error('处理 OIDC 回调失败:', err)
-    error.value = err instanceof Error ? err.message : '处理 SSO 回调失败'
+    error.value = err instanceof Error ? err.message : '处理 OIDC 回调失败'
   }
 }
 

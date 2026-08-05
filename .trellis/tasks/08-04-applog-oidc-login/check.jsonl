@@ -1,1 +1,14 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/backend/index.md","reason":"NestJS controller, service, DTO, auth, and quality conventions"}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"User identity columns, unique index, and synchronize compatibility"}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"Generic OIDC boundary errors and BusinessException behavior"}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"OIDC failure logging and secret redaction"}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Backend lint, build, tests, and API conventions"}
+{"file":".trellis/spec/common/shared/deployment-automation-contracts.md","reason":"OIDC runtime configuration and deployment preflight scope"}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Cross-layer configuration ownership and secret boundaries"}
+{"file":".trellis/spec/common/shared/type-safety.md","reason":"Public identity and frontend/backend response type changes"}
+{"file":".trellis/spec/frontend/frontend/index.md","reason":"Vue frontend package conventions"}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Login and callback component behavior"}
+{"file":".trellis/spec/frontend/frontend/state-management.md","reason":"Pinia authentication flow and persistence"}
+{"file":".trellis/spec/frontend/frontend/type-safety.md","reason":"OIDC API and public identity types"}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Frontend lint, type-check, build, and test gate"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"OIDC browser-to-provider-to-backend data flow review"}

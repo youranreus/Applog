@@ -16,7 +16,7 @@ Reference: `packages/backend/src/main.ts`, `packages/backend/src/app.module.ts`.
 
 | Type | When to use | Source |
 |------|-------------|--------|
-| `BusinessException` | Domain/business failures (not found, forbidden action, SSO failure, etc.) | `@reus-able/nestjs` |
+| `BusinessException` | Domain/business failures (not found, forbidden action, OIDC completion failure, etc.) | `@reus-able/nestjs` |
 | Validation → `BusinessException` | DTO validation failures via global `ValidationPipe.exceptionFactory` | `app.module.ts` |
 
 **Do not use** NestJS built-ins like `NotFoundException` / `BadRequestException` for business errors — the codebase does not use them.

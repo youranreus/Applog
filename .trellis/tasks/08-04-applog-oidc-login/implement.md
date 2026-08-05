@@ -20,7 +20,7 @@
 - [x] 新增 `GET /user/oidc/callback`：校验 transaction、从已登记 HTTPS callback 合成完整返回 URL、解析身份并生成 completion，然后重定向前端。
 - [x] 新增 `POST /user/oidc/complete`：一次性返回 `ILoginResponseDto` 并清除 completion。
 - [x] 删除 `GET /user/login?ticket=`、`LoginDto` 和 `@reus-able/sso-utils` 依赖。
-- [ ] 使用可控 OIDC client double 测试授权参数、state/nonce/verifier、`iss` 透传、重复/过期 completion 及脱敏日志。
+- [ ] 使用可控 OIDC client double 测试 Discovery 缓存/失败、授权参数及 issuer/audience/nonce/verifier 校验；controller double 已覆盖安全 return path、generic callback failure、cookie 清除和重复/过期 completion。
 
 ## 4. Frontend Flow
 
@@ -28,7 +28,7 @@
 - [x] 简化 `useUserStore.login()` 和 callback handler，保留 JWT/user 缓存、auth bootstrap 与 redirect 恢复。
 - [x] 更新 `Login.vue`、`Callback.vue` 文案和失败重试行为；失败重试重新开始登录，不重放回调。
 - [x] 删除旧 `ISsoCallbackParams`、ticket state、exchange API 和 `VITE_SSO_*` 类型/配置。
-- [ ] 增加 store/API 静态或单元回归，覆盖完整成功、complete 失败和站内 redirect。
+- [x] 增加前端 OIDC 静态/单元回归，覆盖 callback 不读取 provider code/state、不使用浏览器 redirect storage，以及站内 redirect 规范化；complete 成功/失败由后端 controller 回归覆盖。
 
 ## 5. Configuration And Operations
 
@@ -39,12 +39,12 @@
 
 ## 6. Validation And Review
 
-- [x] `pnpm --filter @applog/backend run test:unit`（82/82）
+- [x] `pnpm --filter @applog/backend run test:unit`（86/86）
 - [x] `pnpm --filter @applog/backend run lint`
 - [x] `pnpm --filter @applog/backend run build`
-- [x] `pnpm --filter @applog/frontend run test:unit`（31/31）
+- [x] `pnpm --filter @applog/frontend run test:unit`（33/33）
 - [x] `pnpm --filter @applog/frontend run type-check`
-- [ ] `pnpm --filter @applog/frontend run lint`
+- [x] `pnpm --filter @applog/frontend run lint`
 - [x] `pnpm --filter @applog/frontend run build`
 - [x] `pnpm build`
 - [x] `git diff --check`

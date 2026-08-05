@@ -36,7 +36,7 @@ Criteria (all should be true):
 | Alova API wrappers | `packages/frontend/src/api/` |
 | API response envelopes | Duplicated today as `IConfigResponseDto` in backend DTO + frontend `types/system-config.ts` |
 | Env reading / admin permission logic | Backend `ConfigService` + `SystemConfigService.ensureSystemKeyAccess` |
-| SSO / JWT payload types | `@reus-able/types` |
+| JWT payload types | `@reus-able/types` |
 
 ---
 

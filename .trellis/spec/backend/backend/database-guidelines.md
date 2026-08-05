@@ -26,7 +26,7 @@
 
 Reference entities:
 - `packages/backend/src/entities/Post.ts` — `PostEntity`, `PostExportData`, `getData`
-- `packages/backend/src/entities/User.ts` — public `id` in `getData()` is `ssoId`, not DB PK
+- `packages/backend/src/entities/User.ts` — public `id` in `getData()` prefers opaque `oidcSubject`, then legacy `ssoId`, then DB PK; content relations always keep using the DB PK
 - `packages/backend/src/entities/Comment.ts` — self-referencing parent relation
 - `packages/backend/src/entities/SystemConfig.ts` — key/value config store
 

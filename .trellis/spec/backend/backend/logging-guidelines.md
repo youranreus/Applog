@@ -47,11 +47,11 @@ Reference: `packages/backend/src/module/post/post.service.ts`, `packages/backend
 
 | Level | Use for |
 |-------|---------|
-| `log` | Operation start/success (create/update/delete, SSO steps, migration stats) |
+| `log` | Operation start/success (create/update/delete, OIDC identity binding, migration stats) |
 | `warn` | Suspicious but handled cases (e.g. non-admin writing `SYSTEM_` keys) |
 | `error` | Unexpected failures before wrapping as `BusinessException` |
 
-Include enough context (ids/slugs/action) but **never** log secrets (`TOKEN_SECRET`, SSO secret, passwords, raw JWT).
+Include enough context (ids/slugs/action) but **never** log secrets (`TOKEN_SECRET`, OIDC client/session secrets, authorization codes, state, nonce, PKCE verifier, upstream tokens, passwords, raw JWT).
 
 ---
 

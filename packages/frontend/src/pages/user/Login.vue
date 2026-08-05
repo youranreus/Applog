@@ -3,6 +3,7 @@ import { useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/useUserStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { normalizeReturnPath } from '@/utils/normalize-return-path';
 
 /**
  * 路由实例
@@ -17,17 +18,12 @@ const userStore = useUserStore();
 /**
  * 处理登录按钮点击
  * 调用 userStore.login() 跳转到后端托管的 OIDC 登录入口
- * 如果 URL 中有 redirect 参数，保存到 sessionStorage，登录成功后跳转回原页面
+ * 如果 URL 中有 redirect 参数，将规范化后的站内路径绑定到后端 OIDC transaction
  */
 function handleLogin(): void {
   try {
-    // 如果 URL 中有 redirect 参数，保存到 sessionStorage
-    const redirect = route.query.redirect as string | undefined;
-    if (redirect) {
-      sessionStorage.setItem('login_redirect', redirect);
-    }
-
-    userStore.login();
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined;
+    userStore.login(normalizeReturnPath(redirect));
   } catch (error) {
     console.error('跳转 OIDC 登录失败:', error);
   }
