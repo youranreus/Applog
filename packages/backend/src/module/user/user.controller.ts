@@ -5,6 +5,7 @@ import {
   VERSION_NEUTRAL,
   Query,
   Body,
+  HttpStatus,
   Post,
   Req,
   Res,
@@ -27,6 +28,7 @@ interface OidcRequest {
 
 interface OidcReply {
   header(name: string, value: string | string[]): OidcReply;
+  status(code: number): OidcReply;
   redirect(url: string): unknown;
 }
 
@@ -62,7 +64,7 @@ export class UserController {
         this.oidcService.transactionTtl(),
       ),
     );
-    return reply.redirect(url.toString());
+    return reply.status(HttpStatus.FOUND).redirect(url.toString());
   }
 
   @Get('oidc/callback')
@@ -97,11 +99,13 @@ export class UserController {
       ]);
       const callbackUrl = new URL('/user/callback', `${frontUrl}/`);
       callbackUrl.searchParams.set('returnPath', transaction.returnPath);
-      return reply.redirect(callbackUrl.toString());
+      return reply.status(HttpStatus.FOUND).redirect(callbackUrl.toString());
     } catch (error) {
       this.oidcService.logCallbackFailure(error);
       reply.header('Set-Cookie', clearTransaction);
-      return reply.redirect(`${frontUrl}/user/callback?error=login_failed`);
+      return reply
+        .status(HttpStatus.FOUND)
+        .redirect(`${frontUrl}/user/callback?error=login_failed`);
     }
   }
 

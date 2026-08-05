@@ -1,11 +1,16 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { BusinessException } from '@reus-able/nestjs';
+import { Module } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { FastifyAdapter } from '@nestjs/platform-fastify';
+import { BusinessException, TransformInterceptor } from '@reus-able/nestjs';
 import type { ILoginResponseDto } from '../src/module/user/dto';
 import { UserController } from '../src/module/user/user.controller';
-import type {
-  OidcClaims,
-  OidcTransaction,
+import { UserService } from '../src/module/user/user.service';
+import {
+  OidcService,
+  type OidcClaims,
+  type OidcTransaction,
 } from '../src/module/user/oidc.service';
 
 const result = {
@@ -16,6 +21,7 @@ const result = {
 class ReplyDouble {
   headers = new Map<string, string | string[]>();
   redirectUrl?: string;
+  statusCode = 200;
 
   header(name: string, value: string | string[]): this {
     this.headers.set(name, value);
@@ -25,6 +31,11 @@ class ReplyDouble {
   redirect(url: string): string {
     this.redirectUrl = url;
     return url;
+  }
+
+  status(code: number): this {
+    this.statusCode = code;
+    return this;
   }
 }
 
@@ -83,12 +94,54 @@ function createController(
 }
 
 describe('UserController OIDC endpoints', () => {
+  it('returns an HTTP redirect from the login endpoint', async () => {
+    class OidcLoginTestModule {}
+    Module({
+      controllers: [UserController],
+      providers: [
+        { provide: UserService, useValue: {} },
+        {
+          provide: OidcService,
+          useValue: {
+            begin: async () => ({
+              url: new URL('https://h.example/authorize'),
+              transaction: {},
+            }),
+            cookie: () => 'oidc_tx=sealed',
+            seal: () => 'sealed',
+            transactionTtl: () => 600_000,
+          },
+        },
+      ],
+    })(OidcLoginTestModule);
+
+    const app = await NestFactory.create(
+      OidcLoginTestModule,
+      new FastifyAdapter(),
+      { logger: false },
+    );
+    app.useGlobalInterceptors(new TransformInterceptor());
+    await app.init();
+    try {
+      const response = await app.getHttpAdapter().getInstance().inject({
+        method: 'GET',
+        url: '/user/oidc/login?returnPath=%2F',
+      });
+
+      assert.equal(response.statusCode, 302);
+      assert.equal(response.headers.location, 'https://h.example/authorize');
+    } finally {
+      await app.close();
+    }
+  });
+
   it('sets a transaction cookie and redirects to authorization', async () => {
     const { controller } = createController();
     const reply = new ReplyDouble();
 
     await controller.login('/admin', reply);
 
+    assert.equal(reply.statusCode, 302);
     assert.match(String(reply.headers.get('Set-Cookie')), /^oidc_tx=/);
     assert.equal(reply.redirectUrl, 'https://h.example/authorize');
   });
@@ -106,6 +159,7 @@ describe('UserController OIDC endpoints', () => {
     );
 
     const cookies = reply.headers.get('Set-Cookie') as string[];
+    assert.equal(reply.statusCode, 302);
     assert.equal(cookies[0], 'oidc_tx=; Max-Age=0');
     assert.match(cookies[1], /^oidc_completion=/);
     assert.equal(
@@ -130,6 +184,7 @@ describe('UserController OIDC endpoints', () => {
     );
 
     assert.equal(reply.headers.get('Set-Cookie'), 'oidc_tx=; Max-Age=0');
+    assert.equal(reply.statusCode, 302);
     assert.equal(
       reply.redirectUrl,
       'https://app.example/user/callback?error=login_failed',

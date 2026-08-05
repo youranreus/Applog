@@ -71,6 +71,16 @@ Reference: `packages/backend/src/module/post/dto/create-post.dto.ts`.
 | Delete success | Often `{ message: string }` |
 | SEO / sitemap | `@Res()` raw write — bypasses interceptor (`seo.controller.ts`) |
 
+For raw Fastify redirects, set the status explicitly before `redirect()`:
+
+```typescript
+reply.status(HttpStatus.FOUND).redirect(url);
+```
+
+With the global `TransformInterceptor`, calling only `reply.redirect(url)` can
+leave the HTTP status at 200 even though the `Location` header is present, so
+browsers do not follow the redirect.
+
 ---
 
 ## Auth-Related Failures

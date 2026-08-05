@@ -39,7 +39,7 @@
 
 ## 6. Validation And Review
 
-- [x] `pnpm --filter @applog/backend run test:unit`（86/86）
+- [x] `pnpm --filter @applog/backend run test:unit`（87/87）
 - [x] `pnpm --filter @applog/backend run lint`
 - [x] `pnpm --filter @applog/backend run build`
 - [x] `pnpm --filter @applog/frontend run test:unit`（33/33）
