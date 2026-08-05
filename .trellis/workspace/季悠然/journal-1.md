@@ -812,3 +812,24 @@ Switched the Landing health status to a deterministic full-day score from the Ga
 ### Status
 
 [OK] **Completed**
+
+
+## Session 30: 归档 Applog OIDC 登录迁移
+
+**Date**: 2026-08-06
+**Task**: 归档 Applog OIDC 登录迁移
+**Branch**: `master`
+
+### Summary
+
+用户确认真实 H OIDC 登录验收通过，并明确接受延期剩余隔离数据库、并发矩阵与部署 preflight 验证；记录完成决策并归档 applog-oidc-login 任务。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b4b18eb` | (see git log) |
+
+### Status
+
+[OK] **Completed**
