@@ -24,4 +24,13 @@ describe('frontend OIDC flow', () => {
     assert.doesNotMatch(callback, /sessionStorage|query\.code|query\.state/)
     assert.match(callback, /query\.returnPath/)
   })
+
+  it('sends a JSON object when consuming the completion cookie', async () => {
+    const api = await readFile(
+      new URL('../src/api/user/completeOidcLogin.ts', import.meta.url),
+      'utf8',
+    )
+
+    assert.match(api, /Post<ILoginResponseDto>\('\/user\/oidc\/complete', \{\},/)
+  })
 })

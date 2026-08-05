@@ -67,6 +67,50 @@ pnpm --filter @applog/frontend run build
 
 ## Common Mistakes
 
+### Scenario: Bodyless JSON POSTs with Alova and Fastify
+
+#### 1. Scope / Trigger
+
+- Applies when an Alova `Post` endpoint has no domain request fields but the request adapter sends `Content-Type: application/json` to the NestJS Fastify backend.
+
+#### 2. Signatures
+
+- Frontend: `alovaInstance.Post<T>(path, {}, config)`.
+- Backend: a `@Post()` controller method that does not require `@Body()`.
+
+#### 3. Contracts
+
+- Send `{}` as the JSON body. Do not pass `undefined` when the request is represented as JSON.
+- Cookies and credentials remain request config, for example `{ credentials: 'include' }`; they are not body fields.
+
+#### 4. Validation & Error Matrix
+
+| Request | Expected result |
+|---------|-----------------|
+| JSON body `{}` | Fastify accepts the request and invokes the controller |
+| JSON Content-Type with an empty body | Fastify rejects before the controller with `FST_ERR_CTP_EMPTY_JSON_BODY` |
+
+#### 5. Good/Base/Bad Cases
+
+- Good: completion or initialization POST sends `{}` and reaches the controller.
+- Base: a POST with real fields sends its typed DTO normally.
+- Bad: a bodyless POST passes `undefined` while the adapter declares JSON.
+
+#### 6. Tests Required
+
+- Assert the API owner passes `{}` for a no-field JSON POST.
+- For integration coverage, assert Fastify reaches the controller rather than returning `FST_ERR_CTP_EMPTY_JSON_BODY`.
+
+#### 7. Wrong vs Correct
+
+```typescript
+// Wrong: may produce an empty body with application/json.
+alovaInstance.Post('/user/oidc/complete', undefined, config)
+
+// Correct: valid empty JSON object.
+alovaInstance.Post('/user/oidc/complete', {}, config)
+```
+
 ### Mistake: Treating `useRequest` data as still wrapped
 
 Interceptor already returns inner `data` — do not read `.data.data`.

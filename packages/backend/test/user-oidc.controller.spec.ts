@@ -135,6 +135,48 @@ describe('UserController OIDC endpoints', () => {
     }
   });
 
+  it('accepts an empty JSON object when completing login over HTTP', async () => {
+    class OidcCompleteTestModule {}
+    Module({
+      controllers: [UserController],
+      providers: [
+        { provide: UserService, useValue: {} },
+        {
+          provide: OidcService,
+          useValue: {
+            open: () => ({ result, createdAt: Date.now() }),
+            completionTtl: () => 120_000,
+            cookie: () => 'oidc_completion=; Max-Age=0',
+          },
+        },
+      ],
+    })(OidcCompleteTestModule);
+
+    const app = await NestFactory.create(
+      OidcCompleteTestModule,
+      new FastifyAdapter(),
+      { logger: false },
+    );
+    app.useGlobalInterceptors(new TransformInterceptor());
+    await app.init();
+    try {
+      const response = await app
+        .getHttpAdapter()
+        .getInstance()
+        .inject({
+          method: 'POST',
+          url: '/user/oidc/complete',
+          headers: { cookie: 'oidc_completion=completion' },
+          payload: {},
+        });
+
+      assert.equal(response.statusCode, 201);
+      assert.deepEqual(response.json().data, result);
+    } finally {
+      await app.close();
+    }
+  });
+
   it('sets a transaction cookie and redirects to authorization', async () => {
     const { controller } = createController();
     const reply = new ReplyDouble();

@@ -39,17 +39,17 @@
 
 ## 6. Validation And Review
 
-- [x] `pnpm --filter @applog/backend run test:unit`（87/87）
+- [x] `pnpm --filter @applog/backend run test:unit`（88/88，含 Fastify 空 JSON completion 回归）
 - [x] `pnpm --filter @applog/backend run lint`
 - [x] `pnpm --filter @applog/backend run build`
-- [x] `pnpm --filter @applog/frontend run test:unit`（33/33）
+- [x] `pnpm --filter @applog/frontend run test:unit`（34/34）
 - [x] `pnpm --filter @applog/frontend run type-check`
 - [x] `pnpm --filter @applog/frontend run lint`
 - [x] `pnpm --filter @applog/frontend run build`
 - [x] `pnpm build`
 - [x] `git diff --check`
-- [ ] 浏览器检查 URL、storage、请求/响应和 console，确认无上游 token、ID Token、client secret 泄露。
-- [ ] 使用 H 测试子应用完成一次真实 Authorization Code + S256 登录，并验证已有管理员角色和内容归属未变化。
+- [x] 2026-08-06 由用户完成浏览器验收，URL、storage、请求/响应和 console 未发现上游 token、ID Token 或 client secret 泄露。
+- [x] 2026-08-06 使用 H 正式 Issuer 和已登记子应用完成真实 Authorization Code + S256 登录，用户确认验收通过。
 
 ## Risk And Rollback Points
 
