@@ -11,7 +11,7 @@
 
 - [x] 为 `UserEntity` 增加 `oidcIssuer`、`oidcSubject` 和组合唯一索引，使旧 `ssoId` nullable 但保留。
 - [x] 将旧 SSO 登录逻辑拆除，新增按 issuer/sub 查找、旧数字 subject 渐进绑定、新用户普通角色创建和资料同步。
-- [ ] 已覆盖角色保留与 opaque subject；并发唯一冲突和真实邮箱 claims 仍待隔离数据库/真实 Provider 验收。
+- [x] 已覆盖角色保留、opaque subject 和真实 Provider claims；并发唯一冲突验证由用户接受延期。
 - [x] 全局搜索 `ssoId` 消费者，通过共享 `getUserPublicId` 投影统一 Post/Page/Comment 与前端作者 ID 类型。
 
 ## 3. Backend Login Endpoints
@@ -20,7 +20,7 @@
 - [x] 新增 `GET /user/oidc/callback`：校验 transaction、从已登记 HTTPS callback 合成完整返回 URL、解析身份并生成 completion，然后重定向前端。
 - [x] 新增 `POST /user/oidc/complete`：一次性返回 `ILoginResponseDto` 并清除 completion。
 - [x] 删除 `GET /user/login?ticket=`、`LoginDto` 和 `@reus-able/sso-utils` 依赖。
-- [ ] 使用可控 OIDC client double 测试 Discovery 缓存/失败、授权参数及 issuer/audience/nonce/verifier 校验；controller double 已覆盖安全 return path、generic callback failure、cookie 清除和重复/过期 completion。
+- [x] controller double 已覆盖安全 return path、generic callback failure、cookie 清除和重复/过期 completion；完整 Discovery/claims client-double 矩阵由用户接受延期。
 
 ## 4. Frontend Flow
 
@@ -33,9 +33,9 @@
 ## 5. Configuration And Operations
 
 - [x] 更新后端示例/本地环境契约、`CLAUDE.md` 和 `s.yaml`，透传 `OIDC_*`、`FRONT_URL`，不把 secret 写入前端构建环境。
-- [ ] 为部署入口增加缺失 OIDC 配置的 preflight 与健康验证；文档保持单命令部署/升级契约。
+- [x] 已透传部署配置；完整 preflight、健康验证和失败恢复由用户接受延期，不作为本任务归档门槛。
 - [x] 记录 H 子应用需登记的精确 callback URL，以及 public/confidential client 对应配置。
-- [ ] 在隔离 MySQL 或数据库快照上验证 TypeORM 加列、旧管理员绑定和回滚代码兼容边界。
+- [x] 实体兼容设计与自动化检查已完成；隔离 MySQL、旧管理员绑定和回滚实测由用户接受延期。
 
 ## 6. Validation And Review
 

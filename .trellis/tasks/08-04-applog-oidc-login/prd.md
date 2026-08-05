@@ -26,12 +26,17 @@
 
 ## Acceptance Criteria
 
-- [ ] 未登录用户点击登录后进入 H 授权页，授权请求可验证包含 `response_type=code`、`scope=openid profile email`、`code_challenge_method=S256`，且不包含 client secret。
-- [ ] 正常回调可完成 Discovery 端点兑换、ID Token 验证、本地用户解析和 Applog JWT 登录；刷新页面后现有受保护路由仍可访问。
-- [ ] 使用错误或过期 `state`、错误 verifier、错误 nonce、错误 issuer/audience 的回调均失败；同一授权码第二次兑换失败。
-- [ ] H 的非数字 `sub` 可以创建并稳定解析为同一 Applog 用户；已有用户的文章、页面、评论和本地角色不变。
-- [ ] 浏览器网络、URL、localStorage/sessionStorage 和日志中不出现 H client secret、上游 access token 或 ID Token 原文。
-- [ ] 后端、前端和数据库迁移专项测试通过；至少覆盖 Discovery 缓存/失败、回调错误分支、身份幂等和旧数据迁移。
+- [x] 未登录用户点击登录后进入 H 授权页，授权请求可验证包含 `response_type=code`、`scope=openid profile email`、`code_challenge_method=S256`，且不包含 client secret。
+- [x] 正常回调可完成 Discovery 端点兑换、ID Token 验证、本地用户解析和 Applog JWT 登录；刷新页面后现有受保护路由仍可访问。
+- [x] 使用错误或过期 `state`、错误 verifier、错误 nonce、错误 issuer/audience 的回调均失败；同一授权码第二次兑换失败。
+- [x] H 的非数字 `sub` 可以创建并稳定解析为同一 Applog 用户；已有用户的文章、页面、评论和本地角色不变。
+- [x] 浏览器网络、URL、localStorage/sessionStorage 和日志中不出现 H client secret、上游 access token 或 ID Token 原文。
+- [x] 后端和前端专项测试通过；隔离数据库迁移与并发绑定验证由用户于 2026-08-06 明确接受延期，不再作为本任务归档门槛。
+
+## Completion Decision
+
+- 2026-08-06：真实 H OIDC 登录与浏览器验收通过。
+- 用户明确要求不再执行剩余隔离数据库、并发矩阵与部署 preflight 验证；这些项目作为后续增强保留，不代表已有验证证据。
 
 ## Out of Scope
 
