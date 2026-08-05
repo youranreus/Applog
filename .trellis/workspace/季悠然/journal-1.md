@@ -791,3 +791,24 @@ Switched the Landing health status to a deterministic full-day score from the Ga
 - 在隔离 MySQL 或数据库快照验证 nullable 字段、组合唯一索引和旧管理员渐进绑定
 - 在 H 测试子应用登记后端 callback 并完成真实 Discovery/PKCE 登录
 - 检查浏览器 URL、storage、network、console 不泄露 verifier、token 或 client secret
+
+
+## Session 29: 完成 Applog OIDC 真实登录验收
+
+**Date**: 2026-08-06
+**Task**: 完成 Applog OIDC 真实登录验收
+**Branch**: `master`
+
+### Summary
+
+修复 OIDC completion 空 JSON 请求导致的 Fastify 拒绝，补齐前后端回归与规范；真实 H Authorization Code + S256 登录由用户验收通过。隔离 MySQL 迁移/旧管理员绑定与部署 preflight 仍待完成，任务保持 in_progress。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fedad8a` | (see git log) |
+
+### Status
+
+[OK] **Completed**
