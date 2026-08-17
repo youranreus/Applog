@@ -875,3 +875,24 @@ Fixed reply target matching for nullable SQL columns, added post/page and malfor
 ### Status
 
 [OK] **Completed**
+
+
+## Session 33: 评论被回复邮件通知
+
+**Date**: 2026-08-17
+**Task**: 评论被回复邮件通知
+**Branch**: `master`
+
+### Summary
+
+新增公开嵌套回复邮件通知：直属父评论收件人映射、自回复抑制、稳定幂等、H 模板与完整测试；独立检查修复顶层评论误调用，并同步通知代码规范。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1ebe840` | (see git log) |
+
+### Status
+
+[OK] **Completed**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 32
+- **Total Sessions**: 33
 - **Last Active**: 2026-08-17
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~877 | Active |
+| `journal-1.md` | ~898 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 33 | 2026-08-17 | 评论被回复邮件通知 | `1ebe840` | `master` |
 | 32 | 2026-08-17 | Fix comment reply parent target validation | `63a8348` | `master` |
 | 31 | 2026-08-17 | 评论邮件通知 | `70d36de` | `master` |
 | 30 | 2026-08-06 | 归档 Applog OIDC 登录迁移 | `b4b18eb` | `master` |
