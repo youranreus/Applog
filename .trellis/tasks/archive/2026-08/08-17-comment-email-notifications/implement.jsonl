@@ -1,0 +1,11 @@
+{"file":".trellis/spec/backend/backend/comment-guidelines.md","reason":"Preserve comment privacy, moderation, capability invalidation, target, and test contracts while adding lifecycle notifications."}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"Keep H failures behind the service boundary without changing comment API success semantics."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Implement contextual HLogger output while excluding keys, recipients, bodies, and comment text."}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Follow NestJS module, config, typing, and backend verification conventions."}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Extend the shared system-config boundary with an administrator-only masked notification credential contract."}
+{"file":".trellis/spec/frontend/frontend/index.md","reason":"Implement the administrator settings surface through Vue 3, Alova, shared contracts, and existing Dashboard composition."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Build a focused NotificationSettings SFC with existing Field/Input/Switch/Button and toast conventions."}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"Keep HTTP in the typed API layer and async form state in useRequest rather than raw fetch."}
+{"file":".trellis/spec/frontend/frontend/type-safety.md","reason":"Share INotificationConfig and config constants through @applog/common without duplicating frontend types."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Maintain consistency across comment persistence, H request contracts, deployment configuration, and repository templates."}
+{"file":".trellis/tasks/08-17-comment-email-notifications/research/h-notification-api.md","reason":"Use the verified upstream recipient, template, idempotency, batching, retry, and security contract."}

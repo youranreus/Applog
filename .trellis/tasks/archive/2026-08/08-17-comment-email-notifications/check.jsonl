@@ -1,0 +1,8 @@
+{"file":".trellis/spec/backend/backend/comment-guidelines.md","reason":"Check notification hooks do not regress public DTO privacy, moderation no-op handling, capability clearing, or post/page behavior."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Audit every skip, retry, and final failure log for secrets and PII."}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Run and assess backend tests, lint, build, typing, and module conventions."}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Verify masking, preserve-on-blank, administrator access, and generic-route protection across layers."}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Check Vue Composition API, Alova layering, administrator gating, lint, type-check, and build."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Review focused settings composition, password input behavior, Switch/Field UI, and layoutStore notifications."}
+{"file":".trellis/spec/common/shared/deployment-automation-contracts.md","reason":"Check deployment environment passthrough and operational enable/rollback documentation."}
+{"file":".trellis/tasks/08-17-comment-email-notifications/research/h-notification-api.md","reason":"Verify H request limits, recipient shapes, template variables, retry classes, and idempotency behavior against primary-source evidence."}
