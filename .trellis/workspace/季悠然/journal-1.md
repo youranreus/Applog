@@ -854,3 +854,24 @@ Switched the Landing health status to a deterministic full-day score from the Ga
 ### Status
 
 [OK] **Completed**
+
+
+## Session 32: Fix comment reply parent target validation
+
+**Date**: 2026-08-17
+**Task**: Fix comment reply parent target validation
+**Branch**: `master`
+
+### Summary
+
+Fixed reply target matching for nullable SQL columns, added post/page and malformed-target regressions, updated the comment contract, and verified 107 backend tests plus lint/build.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `63a8348` | (see git log) |
+
+### Status
+
+[OK] **Completed**
