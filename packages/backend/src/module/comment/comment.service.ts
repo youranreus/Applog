@@ -142,6 +142,9 @@ export class CommentService {
       if (!this.isAdmin(user)) {
         await this.notificationService.notifyNewComment(hydrated ?? saved);
       }
+      if (saved.parentId && saved.status === 'approved') {
+        await this.notificationService.notifyCommentReply(hydrated ?? saved);
+      }
       const publicComment = this.toPublic(hydrated ?? saved);
       return token
         ? { comment: publicComment, withdrawToken: token }
@@ -340,6 +343,9 @@ export class CommentService {
     const saved = await this.commentRepo.save(comment);
     this.log(`评论审核完成，评论ID: ${id}，状态: ${dto.status}`);
     await this.notificationService.notifyCommentStatus(saved);
+    if (saved.parentId && saved.status === 'approved') {
+      await this.notificationService.notifyCommentReply(saved);
+    }
     return this.toAdmin(
       saved,
       (await this.getDeleteImpact(id)).descendantCount,

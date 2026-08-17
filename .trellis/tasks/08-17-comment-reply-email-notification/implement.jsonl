@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/backend/notification-guidelines.md","reason":"Extend the canonical H notification trigger, recipient, template, idempotency, privacy, and test contracts."}
+{"file":".trellis/spec/backend/backend/comment-guidelines.md","reason":"Preserve comment creation, moderation, parent-target, capability, public visibility, and privacy behavior."}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"Keep reply-notification failures contained after comment persistence."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Ensure reply recipient identities, text, variables, and token never enter logs."}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Follow NestJS service/module conventions and required backend gates."}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Validate the repository HTML contract test and frontend quality gates."}

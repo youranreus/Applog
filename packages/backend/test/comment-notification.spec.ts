@@ -6,12 +6,16 @@ import { CommentService } from '../src/module/comment/comment.service';
 function makeService(comment: CommentEntity) {
   let saves = 0;
   let notifications = 0;
+  let replyNotifications = 0;
   const service = new CommentService(
     { get: (_key: string, fallback: unknown) => fallback } as never,
     {} as never,
     {
       notifyCommentStatus: async () => {
         notifications += 1;
+      },
+      notifyCommentReply: async () => {
+        replyNotifications += 1;
       },
     } as never,
   );
@@ -39,7 +43,12 @@ function makeService(comment: CommentEntity) {
       }),
     },
   });
-  return { service, saves: () => saves, notifications: () => notifications };
+  return {
+    service,
+    saves: () => saves,
+    notifications: () => notifications,
+    replyNotifications: () => replyNotifications,
+  };
 }
 
 describe('comment notification triggers', () => {
@@ -56,6 +65,7 @@ describe('comment notification triggers', () => {
     await fixture.service.approve(1, { status: 'approved' });
     assert.equal(fixture.saves(), 0);
     assert.equal(fixture.notifications(), 0);
+    assert.equal(fixture.replyNotifications(), 0);
     assert.equal(comment.withdrawTokenHash, 'unchanged');
   });
 
@@ -73,5 +83,35 @@ describe('comment notification triggers', () => {
     assert.equal(fixture.saves(), 1);
     assert.equal(fixture.notifications(), 1);
     assert.equal(comment.withdrawTokenHash, null);
+    assert.equal(fixture.replyNotifications(), 0);
+  });
+
+  it('notifies the parent only after a real transition to approved', async () => {
+    const comment = Object.assign(new CommentEntity(), {
+      id: 3,
+      parentId: 1,
+      status: 'pending',
+      content: 'x',
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    });
+    const fixture = makeService(comment);
+    await fixture.service.approve(3, { status: 'approved' });
+    assert.equal(fixture.notifications(), 1);
+    assert.equal(fixture.replyNotifications(), 1);
+  });
+
+  it('does not invoke reply notification for an approved top-level comment', async () => {
+    const comment = Object.assign(new CommentEntity(), {
+      id: 4,
+      status: 'pending',
+      content: 'x',
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    });
+    const fixture = makeService(comment);
+    await fixture.service.approve(4, { status: 'approved' });
+    assert.equal(fixture.notifications(), 1);
+    assert.equal(fixture.replyNotifications(), 0);
   });
 });

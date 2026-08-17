@@ -1,0 +1,5 @@
+{"file":".trellis/spec/backend/backend/notification-guidelines.md","reason":"Check exact reply trigger/recipient/template/idempotency/privacy behavior and regression coverage."}
+{"file":".trellis/spec/backend/backend/comment-guidelines.md","reason":"Verify creation/moderation/public visibility and capability behavior are unchanged."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Audit all new skips/failures for PII and secret leakage."}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Run backend tests, lint, build, typing, and module review."}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Run template contract tests plus frontend lint/type-check/build."}

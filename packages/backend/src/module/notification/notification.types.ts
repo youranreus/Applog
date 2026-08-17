@@ -4,7 +4,8 @@ export type HRecipient =
 
 export type CommentNotificationTemplateKey =
   | 'applog-comment-status'
-  | 'applog-new-comment';
+  | 'applog-new-comment'
+  | 'applog-comment-reply';
 
 export interface HTemplateNotificationRequest {
   recipients: HRecipient[];

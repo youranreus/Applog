@@ -22,12 +22,17 @@ describe('notification frontend and template contract', () => {
     const root = new URL('../../../docs/notification-templates/', import.meta.url);
     const status = await readFile(new URL('applog-comment-status.html', root), 'utf8');
     const fresh = await readFile(new URL('applog-new-comment.html', root), 'utf8');
+    const reply = await readFile(new URL('applog-comment-reply.html', root), 'utf8');
     const variables = (html) => [...html.matchAll(/{{(\w+)}}/g)].map((match) => match[1]);
     assert.deepEqual([...new Set(variables(status))].sort(), [
       'commentExcerpt', 'commenterName', 'statusLabel', 'targetTitle', 'targetType', 'viewUrl',
     ]);
     assert.deepEqual([...new Set(variables(fresh))].sort(), [
       'adminUrl', 'commentExcerpt', 'commenterName', 'siteName', 'targetTitle', 'targetType',
+    ]);
+    assert.deepEqual([...new Set(variables(reply))].sort(), [
+      'parentCommentExcerpt', 'parentCommenterName', 'replierName', 'replyExcerpt',
+      'targetTitle', 'targetType', 'viewUrl',
     ]);
   });
 });

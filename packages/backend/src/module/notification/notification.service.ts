@@ -7,6 +7,7 @@ import { CommentEntity, PageEntity, PostEntity, UserEntity } from '@/entities';
 import { SystemConfigService } from '@/module/system-config/system-config.service';
 import { NotificationClient } from './notification.client';
 import {
+  COMMENT_REPLY_TEMPLATE_KEY,
   COMMENT_STATUS_TEMPLATE_KEY,
   H_NOTIFICATION_BATCH_SIZE,
   NEW_COMMENT_TEMPLATE_KEY,
@@ -21,6 +22,8 @@ interface NotificationTarget {
 
 @Injectable()
 export class NotificationService {
+  @InjectRepository(CommentEntity)
+  private commentRepo: Repository<CommentEntity>;
   @InjectRepository(UserEntity) private userRepo: Repository<UserEntity>;
   @InjectRepository(PostEntity) private postRepo: Repository<PostEntity>;
   @InjectRepository(PageEntity) private pageRepo: Repository<PageEntity>;
@@ -130,6 +133,63 @@ export class NotificationService {
     });
   }
 
+  async notifyCommentReply(reply: CommentEntity): Promise<void> {
+    await this.contain('comment-reply', reply.id, async () => {
+      if (!reply.parentId || reply.status !== 'approved') return;
+      const config = await this.enabledConfig();
+      if (!config) return;
+      const parent = await this.commentRepo.findOne({
+        where: { id: reply.parentId },
+        relations: ['author'],
+      });
+      if (!parent) return;
+      const replier =
+        reply.author ??
+        (reply.authorId
+          ? await this.userRepo.findOne({
+              where: { id: reply.authorId },
+              select: ['id', 'name', 'email', 'ssoId'],
+            })
+          : undefined);
+      if (this.isSelfReply(reply, parent, replier)) return;
+
+      let recipient: HRecipient | undefined;
+      if (parent.authorId) {
+        if (!parent.author?.ssoId || parent.author.ssoId <= 0) {
+          this.logger.warn(
+            `跳过无有效 ssoId 的被回复评论作者 commentId=${reply.id}`,
+            NotificationService.name,
+          );
+          return;
+        }
+        recipient = { kind: 'user', userId: parent.author.ssoId };
+      } else if (parent.guestEmail?.trim()) {
+        recipient = { kind: 'email', email: parent.guestEmail.trim() };
+      }
+      if (!recipient) return;
+      const target = await this.resolveTarget(reply);
+      if (!target) return;
+      await this.sendBatches(
+        config.mailToken,
+        [recipient],
+        COMMENT_REPLY_TEMPLATE_KEY,
+        {
+          parentCommenterName: this.commenterName(parent),
+          replierName:
+            replier?.name?.trim() || reply.guestName?.trim() || '访客',
+          targetTitle: target.title,
+          targetType: target.typeLabel,
+          parentCommentExcerpt: this.excerpt(parent.content),
+          replyExcerpt: this.excerpt(reply.content),
+          viewUrl: `${target.publicUrl}#comment-${reply.id}`,
+        },
+        `applog-comment-reply-${reply.id}`,
+        'comment-reply',
+        reply.id,
+      );
+    });
+  }
+
   private async enabledConfig() {
     const config = await this.systemConfigService.getNotificationConfigRaw();
     return config?.enabled && config.mailToken ? config : null;
@@ -139,6 +199,7 @@ export class NotificationService {
     mailToken: string,
     recipients: HRecipient[],
     templateKey:
+      | typeof COMMENT_REPLY_TEMPLATE_KEY
       | typeof COMMENT_STATUS_TEMPLATE_KEY
       | typeof NEW_COMMENT_TEMPLATE_KEY,
     variables: Record<string, string>,
@@ -209,6 +270,27 @@ export class NotificationService {
 
   private commenterName(comment: CommentEntity): string {
     return comment.author?.name?.trim() || comment.guestName?.trim() || '访客';
+  }
+
+  private isSelfReply(
+    reply: CommentEntity,
+    parent: CommentEntity,
+    replier: UserEntity | undefined,
+  ): boolean {
+    if (reply.authorId && parent.authorId) {
+      return reply.authorId === parent.authorId;
+    }
+    const parentEmail = this.normalizedEmail(parent.guestEmail);
+    if (!parentEmail) return false;
+    if (!reply.authorId) {
+      return this.normalizedEmail(reply.guestEmail) === parentEmail;
+    }
+    return this.normalizedEmail(replier?.email) === parentEmail;
+  }
+
+  private normalizedEmail(value: string | undefined): string | undefined {
+    const normalized = value?.trim().toLowerCase();
+    return normalized || undefined;
   }
 
   private excerpt(content: string): string {

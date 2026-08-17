@@ -33,6 +33,7 @@ function makeService(options?: {
       find: async () => (options?.adminIds ?? [3]).map((ssoId) => ({ ssoId })),
       findOne: async () => null,
     },
+    commentRepo: { findOne: async () => null },
     postRepo: {
       findOne: async () => ({ id: 1, title: 'Hello', slug: 'hello world' }),
     },
@@ -163,5 +164,137 @@ describe('NotificationService', () => {
       'applog-new-comment-12-b0',
       'applog-new-comment-12-b1',
     ]);
+  });
+
+  it('notifies only the direct guest parent with private, stable variables', async () => {
+    const { service, sent } = makeService();
+    Object.assign(service, {
+      commentRepo: {
+        findOne: async () =>
+          Object.assign(new CommentEntity(), {
+            id: 4,
+            parentId: 2,
+            guestName: 'Parent',
+            guestEmail: ' parent@example.com ',
+            content: '<b>Parent</b>   comment',
+          }),
+      },
+    });
+    await service.notifyCommentReply(
+      Object.assign(new CommentEntity(), {
+        id: 13,
+        parentId: 4,
+        postId: 1,
+        status: 'approved',
+        guestName: 'Replier',
+        guestEmail: 'reply@example.com',
+        content: '<i>Reply</i> text',
+      }),
+    );
+    assert.deepEqual(sent[0].recipients, [
+      { kind: 'email', email: 'parent@example.com' },
+    ]);
+    assert.equal(sent[0].content.templateKey, 'applog-comment-reply');
+    assert.equal(sent[0].idempotencyKey, 'applog-comment-reply-13-b0');
+    assert.deepEqual(sent[0].content.variables, {
+      parentCommenterName: 'Parent',
+      replierName: 'Replier',
+      targetTitle: 'Hello',
+      targetType: '文章',
+      parentCommentExcerpt: 'Parent comment',
+      replyExcerpt: 'Reply text',
+      viewUrl: 'https://blog.example/archives/hello%20world.html#comment-13',
+    });
+  });
+
+  it('uses parent ssoId and does not fall back to account email', async () => {
+    const { service, sent } = makeService();
+    const parent = Object.assign(new CommentEntity(), {
+      id: 4,
+      authorId: 7,
+      author: { id: 7, name: 'Parent', email: 'hidden@example.com', ssoId: 70 },
+      content: 'parent',
+    });
+    Object.assign(service, { commentRepo: { findOne: async () => parent } });
+    const reply = Object.assign(new CommentEntity(), {
+      id: 14,
+      parentId: 4,
+      postId: 1,
+      status: 'approved',
+      guestName: 'Guest',
+      guestEmail: 'guest@example.com',
+      content: 'reply',
+    });
+    await service.notifyCommentReply(reply);
+    assert.deepEqual(sent[0].recipients, [{ kind: 'user', userId: 70 }]);
+    parent.author.ssoId = null;
+    await service.notifyCommentReply(Object.assign(reply, { id: 15 }));
+    assert.equal(sent.length, 1);
+  });
+
+  it('suppresses all defined provable self-reply identities', async () => {
+    const cases = [
+      [
+        { authorId: 7, author: { id: 7, name: 'P', ssoId: 70 } },
+        { authorId: 7, author: { id: 7, name: 'R' } },
+      ],
+      [
+        { guestEmail: ' Same@Example.com ', guestName: 'P' },
+        { guestEmail: 'same@example.COM', guestName: 'R' },
+      ],
+      [
+        { guestEmail: 'same@example.com', guestName: 'P' },
+        {
+          authorId: 9,
+          author: { id: 9, name: 'R', email: ' SAME@example.com ' },
+        },
+      ],
+    ] as const;
+    for (const [index, [parentIdentity, replyIdentity]] of cases.entries()) {
+      const { service, sent } = makeService();
+      Object.assign(service, {
+        commentRepo: {
+          findOne: async () =>
+            Object.assign(new CommentEntity(), {
+              id: 4,
+              content: 'parent',
+              ...parentIdentity,
+            }),
+        },
+      });
+      await service.notifyCommentReply(
+        Object.assign(new CommentEntity(), {
+          id: 20 + index,
+          parentId: 4,
+          postId: 1,
+          status: 'approved',
+          content: 'reply',
+          ...replyIdentity,
+        }),
+      );
+      assert.equal(sent.length, 0);
+    }
+  });
+
+  it('skips top-level, pending, and rejected comments', async () => {
+    const { service, sent } = makeService();
+    await service.notifyCommentReply(
+      Object.assign(new CommentEntity(), { id: 30, status: 'approved' }),
+    );
+    await service.notifyCommentReply(
+      Object.assign(new CommentEntity(), {
+        id: 31,
+        parentId: 4,
+        status: 'pending',
+      }),
+    );
+    await service.notifyCommentReply(
+      Object.assign(new CommentEntity(), {
+        id: 32,
+        parentId: 4,
+        status: 'rejected',
+      }),
+    );
+    assert.equal(sent.length, 0);
   });
 });

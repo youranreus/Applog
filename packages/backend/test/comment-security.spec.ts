@@ -25,6 +25,7 @@ function createCommentService(
     {
       notifyNewComment: async () => undefined,
       notifyCommentStatus: async () => undefined,
+      notifyCommentReply: async () => undefined,
     } as never,
   );
   Object.assign(service, {
@@ -34,8 +35,12 @@ function createCommentService(
   return service;
 }
 
-async function createCommentByIdentity(user?: { id: number; role: number }) {
+async function createCommentByIdentity(
+  user?: { id: number; role: number },
+  parentId?: number,
+) {
   let saved: CommentEntity | undefined;
+  let replyNotifications = 0;
   const commentRepo = {
     count: async () => 0,
     create: (value: Partial<CommentEntity>) =>
@@ -48,8 +53,20 @@ async function createCommentByIdentity(user?: { id: number; role: number }) {
       });
       return saved;
     },
-    findOne: async (options: { relations?: string[] }) => {
-      if (!options.relations || !saved) return undefined;
+    findOne: async (options: {
+      where?: { id?: number };
+      relations?: string[];
+    }) => {
+      if (!options.relations) {
+        return options.where?.id === parentId
+          ? Object.assign(new CommentEntity(), {
+              id: parentId,
+              postId: 1,
+              status: 'approved',
+            })
+          : undefined;
+      }
+      if (!saved) return undefined;
       if (user) {
         saved.author = {
           ssoId: user.id,
@@ -63,12 +80,22 @@ async function createCommentByIdentity(user?: { id: number; role: number }) {
   };
   const service = createCommentService(commentRepo);
   Object.assign(service, {
+    notificationService: {
+      notifyNewComment: async () => undefined,
+      notifyCommentStatus: async () => undefined,
+      notifyCommentReply: async () => {
+        replyNotifications += 1;
+      },
+    },
+  });
+  Object.assign(service, {
     postRepo: { findOne: async () => ({ id: 1, status: 'published' }) },
     configRepo: { findOne: async () => undefined },
   });
   const result = await service.create(
     {
       postId: 1,
+      parentId,
       content: 'hello',
       guestName: '游客输入',
       guestEmail: 'guest@example.com',
@@ -76,25 +103,29 @@ async function createCommentByIdentity(user?: { id: number; role: number }) {
     user as never,
     { ip: '127.0.0.1', agent: 'test-agent' },
   );
-  return { result, saved: saved! };
+  return { result, saved: saved!, replyNotifications };
 }
 
 describe('comment security contract', () => {
   it('已登录用户评论直接 approved 且不创建撤回凭证', async () => {
-    const { result, saved } = await createCommentByIdentity({
-      id: 44,
-      role: 1,
-    });
+    const { result, saved, replyNotifications } = await createCommentByIdentity(
+      {
+        id: 44,
+        role: 1,
+      },
+    );
     assert.equal(saved.status, 'approved');
     assert.equal(saved.authorId, 44);
     assert.equal(saved.withdrawTokenHash, undefined);
     assert.equal(saved.guestName, undefined);
     assert.equal(result.comment.status, 'approved');
     assert.equal('withdrawToken' in result, false);
+    assert.equal(replyNotifications, 0);
   });
 
   it('游客评论保持 pending 并只返回一次明文撤回凭证', async () => {
-    const { result, saved } = await createCommentByIdentity();
+    const { result, saved, replyNotifications } =
+      await createCommentByIdentity();
     assert.equal(saved.status, 'pending');
     assert.equal(saved.authorId, undefined);
     assert.equal(saved.guestName, '游客输入');
@@ -109,6 +140,17 @@ describe('comment security contract', () => {
       true,
     );
     assert.notEqual(saved.withdrawTokenHash, result.withdrawToken);
+    assert.equal(replyNotifications, 0);
+  });
+
+  it('已登录用户的公开嵌套回复创建后调用回复通知', async () => {
+    const { saved, replyNotifications } = await createCommentByIdentity(
+      { id: 44, role: 1 },
+      9,
+    );
+    assert.equal(saved.parentId, 9);
+    assert.equal(saved.status, 'approved');
+    assert.equal(replyNotifications, 1);
   });
 
   it('只用 SHA-256 摘要核验撤回 token', () => {
