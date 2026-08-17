@@ -833,3 +833,24 @@ Switched the Landing health status to a deterministic full-day score from the Ga
 ### Status
 
 [OK] **Completed**
+
+
+## Session 31: 评论邮件通知
+
+**Date**: 2026-08-17
+**Task**: 评论邮件通知
+**Branch**: `master`
+
+### Summary
+
+实现文章与独立页面评论邮件通知、H mail token 管理配置、管理员设置界面、版本化邮件模板及完整测试；独立检查修复路由版本、必需依赖和批次容错。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `70d36de` | (see git log) |
+
+### Status
+
+[OK] **Completed**
