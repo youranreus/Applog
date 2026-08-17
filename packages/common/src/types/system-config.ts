@@ -105,3 +105,11 @@ export interface IDuolingoConfig {
   /** Landing 展示总开关 */
   enabled: boolean;
 }
+
+/** 评论邮件通知配置（存于 SYSTEM_NOTIFICATION_CONFIG）。 */
+export interface INotificationConfig {
+  /** H Notification Key；空值或脱敏占位提交表示保留旧值。 */
+  mailToken: string;
+  /** 评论邮件通知总开关。 */
+  enabled: boolean;
+}

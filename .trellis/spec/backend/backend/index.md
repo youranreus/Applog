@@ -22,6 +22,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Traffic Views/Visitors uses `AnalyticsModule` Umami proxy (`GET /analytics/summary|trend|top|breakdown`) — not Post/Page `viewCount`; config via `SYSTEM_UMAMI_CONFIG`
 - [ ] Visitor cursor changes follow [Visitor Cursor Cross-Layer Contract](./visitor-cursor-guidelines.md)
 - [ ] Comment, moderation, pending capability, or Typecho comment migration changes follow [Comment Cross-Layer Contract](./comment-guidelines.md)
+- [ ] Comment email notification, H mail token, template, or delivery changes follow [Comment Notification Contract](./notification-guidelines.md)
 - [ ] Duolingo Landing/config changes follow [Duolingo Landing Statistics Contract](./duolingo-guidelines.md)
 - [ ] Garmin Landing/worker/snapshot changes follow [Garmin Landing Activity Snapshot Contract](./garmin-guidelines.md)
 
@@ -40,6 +41,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 | [Logging Guidelines](./logging-guidelines.md) | `HLogger` usage in services | Filled |
 | [Visitor Cursor Guidelines](./visitor-cursor-guidelines.md) | Ephemeral presence API, lifecycle, validation, and tests | Filled |
 | [Comment Guidelines](./comment-guidelines.md) | Public trees, moderation, pending capabilities, safe meme rendering, and Typecho migration | Filled |
+| [Comment Notification Guidelines](./notification-guidelines.md) | H mail-token config, comment notification triggers, recipients, templates, retry, and admin UI | Filled |
 | [Duolingo Guidelines](./duolingo-guidelines.md) | Secret config, third-party normalization, cache, public DTO, and Landing presentation | Filled |
 | [Garmin Guidelines](./garmin-guidelines.md) | Worker snapshot, public DTO, privacy, and Landing activity cards | Filled |
 
@@ -55,6 +57,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] API controllers use `version: [VERSION_NEUTRAL, '1']` unless intentionally raw (e.g. SEO XML)
 - [ ] Analytics: Umami proxy + Shanghai windows; never leak credentials; legacy analytics_* tables soft-disabled
 - [ ] Comments: public DTOs hide private metadata; pending access requires a capability; subtree deletion is transactional
+- [ ] Comment notifications: mail token is masked/admin-only; disabled/missing config skips safely; every admin batch is attempted independently
 
 ---
 

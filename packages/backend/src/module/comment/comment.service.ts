@@ -35,6 +35,7 @@ import {
   hashWithdrawToken,
   matchesWithdrawToken,
 } from './comment-security.utils';
+import { NotificationService } from '@/module/notification/notification.service';
 
 export type CommentTarget =
   | { postId: number; pageId?: never }
@@ -56,6 +57,7 @@ export class CommentService {
   constructor(
     private config: ConfigService,
     private dataSource: DataSource,
+    private readonly notificationService: NotificationService,
   ) {
     this.adminRoleValue = this.config.get<number>('SYSTEM_ADMIN_ROLE_VALUE', 0);
     this.baseConfigKey = getSystemConfigKey(
@@ -137,6 +139,9 @@ export class CommentService {
       this.log(
         `评论创建成功，评论ID: ${saved.id}，目标: ${this.targetKey(target)}`,
       );
+      if (!this.isAdmin(user)) {
+        await this.notificationService.notifyNewComment(hydrated ?? saved);
+      }
       const publicComment = this.toPublic(hydrated ?? saved);
       return token
         ? { comment: publicComment, withdrawToken: token }
@@ -324,10 +329,17 @@ export class CommentService {
       relations: ['author', 'post', 'page'],
     });
     if (!comment) throw new BusinessException('评论不存在');
+    if (comment.status === dto.status) {
+      return this.toAdmin(
+        comment,
+        (await this.getDeleteImpact(id)).descendantCount,
+      );
+    }
     comment.status = dto.status;
     comment.withdrawTokenHash = null;
     const saved = await this.commentRepo.save(comment);
     this.log(`评论审核完成，评论ID: ${id}，状态: ${dto.status}`);
+    await this.notificationService.notifyCommentStatus(saved);
     return this.toAdmin(
       saved,
       (await this.getDeleteImpact(id)).descendantCount,

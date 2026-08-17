@@ -22,6 +22,10 @@ function createCommentService(
   const service = new CommentService(
     { get: (_key: string, fallback: unknown) => fallback } as never,
     {} as never,
+    {
+      notifyNewComment: async () => undefined,
+      notifyCommentStatus: async () => undefined,
+    } as never,
   );
   Object.assign(service, {
     commentRepo,

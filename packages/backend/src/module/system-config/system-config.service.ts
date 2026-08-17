@@ -7,6 +7,7 @@ import { isNil } from 'lodash';
 import type { UserJwtPayload } from '@reus-able/types';
 import type {
   IDuolingoConfig,
+  INotificationConfig,
   ISystemBaseConfig,
   IUmamiConfig,
 } from '@applog/common';
@@ -17,8 +18,11 @@ import {
   getSystemConfigKey,
   isValidIanaTimeZone,
   maskDuolingoConfigJwt,
+  maskNotificationMailToken,
   maskUmamiConfigPassword,
   shouldKeepExistingDuolingoJwt,
+  shouldKeepExistingNotificationMailToken,
+  normalizeNotificationConfig,
   shouldKeepExistingUmamiPassword,
   normalizeUmamiBaseUrl,
 } from '@applog/common';
@@ -88,6 +92,13 @@ export class SystemConfigService {
     );
   }
 
+  getNotificationConfigKey(): string {
+    return getSystemConfigKey(
+      SYSTEM_CONFIG_KEYS.NOTIFICATION_CONFIG,
+      this.systemKeyPrefix,
+    );
+  }
+
   /**
    * 完整系统基础配置 key（含前缀）
    * @returns 如 SYSTEM_BASE_CONFIG
@@ -120,6 +131,15 @@ export class SystemConfigService {
       configKey === SYSTEM_CONFIG_KEYS.DUOLINGO_CONFIG ||
       configKey ===
         `${this.systemKeyPrefix}${SYSTEM_CONFIG_KEYS.DUOLINGO_CONFIG}`
+    );
+  }
+
+  private isNotificationConfigKey(configKey: string): boolean {
+    return (
+      configKey === this.getNotificationConfigKey() ||
+      configKey === SYSTEM_CONFIG_KEYS.NOTIFICATION_CONFIG ||
+      configKey ===
+        `${this.systemKeyPrefix}${SYSTEM_CONFIG_KEYS.NOTIFICATION_CONFIG}`
     );
   }
 
@@ -161,7 +181,8 @@ export class SystemConfigService {
     // 第三方凭证：读写均仅管理员（优先于「SYSTEM_ 全员可读」）
     if (
       this.isUmamiConfigKey(configKey) ||
-      this.isDuolingoConfigKey(configKey)
+      this.isDuolingoConfigKey(configKey) ||
+      this.isNotificationConfigKey(configKey)
     ) {
       if (!this.isAdmin(user)) {
         this.warn(
@@ -199,30 +220,38 @@ export class SystemConfigService {
     const data = entity.getData();
     if (
       !this.isUmamiConfigKey(entity.configKey) &&
-      !this.isDuolingoConfigKey(entity.configKey)
+      !this.isDuolingoConfigKey(entity.configKey) &&
+      !this.isNotificationConfigKey(entity.configKey)
     ) {
       return data;
     }
 
-    const masked = this.isDuolingoConfigKey(entity.configKey)
-      ? maskDuolingoConfigJwt(
-          this.parseDuolingoConfigValue(data.configValue) ?? {
-            username: '',
-            jwt: '',
-            timeZone: DEFAULT_DUOLINGO_TIME_ZONE,
+    const masked = this.isNotificationConfigKey(entity.configKey)
+      ? maskNotificationMailToken(
+          this.parseNotificationConfigValue(data.configValue) ?? {
+            mailToken: '',
             enabled: false,
           },
         )
-      : maskUmamiConfigPassword(
-          this.parseUmamiConfigValue(data.configValue) ?? {
-            baseUrl: '',
-            websiteId: '',
-            scriptUrl: '',
-            username: '',
-            password: '',
-            enabled: false,
-          },
-        );
+      : this.isDuolingoConfigKey(entity.configKey)
+        ? maskDuolingoConfigJwt(
+            this.parseDuolingoConfigValue(data.configValue) ?? {
+              username: '',
+              jwt: '',
+              timeZone: DEFAULT_DUOLINGO_TIME_ZONE,
+              enabled: false,
+            },
+          )
+        : maskUmamiConfigPassword(
+            this.parseUmamiConfigValue(data.configValue) ?? {
+              baseUrl: '',
+              websiteId: '',
+              scriptUrl: '',
+              username: '',
+              password: '',
+              enabled: false,
+            },
+          );
     return {
       ...data,
       configValue: JSON.stringify(masked),
@@ -251,7 +280,8 @@ export class SystemConfigService {
     // Umami 含凭证：禁止经通用 setConfig 写入，避免脱敏占位覆盖明文密码
     if (
       this.isUmamiConfigKey(payload.configKey) ||
-      this.isDuolingoConfigKey(payload.configKey)
+      this.isDuolingoConfigKey(payload.configKey) ||
+      this.isNotificationConfigKey(payload.configKey)
     ) {
       throw new BusinessException('请使用对应的专用接口管理含凭证配置');
     }
@@ -678,6 +708,87 @@ export class SystemConfigService {
     } catch (err) {
       if (err instanceof BusinessException) throw err;
       this.error(`保存 Duolingo 配置失败: ${(err as Error).message}`);
+      throw new BusinessException('保存配置失败，请稍后重试');
+    }
+  }
+
+  private parseNotificationConfigValue(
+    raw: string,
+  ): INotificationConfig | null {
+    try {
+      const parsed = JSON.parse(raw) as Partial<INotificationConfig>;
+      if (!parsed || typeof parsed !== 'object') return null;
+      return normalizeNotificationConfig(parsed);
+    } catch {
+      return null;
+    }
+  }
+
+  /** 服务端读取完整评论邮件配置（含明文 token，勿下发前端）。 */
+  async getNotificationConfigRaw(): Promise<INotificationConfig | null> {
+    const configKey = this.getNotificationConfigKey();
+    try {
+      const entity = await this.configRepo.findOne({ where: { configKey } });
+      return entity
+        ? this.parseNotificationConfigValue(entity.configValue)
+        : null;
+    } catch (err) {
+      this.error(`读取评论邮件配置失败: ${(err as Error).message}`);
+      throw new BusinessException('查询配置失败，请稍后重试');
+    }
+  }
+
+  async getNotificationConfigMasked(
+    user: UserJwtPayload,
+  ): Promise<INotificationConfig> {
+    this.ensureSystemKeyAccess(this.getNotificationConfigKey(), 'read', user);
+    return maskNotificationMailToken(
+      (await this.getNotificationConfigRaw()) ?? {
+        mailToken: '',
+        enabled: false,
+      },
+    );
+  }
+
+  async setNotificationConfig(
+    payload: INotificationConfig,
+    user: UserJwtPayload,
+  ): Promise<INotificationConfig> {
+    const configKey = this.getNotificationConfigKey();
+    this.ensureSystemKeyAccess(configKey, 'write', user);
+    try {
+      const existing = await this.getNotificationConfigRaw();
+      const mailToken = shouldKeepExistingNotificationMailToken(
+        payload.mailToken,
+      )
+        ? (existing?.mailToken ?? '')
+        : (payload.mailToken || '').trim();
+      if (payload.enabled === true && !mailToken) {
+        throw new BusinessException('启用评论邮件通知前请填写 mail token');
+      }
+      const toStore: INotificationConfig = {
+        mailToken,
+        enabled: payload.enabled === true,
+      };
+      let entity = await this.configRepo.findOne({ where: { configKey } });
+      if (isNil(entity)) {
+        entity = this.configRepo.create({
+          configKey,
+          configValue: JSON.stringify(toStore),
+          description: '评论邮件通知配置',
+          extra: { type: 'INotificationConfig' },
+        });
+      } else {
+        entity.configValue = JSON.stringify(toStore);
+        entity.description = '评论邮件通知配置';
+        entity.extra = { ...(entity.extra ?? {}), type: 'INotificationConfig' };
+      }
+      await this.configRepo.save(entity);
+      this.log('评论邮件通知配置保存成功');
+      return maskNotificationMailToken(toStore);
+    } catch (err) {
+      if (err instanceof BusinessException) throw err;
+      this.error(`保存评论邮件配置失败: ${(err as Error).message}`);
       throw new BusinessException('保存配置失败，请稍后重试');
     }
   }

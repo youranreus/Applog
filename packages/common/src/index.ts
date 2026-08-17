@@ -7,3 +7,4 @@ export * from "./constants/visitor-cursor.js";
 export * from "./utils/system-config.js";
 export * from "./utils/umami-config.js";
 export * from "./utils/duolingo-config.js";
+export * from "./utils/notification-config.js";

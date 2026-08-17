@@ -8,9 +8,11 @@ import {
   PostEntity,
   SystemConfigEntity,
 } from '@/entities';
+import { NotificationModule } from '@/module/notification/notification.module';
 
 @Module({
   imports: [
+    NotificationModule,
     TypeOrmModule.forFeature([
       CommentEntity,
       PageEntity,

@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/dialog';
 import LandingSettingsFields from './LandingSettingsFields.vue';
 import DuolingoSettings from './DuolingoSettings.vue';
+import NotificationSettings from './NotificationSettings.vue';
 
 /**
  * 建站日期展示用格式化器（本地时区）
@@ -852,6 +853,7 @@ async function handleSaveUmami(): Promise<void> {
       </FieldGroup>
 
       <DuolingoSettings v-if="isAdmin" />
+      <NotificationSettings v-if="isAdmin" />
     </div>
 
     <Dialog v-model:open="permissionConfirmOpen">
