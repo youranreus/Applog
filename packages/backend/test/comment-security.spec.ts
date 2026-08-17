@@ -290,6 +290,120 @@ describe('comment security contract', () => {
     assert.equal(countWhere.length, 0);
   });
 
+  for (const scenario of [
+    {
+      name: '文章',
+      target: { postId: 3 },
+      parent: { postId: 3, pageId: null },
+    },
+    {
+      name: '独立页面',
+      target: { pageId: 3 },
+      parent: { postId: null, pageId: 3 },
+    },
+  ] as const) {
+    it(`允许回复同一${scenario.name}下未使用目标列为 SQL NULL 的已公开评论`, async () => {
+      const parent = Object.assign(new CommentEntity(), scenario.parent, {
+        id: 8,
+        status: 'approved' as const,
+      });
+      let saved: CommentEntity | undefined;
+      const service = createCommentService({
+        findOne: async (options: { relations?: string[] }) =>
+          options.relations ? saved : parent,
+        count: async () => 0,
+        create: (value: Partial<CommentEntity>) =>
+          Object.assign(new CommentEntity(), value),
+        save: async (value: CommentEntity) => {
+          saved = Object.assign(value, {
+            id: 9,
+            createdAt: new Date(0),
+            updatedAt: new Date(0),
+          });
+          return saved;
+        },
+      });
+      Object.assign(service, {
+        postRepo: { findOne: async () => ({ id: 3, status: 'published' }) },
+        pageRepo: { findOne: async () => ({ id: 3, status: 'published' }) },
+        configRepo: { findOne: async () => undefined },
+      });
+
+      const result = await service.create(
+        {
+          ...scenario.target,
+          parentId: parent.id,
+          content: 'reply',
+        },
+        { id: 1, role: 1 } as never,
+        { ip: '127.0.0.1' },
+      );
+
+      assert.equal(result.comment.parentId, parent.id);
+    });
+  }
+
+  for (const scenario of [
+    {
+      name: '父评论属于另一篇文章',
+      target: { postId: 3 },
+      parent: { postId: 2, pageId: null },
+    },
+    {
+      name: '父评论属于另一个独立页面',
+      target: { pageId: 3 },
+      parent: { postId: null, pageId: 2 },
+    },
+    {
+      name: '同数字 ID 但目标类型不同',
+      target: { pageId: 3 },
+      parent: { postId: 3, pageId: null },
+    },
+    {
+      name: '父评论异常地同时关联两种目标',
+      target: { postId: 3 },
+      parent: { postId: 3, pageId: 3 },
+    },
+  ] as const) {
+    it(`拒绝回复：${scenario.name}`, async () => {
+      const parent = Object.assign(new CommentEntity(), scenario.parent, {
+        id: 8,
+        status: 'approved' as const,
+      });
+      let persisted = false;
+      const service = createCommentService({
+        findOne: async () => parent,
+        count: async () => 0,
+        create: (value: Partial<CommentEntity>) =>
+          Object.assign(new CommentEntity(), value),
+        save: async (value: CommentEntity) => {
+          persisted = true;
+          return value;
+        },
+      });
+      Object.assign(service, {
+        postRepo: { findOne: async () => ({ id: 3, status: 'published' }) },
+        pageRepo: { findOne: async () => ({ id: 3, status: 'published' }) },
+        configRepo: { findOne: async () => undefined },
+      });
+
+      await assert.rejects(
+        () =>
+          service.create(
+            {
+              ...scenario.target,
+              parentId: parent.id,
+              content: 'reply',
+            },
+            { id: 1, role: 1 } as never,
+            { ip: '127.0.0.1' },
+          ),
+        (error: Error) => error.message === '父评论不属于该评论目标',
+      );
+      assert.equal(persisted, false);
+    });
+  }
+
   it('页面根评论仅按 pageId 和 IP 限流并写入页面目标', async () => {
     let saved: CommentEntity | undefined;
     let countWhere: Record<string, unknown> | undefined;

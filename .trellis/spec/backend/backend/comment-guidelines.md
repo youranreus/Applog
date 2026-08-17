@@ -117,6 +117,10 @@ That UI must not expose resource selection, `fieldMapping`, or `clearExisting`. 
 - The global `allowComment` setting gates creation.
 - Exactly one target must be supplied, and the target post or page must exist and be published.
 - A reply parent must belong to the same complete target and already be approved.
+- Parent-target matching branches on the requested target type and compares that
+  target's ID. The inactive nullable target column may be either SQL `NULL` or
+  JavaScript `undefined`, but must not contain an ID; a row with both targets is
+  malformed and must be rejected.
 - Logged-in identity comes from the authenticated payload; clients cannot override it with guest fields.
 - Guest comments require trimmed name and email. Website remains optional.
 - Authenticated comments are created as `approved`, generate no withdrawal token, and are immediately public. Guest comments are created as `pending` and follow the capability workflow.
@@ -224,6 +228,9 @@ Backend changes require tests for:
 - pending resolution deduplication and pending-only behavior;
 - hidden-ancestor protection for direct read and reaction;
 - approval/rejection clearing the capability hash;
+- reply creation with the inactive target column represented as SQL `NULL` for
+  both posts and pages, plus different-ID, cross-target, and dual-target
+  rejection through the public creation service path;
 - transactional subtree deletion impact;
 - Typecho status/type/target mapping, post/page topology, missing references, idempotency, and comments-only zero source post/page reads/writes;
 - prefix validation and selected-resource clear behavior.

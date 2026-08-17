@@ -624,7 +624,9 @@ export class CommentService {
     comment: Pick<CommentEntity, 'postId' | 'pageId'>,
     target: CommentTarget,
   ): boolean {
-    return comment.postId === target.postId && comment.pageId === target.pageId;
+    return 'postId' in target
+      ? comment.postId === target.postId && comment.pageId == null
+      : comment.pageId === target.pageId && comment.postId == null;
   }
 
   private async assertPublishedTarget(target: CommentTarget): Promise<void> {
