@@ -35,4 +35,16 @@ describe('notification frontend and template contract', () => {
       'targetTitle', 'targetType', 'viewUrl',
     ]);
   });
+
+  it('templates omit unsupported document declarations and metadata', async () => {
+    const root = new URL('../../../docs/notification-templates/', import.meta.url);
+    const templates = await Promise.all([
+      readFile(new URL('applog-comment-status.html', root), 'utf8'),
+      readFile(new URL('applog-new-comment.html', root), 'utf8'),
+      readFile(new URL('applog-comment-reply.html', root), 'utf8'),
+    ]);
+    for (const html of templates) {
+      assert.doesNotMatch(html, /<!doctype|<meta\b/iu);
+    }
+  });
 });
