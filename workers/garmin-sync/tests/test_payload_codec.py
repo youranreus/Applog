@@ -73,13 +73,16 @@ def test_fit_binary_round_trip_and_size_guard():
         binary=True,
     )
     assert envelope.compression == "none"
-    assert decrypt_payload(
-        envelope,
-        KEY,
-        domain="activity",
-        owner_key="synthetic-owner",
-        payload_kind="fit",
-    ) == fit
+    assert (
+        decrypt_payload(
+            envelope,
+            KEY,
+            domain="activity",
+            owner_key="synthetic-owner",
+            payload_kind="fit",
+        )
+        == fit
+    )
     with pytest.raises(ValueError, match="hash mismatch"):
         decrypt_payload(
             dataclasses.replace(envelope, content_hash="0" * 64),

@@ -369,8 +369,15 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 
 ### 3. Contracts
 
-- `GARMIN_DATA_ENCRYPTION_KEY` is a separate Base64-encoded 32-byte AES-256-GCM
-  key; it must not reuse the token key.
+- `APP_SECRET_ENCRYPTION_KEY` is a strictly Base64-encoded 32-byte master key.
+  The worker derives purpose-isolated keys with HKDF-SHA256 using the stable
+  `garmin.credential` and `garmin.private-payload` purposes. Persistent envelopes
+  use AES-256-GCM, envelope version 2, key version 1, random 12-byte nonces, and
+  record-bound canonical JSON AAD. Legacy Garmin-specific keys are accepted only
+  by the maintenance migration command, never by the steady-state worker.
+- The additive `keyVersion` columns default to `0` so pre-existing envelope-v1
+  rows are unambiguously legacy. Steady-state writes always persist envelope 2
+  with key version 1 and reject legacy, mixed, or unknown versions.
 - Worker MySQL configuration prefers `GARMIN_MYSQL_*` and falls back to the
   matching `MYSQL_*` keys used by NestJS/FC.
 - Cover configuration uses `GARMIN_MAP_COVERS_ENABLED`, `TENCENT_MAP_KEY`, and
@@ -396,7 +403,8 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
   never through a fixed-year cutoff.
   Bounded detail work is selected from the persistent `pending`/`failed` queue,
   never only from an in-memory prefix of the current page.
-- Payload AAD binds domain, owner, payload kind, and encryption version. JSON is
+- Payload AAD binds purpose, domain, owner, payload kind, envelope version, and
+  key version. JSON is
   canonicalized and gzipped before encryption; FIT remains binary and is hash
   verified after decryption.
 - Public responses are rebuilt from explicit allowlists. They never expose source

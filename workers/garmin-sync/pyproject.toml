@@ -11,6 +11,9 @@ dependencies = [
   "Pillow==11.3.0",
 ]
 
+[project.scripts]
+manage-encryption = "garmin_sync.manage_encryption:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest==8.4.1",

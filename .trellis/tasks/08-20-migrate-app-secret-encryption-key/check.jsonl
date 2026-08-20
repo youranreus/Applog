@@ -1,0 +1,5 @@
+{"file":".trellis/spec/backend/backend/index.md","reason":"Verify backend structure, logging, API boundaries, and quality rules."}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"Verify schema and database mutation behavior against project conventions."}
+{"file":".trellis/spec/backend/backend/garmin-guidelines.md","reason":"Verify encrypted Garmin data remains compatible, private, and test-covered."}
+{"file":".trellis/spec/common/shared/deployment-automation-contracts.md","reason":"Verify maintenance automation, dry-run, idempotency, rollback, and documentation gates."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Verify common crypto behavior is centralized within each runtime and cross-language vectors prevent drift."}

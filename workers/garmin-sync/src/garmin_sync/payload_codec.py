@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Literal
 
-ENCRYPTION_VERSION = 1
+ENCRYPTION_VERSION = 2
 DEFAULT_MAX_PAYLOAD_BYTES = 32 * 1024 * 1024
 
 
@@ -22,9 +22,10 @@ class EncryptedPayload:
     content_type: str
     compression: Literal["gzip", "none"]
     version: int = ENCRYPTION_VERSION
+    key_version: int = 1
 
 
-def _aad(domain: str, owner_key: str, payload_kind: str, version: int) -> bytes:
+def _legacy_aad(domain: str, owner_key: str, payload_kind: str, version: int) -> bytes:
     return json.dumps(
         ["applog-garmin", domain, owner_key, payload_kind, version],
         ensure_ascii=True,
@@ -56,8 +57,10 @@ def encrypt_payload(
     """Compress and encrypt one payload with row-identity-bound AAD."""
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+    from .secret_encryption import envelope_aad
+
     if len(key) != 32:
-        raise ValueError("GARMIN_DATA_ENCRYPTION_KEY must decode to 32 bytes")
+        raise ValueError("Garmin private-payload key must be 32 bytes")
     raw = bytes(value) if binary and isinstance(value, bytes | bytearray) else None
     if binary and raw is None:
         raise TypeError("binary payload must be bytes")
@@ -72,7 +75,7 @@ def encrypt_payload(
     encrypted = AESGCM(key).encrypt(
         nonce,
         plaintext,
-        _aad(domain, owner_key, payload_kind, ENCRYPTION_VERSION),
+        envelope_aad("garmin.private-payload", f"{domain}:{owner_key}:{payload_kind}"),
     )
     return EncryptedPayload(
         ciphertext=encrypted[:-16],
@@ -95,12 +98,14 @@ def decrypt_payload(
     """Authenticate, decrypt and decode an archived payload."""
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-    if envelope.version != ENCRYPTION_VERSION:
+    from .secret_encryption import KEY_VERSION, envelope_aad
+
+    if envelope.version != ENCRYPTION_VERSION or envelope.key_version != KEY_VERSION:
         raise ValueError("unsupported Garmin data encryption version")
     plaintext = AESGCM(key).decrypt(
         envelope.nonce,
         envelope.ciphertext + envelope.auth_tag,
-        _aad(domain, owner_key, payload_kind, envelope.version),
+        envelope_aad("garmin.private-payload", f"{domain}:{owner_key}:{payload_kind}"),
     )
     if envelope.compression == "none":
         if hashlib.sha256(plaintext).hexdigest() != envelope.content_hash:
@@ -112,3 +117,34 @@ def decrypt_payload(
     if hashlib.sha256(raw).hexdigest() != envelope.content_hash:
         raise ValueError("garmin payload hash mismatch")
     return json.loads(raw)
+
+
+def decrypt_legacy_payload(
+    envelope: EncryptedPayload,
+    key: bytes,
+    *,
+    domain: str,
+    owner_key: str,
+    payload_kind: str,
+) -> bytes | Any:
+    """Decrypt and validate a legacy v1 payload for maintenance migration."""
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+    if envelope.version != 1:
+        raise ValueError("unsupported legacy Garmin data encryption version")
+    plaintext = AESGCM(key).decrypt(
+        envelope.nonce,
+        envelope.ciphertext + envelope.auth_tag,
+        _legacy_aad(domain, owner_key, payload_kind, 1),
+    )
+    if envelope.compression == "none":
+        raw = plaintext
+        result: bytes | Any = plaintext
+    elif envelope.compression == "gzip":
+        raw = gzip.decompress(plaintext)
+        result = json.loads(raw)
+    else:
+        raise ValueError("unsupported Garmin payload compression")
+    if hashlib.sha256(raw).hexdigest() != envelope.content_hash:
+        raise ValueError("garmin payload hash mismatch")
+    return result

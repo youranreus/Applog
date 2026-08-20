@@ -13,11 +13,14 @@ Garmin 接入由独立 Python worker 完成。生产环境默认在 Linux 服务
 worker 默认从 NestJS 的 `packages/backend` 目录加载环境配置文件。MySQL 优先读取 `GARMIN_MYSQL_*`，缺失时回退到 NestJS/FC 使用的 `MYSQL_*`。在当前生效的高优先级文件（例如 `.env.development.local`）中追加：
 
 - `GARMIN_MYSQL_SERVER`、`GARMIN_MYSQL_PORT`、`GARMIN_MYSQL_USER`、`GARMIN_MYSQL_PASSWORD`、`GARMIN_MYSQL_DATABASE`
-- `GARMIN_TOKEN_ENCRYPTION_KEY`：32 字节随机密钥的 Base64 文本
-- `GARMIN_DATA_ENCRYPTION_KEY`：另一把独立的 32 字节 Base64 数据密钥，不得与 token 密钥复用
+- `APP_SECRET_ENCRYPTION_KEY`：32 字节随机主密钥的严格 Base64 文本；worker
+  通过 HKDF-SHA256 为 token 与私有数据派生互相隔离的子密钥
 - `GARMIN_IS_CN`：Garmin 中国区账号设为 `true`，国际区设为 `false`
 - `GARMIN_TIME_ZONE`：Garmin 健康自然日使用的 IANA 时区，当前部署建议 `Asia/Shanghai`
 - `GARMIN_REQUEST_BUDGET`：单轮 Garmin 请求上限，默认 `80`
+
+首次生成主密钥时运行 `openssl rand -base64 32`，将结果直接交给部署 Secret
+管理；不要使用口令、UUID，也不要把值写入仓库。
 - `GARMIN_HEALTH_EMPTY_DAY_LIMIT`：连续多少个无任何观测值的历史自然日后判定已到上游边界，默认 `30`
 - `GARMIN_PRIVATE_ARCHIVE_ENABLED`、`GARMIN_HEALTH_BACKFILL_ENABLED`、`GARMIN_MAP_COVERS_ENABLED`：三个独立回滚开关
 - `TENCENT_MAP_KEY`：地图封面启用时需要；使用只启用
@@ -82,8 +85,7 @@ GARMIN_MYSQL_PORT=3306
 GARMIN_MYSQL_USER=applog_garmin
 GARMIN_MYSQL_PASSWORD=replace-with-database-password
 GARMIN_MYSQL_DATABASE=applog
-GARMIN_TOKEN_ENCRYPTION_KEY=replace-with-base64-key
-GARMIN_DATA_ENCRYPTION_KEY=replace-with-a-different-base64-key
+APP_SECRET_ENCRYPTION_KEY=replace-with-base64-master-key
 GARMIN_IS_CN=true
 GARMIN_TIME_ZONE=Asia/Shanghai
 GARMIN_REQUEST_BUDGET=80
@@ -135,6 +137,42 @@ GARMIN_MAP_RENDER_TIMEOUT_SECONDS=8
    systemd 不会并发启动同一个 oneshot service；数据库 advisory lock 也会跳过来自其他节点或手动触发的重叠调用。
 
 项目 [s.yaml](../s.yaml) 中的 `garmin_sync` Function Compute timer 保持禁用，不属于服务器部署流程，不要在阿里云侧启用它。
+
+## 从旧 Garmin 密钥迁移
+
+该操作必须在维护窗口完成。先禁用 Garmin timer/FC trigger 并确认没有 worker
+进程，再备份数据库。部署包含 `keyVersion` 字段的新 NestJS schema，但不要启动新
+worker。迁移期间同时提供新主密钥和两把旧密钥；旧密钥仅供维护命令读取：
+
+```ini
+APP_SECRET_ENCRYPTION_KEY=replace-with-new-base64-master-key
+GARMIN_TOKEN_ENCRYPTION_KEY=legacy-token-key
+GARMIN_DATA_ENCRYPTION_KEY=legacy-data-key
+```
+
+按顺序执行：
+
+```bash
+cd workers/garmin-sync
+.venv/bin/manage-encryption preflight --dry-run
+.venv/bin/manage-encryption migrate --backup-id release_20260820 --dry-run
+.venv/bin/manage-encryption migrate --backup-id release_20260820
+.venv/bin/manage-encryption verify --backup-id release_20260820
+```
+
+`backup-id` 仅允许字母、数字和下划线。迁移会创建两张不可覆盖的完整备份表，
+逐条用旧密钥认证解密、用派生子密钥和新随机 nonce 重加密，并在提交后全量回读。
+非敏感进度写入 `app_secret_encryption_migration` ledger，记录阶段和行数，不记录
+密钥或密文内容。同一 `backup-id` 仅在备份与源数据逐字段一致时才允许安全重试。
+任何失败均返回非零且不得重新开启 timer。需要恢复时执行：
+
+```bash
+.venv/bin/manage-encryption rollback --backup-id release_20260820
+```
+
+验证新 worker 手工同步成功后才恢复 timer。观察期结束且另有数据库备份后，人工
+删除备份表和旧环境变量；维护命令不会自动删除它们。日常运行与 `verify` 只需要
+`APP_SECRET_ENCRYPTION_KEY`，`OIDC_SESSION_SECRET` 保持独立。
 
 ## 日常检查
 

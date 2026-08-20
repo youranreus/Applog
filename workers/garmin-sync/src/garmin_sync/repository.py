@@ -76,10 +76,8 @@ class MySQLRepository:
             host=os.getenv("GARMIN_MYSQL_SERVER") or os.environ["MYSQL_SERVER"],
             port=int(os.getenv("GARMIN_MYSQL_PORT") or os.getenv("MYSQL_PORT", "3306")),
             user=os.getenv("GARMIN_MYSQL_USER") or os.environ["MYSQL_USER"],
-            password=os.getenv("GARMIN_MYSQL_PASSWORD")
-            or os.environ["MYSQL_PASSWORD"],
-            database=os.getenv("GARMIN_MYSQL_DATABASE")
-            or os.environ["MYSQL_DATABASE"],
+            password=os.getenv("GARMIN_MYSQL_PASSWORD") or os.environ["MYSQL_PASSWORD"],
+            database=os.getenv("GARMIN_MYSQL_DATABASE") or os.environ["MYSQL_DATABASE"],
             charset="utf8mb4",
             autocommit=True,
         )
@@ -192,7 +190,7 @@ class MySQLRepository:
         """Encrypt and upsert only when source content changed."""
         if self._data_encryption_key is None:
             raise ValueError(
-                "GARMIN_DATA_ENCRYPTION_KEY is required for private archive"
+                "derived private-payload key is required for private archive"
             )
         envelope = encrypt_payload(
             value,
@@ -215,14 +213,16 @@ class MySQLRepository:
                 """
                 INSERT INTO garmin_private_payload
                   (domain, ownerKey, payloadKind, contentType, compression,
-                   ciphertext, nonce, authTag, encryptionVersion, contentHash,
+                   ciphertext, nonce, authTag, encryptionVersion, keyVersion,
+                   contentHash,
                    fetchedAt, createdAt, updatedAt)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                         CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
                 ON DUPLICATE KEY UPDATE contentType = VALUES(contentType),
                   compression = VALUES(compression), ciphertext = VALUES(ciphertext),
                   nonce = VALUES(nonce), authTag = VALUES(authTag),
                   encryptionVersion = VALUES(encryptionVersion),
+                  keyVersion = VALUES(keyVersion),
                   contentHash = VALUES(contentHash), fetchedAt = VALUES(fetchedAt),
                   updatedAt = CURRENT_TIMESTAMP(3)
                 """,
@@ -236,6 +236,7 @@ class MySQLRepository:
                     envelope.nonce,
                     envelope.auth_tag,
                     envelope.version,
+                    envelope.key_version,
                     envelope.content_hash,
                     _mysql_datetime(fetched_at),
                 ),
@@ -296,7 +297,7 @@ class MySQLRepository:
             activity = cursor.fetchone()
             cursor.execute(
                 "SELECT ownerKey, payloadKind, ciphertext, nonce, authTag, "
-                "contentHash, contentType, compression, encryptionVersion "
+                "contentHash, contentType, compression, encryptionVersion, keyVersion "
                 "FROM garmin_private_payload WHERE domain = 'activity' "
                 "AND ownerKey = %s AND payloadKind IN (%s, %s, %s, %s)",
                 (str(private_activity_id), *kinds),
@@ -315,6 +316,7 @@ class MySQLRepository:
                         str(row[6]),
                         str(row[7]),
                         int(row[8]),
+                        int(row[9]),
                     ),
                     self._data_encryption_key,
                     domain="activity",
@@ -334,7 +336,7 @@ class MySQLRepository:
             cursor.execute(
                 "SELECT payload.ownerKey, payload.ciphertext, payload.nonce, "
                 "payload.authTag, payload.contentHash, payload.contentType, "
-                "payload.compression, payload.encryptionVersion "
+                "payload.compression, payload.encryptionVersion, payload.keyVersion "
                 "FROM garmin_private_payload payload "
                 "INNER JOIN garmin_private_activity activity "
                 "ON activity.id = payload.ownerKey "
@@ -356,6 +358,7 @@ class MySQLRepository:
                 str(row[5]),
                 str(row[6]),
                 int(row[7]),
+                int(row[8]),
             ),
             self._data_encryption_key,
             domain="activity",
@@ -618,14 +621,16 @@ class MySQLRepository:
         """Decrypt the singleton token record without exposing it to logs."""
         with self._connection.cursor() as cursor:
             cursor.execute(
-                "SELECT ciphertext, nonce, authTag, encryptionVersion "
+                "SELECT ciphertext, nonce, authTag, encryptionVersion, keyVersion "
                 "FROM garmin_credential WHERE id = 1"
             )
             row = cursor.fetchone()
         if not row:
             raise RuntimeError("garmin_credential_missing")
         return decrypt_token(
-            EncryptedToken(bytes(row[0]), bytes(row[1]), bytes(row[2]), int(row[3])),
+            EncryptedToken(
+                bytes(row[0]), bytes(row[1]), bytes(row[2]), int(row[3]), int(row[4])
+            ),
             self._encryption_key,
         )
 
@@ -636,13 +641,15 @@ class MySQLRepository:
             cursor.execute(
                 """
                 INSERT INTO garmin_credential
-                  (id, ciphertext, nonce, authTag, encryptionVersion,
+                  (id, ciphertext, nonce, authTag, encryptionVersion, keyVersion,
                    createdAt, updatedAt)
-                VALUES (1, %s, %s, %s, %s, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
+                VALUES (1, %s, %s, %s, %s, %s,
+                        CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
                 ON DUPLICATE KEY UPDATE
                   ciphertext = VALUES(ciphertext), nonce = VALUES(nonce),
                   authTag = VALUES(authTag),
                   encryptionVersion = VALUES(encryptionVersion),
+                  keyVersion = VALUES(keyVersion),
                   updatedAt = CURRENT_TIMESTAMP(3)
                 """,
                 (
@@ -650,6 +657,7 @@ class MySQLRepository:
                     envelope.nonce,
                     envelope.auth_tag,
                     envelope.version,
+                    envelope.key_version,
                 ),
             )
 
@@ -768,14 +776,15 @@ class MySQLRepository:
                 cursor.execute(
                     """
                     INSERT INTO garmin_credential
-                      (id, ciphertext, nonce, authTag, encryptionVersion,
+                      (id, ciphertext, nonce, authTag, encryptionVersion, keyVersion,
                        createdAt, updatedAt)
-                    VALUES (1, %s, %s, %s, %s,
+                    VALUES (1, %s, %s, %s, %s, %s,
                             CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
                     ON DUPLICATE KEY UPDATE
                       ciphertext = VALUES(ciphertext), nonce = VALUES(nonce),
                       authTag = VALUES(authTag),
                       encryptionVersion = VALUES(encryptionVersion),
+                      keyVersion = VALUES(keyVersion),
                       updatedAt = CURRENT_TIMESTAMP(3)
                     """,
                     (
@@ -783,6 +792,7 @@ class MySQLRepository:
                         envelope.nonce,
                         envelope.auth_tag,
                         envelope.version,
+                        envelope.key_version,
                     ),
                 )
                 cursor.execute(

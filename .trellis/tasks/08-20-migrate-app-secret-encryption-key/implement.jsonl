@@ -1,0 +1,5 @@
+{"file":".trellis/spec/backend/backend/index.md","reason":"NestJS module, entity, DTO, logging, and quality conventions."}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"TypeORM/MySQL schema and transactional data-change conventions."}
+{"file":".trellis/spec/backend/backend/garmin-guidelines.md","reason":"Existing Garmin encrypted payload, AAD, worker, and validation contracts."}
+{"file":".trellis/spec/common/shared/deployment-automation-contracts.md","reason":"Required one-command maintenance migration, preflight, verification, and rollback behavior."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"The generic crypto boundary must avoid duplicated key/envelope logic."}

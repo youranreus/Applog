@@ -8,8 +8,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 from .adapter import GarminReadAdapter, GarminRequestBudgetExhausted
-from .credential import decode_key
 from .repository import MySQLRepository
+from .secret_encryption import decode_master_key, derive_key
 from .sync import SyncService
 
 LOGGER = logging.getLogger(__name__)
@@ -48,13 +48,12 @@ def handler(event: Any, context: Any) -> str:
             "GARMIN_HEALTH_BACKFILL_ENABLED",
         )
     )
+    master_key = decode_master_key(os.environ["APP_SECRET_ENCRYPTION_KEY"])
     data_key = (
-        decode_key(os.environ["GARMIN_DATA_ENCRYPTION_KEY"])
-        if private_enabled
-        else None
+        derive_key(master_key, "garmin.private-payload") if private_enabled else None
     )
     repository = MySQLRepository.from_environment(
-        decode_key(os.environ["GARMIN_TOKEN_ENCRYPTION_KEY"]),
+        derive_key(master_key, "garmin.credential"),
         data_key,
     )
     if not repository.acquire_lease():

@@ -145,6 +145,7 @@ def test_activity_weather_payload_is_decrypted_only_inside_private_repository():
                 envelope.content_type,
                 envelope.compression,
                 envelope.version,
+                envelope.key_version,
             )
 
     repository = MySQLRepository(
@@ -194,6 +195,7 @@ def test_covered_activity_ids_require_current_renderer_and_provider():
         "tencent-point",
         "no-map",
     )
+
 
 def test_activity_cover_skips_unchanged_immutable_content():
     statements = []

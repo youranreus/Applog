@@ -24,6 +24,9 @@ export class GarminCredentialEntity {
   @Column({ type: 'smallint', unsigned: true, default: 1 })
   encryptionVersion: number;
 
+  @Column({ type: 'smallint', unsigned: true, default: 0 })
+  keyVersion: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -41,6 +41,9 @@ export class GarminPrivatePayloadEntity {
   @Column({ type: 'tinyint', unsigned: true, default: 1 })
   encryptionVersion: number;
 
+  @Column({ type: 'smallint', unsigned: true, default: 0 })
+  keyVersion: number;
+
   @Column({ type: 'char', length: 64 })
   contentHash: string;
 

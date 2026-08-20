@@ -18,6 +18,7 @@ import {
   DuolingoModule,
   GarminModule,
   NotificationModule,
+  SecretEncryptionModule,
 } from '@/module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -56,6 +57,7 @@ import { ENTITY_LIST } from '@/entities';
     DuolingoModule,
     GarminModule,
     NotificationModule,
+    SecretEncryptionModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],

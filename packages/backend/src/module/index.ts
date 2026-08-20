@@ -10,3 +10,4 @@ export * from './visitor-cursor/visitor-cursor.module';
 export * from './duolingo/duolingo.module';
 export * from './garmin/garmin.module';
 export * from './notification/notification.module';
+export * from './secret-encryption/secret-encryption.module';

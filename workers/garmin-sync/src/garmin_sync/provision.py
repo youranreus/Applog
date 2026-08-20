@@ -3,8 +3,8 @@
 import os
 from getpass import getpass
 
-from .credential import decode_key
 from .repository import MySQLRepository
+from .secret_encryption import decode_master_key, derive_key
 
 
 def main() -> None:
@@ -22,8 +22,9 @@ def main() -> None:
         retry_attempts=1,
     )
     api.login()
+    master_key = decode_master_key(os.environ["APP_SECRET_ENCRYPTION_KEY"])
     repository = MySQLRepository.from_environment(
-        decode_key(os.environ["GARMIN_TOKEN_ENCRYPTION_KEY"])
+        derive_key(master_key, "garmin.credential")
     )
     try:
         repository.store_credential(api.client.dumps())
