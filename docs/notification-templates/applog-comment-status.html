@@ -1,20 +1,12 @@
-<html lang="zh-CN">
-  <head>
-    <title>评论审核结果</title>
-  </head>
-  <body style="margin:0;background:#f5f5f5;color:#222;font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f5;padding:24px 12px">
-      <tr><td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border-radius:12px">
-          <tr><td style="padding:32px">
-            <h1 style="margin:0 0 20px;font-size:22px">评论审核结果</h1>
-            <p style="margin:0 0 16px;line-height:1.7">{{commenterName}}，你好。</p>
-            <p style="margin:0 0 16px;line-height:1.7">你在{{targetType}}《{{targetTitle}}》下的评论<strong>{{statusLabel}}</strong>。</p>
-            <blockquote style="margin:20px 0;padding:14px 16px;background:#f7f7f8;border-left:4px solid #777;line-height:1.7">{{commentExcerpt}}</blockquote>
-            <p style="margin:24px 0 0"><a href="{{viewUrl}}" style="display:inline-block;padding:11px 18px;border-radius:8px;background:#222;color:#fff;text-decoration:none">查看内容</a></p>
-          </td></tr>
-        </table>
-      </td></tr>
-    </table>
-  </body>
-</html>
+<div style="max-width:560px;margin:32px auto;padding:0 20px 24px;background:#ffffff;border-top:4px solid #2563eb;box-shadow:0 2px 8px rgba(15,23,42,.12);color:#475569;font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;line-height:1.8">
+  <h2 style="margin:0;padding:18px 4px 14px;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:18px;font-weight:600">
+    <span style="color:#2563eb">›</span> 评论审核结果
+  </h2>
+  <div style="padding:18px 4px 0">
+    <p style="margin:0 0 12px">{{commenterName}}，你好。</p>
+    <p style="margin:0 0 16px">你在{{targetType}}《<strong style="color:#0f172a">{{targetTitle}}</strong>》下的评论审核状态为：<strong style="color:#2563eb">{{statusLabel}}</strong></p>
+    <p style="margin:16px 0;padding:12px 16px;background:#f8fafc;border-left:3px solid #2563eb;color:#334155">{{commentExcerpt}}</p>
+    <p style="margin:20px 0 0"><a href="{{viewUrl}}" target="_blank" style="display:inline-block;padding:9px 18px;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:600">查看内容</a></p>
+    <p style="margin:22px 0 0;color:#94a3b8;font-size:12px">此邮件由 AppLog 评论系统自动发送，请勿直接回复。</p>
+  </div>
+</div>

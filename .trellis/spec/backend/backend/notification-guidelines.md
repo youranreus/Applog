@@ -121,6 +121,17 @@ Comment excerpts collapse whitespace, strip tag-shaped markup, remain plain text
 
 Repository HTML under `docs/notification-templates/` is the versioned source and is published to H manually. Backend variables and HTML placeholders must stay exact; no template-management sync API exists in AppLog.
 
+Every repository template is a self-contained HTML fragment for H rather than a complete HTML document:
+
+```html
+<div style="max-width:560px;...">
+  ...
+  <a href="{{viewUrl}}" style="...">查看</a>
+</div>
+```
+
+The trimmed file must start with one root `<div>`. Keep all presentation styles inline and use only nested text-level elements such as `div`, headings, paragraphs, spans, strong text, and links. Do not include `<!doctype>`, `html`, `head`, `body`, `table`, embedded/external stylesheets, or scripts; H owns the surrounding email document.
+
 ### Consistency, idempotency, and retries
 
 - Persist the comment/status first. Notification failures never roll back or alter the comment API result.
@@ -159,6 +170,7 @@ Repository HTML under `docs/notification-templates/` is the versioned source and
 | H transport/429/503 | retry once with identical body/idempotency key |
 | other H 4xx or invalid success schema | do not retry; contain after logging metadata only |
 | H accepted notification | log event/comment/batch/attempt/notification ID only |
+| H embeds repository template into its email shell | template is a single styled `<div>` fragment without document/table wrappers |
 
 Never log or return authorization headers, mail tokens, recipient identifiers/addresses, request bodies, template variables, or comment text.
 
@@ -170,6 +182,7 @@ Never log or return authorization headers, mail tokens, recipient identifiers/ad
 2. A guest submits a pending page reply. Valid administrators are notified in sorted batches; a failed first batch does not block the second.
 3. Approval persists, then the guest receives a status-template request by email. A transient `503` retry uses the identical idempotency key.
 4. An authenticated user publicly replies to another user's comment. The parent receives `applog-comment-reply` by `ssoId`, with a public reply anchor and plain-text excerpts.
+5. H embeds the fragment without nested document tags; the brand bar, heading, content card, and call-to-action remain visible.
 
 ### Base
 
@@ -187,6 +200,7 @@ Never log or return authorization headers, mail tokens, recipient identifiers/ad
 - Logging an Axios error/request body, recipient, token, or template variables.
 - Calling reply notification for a top-level comment or notifying every ancestor in a reply chain.
 - Sending a self-reply mail because guest emails were compared without normalization.
+- Publishing a full `<!doctype><html><head><body>...` document or table shell where H expects an embeddable fragment.
 
 ## 6. Tests Required
 
@@ -218,6 +232,7 @@ Frontend/template tests:
 - typed API uses the dedicated admin endpoints;
 - settings composition is admin-only, draft remains separate, password/autocomplete/mask/preserve UX is present;
 - all three HTML templates contain every declared variable and no undeclared placeholders;
+- all three templates start with one styled root `<div>`, include an inline-styled action link, and contain no document, table, script, or stylesheet tags;
 - common/backend/frontend lint, type-check/build, unit suites, and `git diff --check` pass.
 
 ## 7. Wrong vs Correct
@@ -260,4 +275,14 @@ await this.notificationService.notifyCommentReply(saved)
 if (saved.parentId && saved.status === 'approved') {
   await this.notificationService.notifyCommentReply(saved)
 }
+```
+
+```html
+<!-- Wrong: H receives a second complete email document. -->
+<!doctype html><html><body>...</body></html>
+
+<!-- Correct: H receives one embeddable, fully inline-styled fragment. -->
+<div style="max-width:560px;...">
+  <a href="{{viewUrl}}" style="display:inline-block;...">查看</a>
+</div>
 ```

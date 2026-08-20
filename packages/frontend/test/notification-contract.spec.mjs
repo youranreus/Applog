@@ -36,15 +36,18 @@ describe('notification frontend and template contract', () => {
     ]);
   });
 
-  it('templates omit unsupported document declarations and metadata', async () => {
+  it('templates remain self-contained HTML fragments for H', async () => {
     const root = new URL('../../../docs/notification-templates/', import.meta.url);
-    const templates = await Promise.all([
-      readFile(new URL('applog-comment-status.html', root), 'utf8'),
-      readFile(new URL('applog-new-comment.html', root), 'utf8'),
-      readFile(new URL('applog-comment-reply.html', root), 'utf8'),
-    ]);
+    const templates = await Promise.all(
+      ['applog-comment-status.html', 'applog-new-comment.html', 'applog-comment-reply.html']
+        .map((name) => readFile(new URL(name, root), 'utf8')),
+    );
+
     for (const html of templates) {
-      assert.doesNotMatch(html, /<!doctype|<meta\b/iu);
+      assert.ok(html.trim().startsWith('<div'));
+      assert.match(html, /style="[^"]*(?:max-width|width):/);
+      assert.match(html, /<a href="{{(?:viewUrl|adminUrl)}}"[^>]*style="/);
+      assert.doesNotMatch(html, /<!doctype|<\/?(?:html|head|body|meta|table|style|script|link)\b/i);
     }
   });
 });
