@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 33
-- **Last Active**: 2026-08-17
+- **Total Sessions**: 34
+- **Last Active**: 2026-08-20
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~898 | Active |
+| `journal-1.md` | ~920 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 34 | 2026-08-20 | Migrate persistent encryption to application master key | `894df2c`, `62ba4fa` | `master` |
 | 33 | 2026-08-17 | 评论被回复邮件通知 | `1ebe840` | `master` |
 | 32 | 2026-08-17 | Fix comment reply parent target validation | `63a8348` | `master` |
 | 31 | 2026-08-17 | 评论邮件通知 | `70d36de` | `master` |

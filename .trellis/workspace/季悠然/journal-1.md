@@ -896,3 +896,25 @@ Fixed reply target matching for nullable SQL columns, added post/page and malfor
 ### Status
 
 [OK] **Completed**
+
+
+## Session 34: Migrate persistent encryption to application master key
+
+**Date**: 2026-08-20
+**Task**: Migrate persistent encryption to application master key
+**Branch**: `master`
+
+### Summary
+
+Researched Flomo tag access, added a reusable HKDF/AES-GCM application secret contract, migrated Garmin encryption runtime and maintenance tooling, and validated migrate/verify/rollback against the local develop database with unrecoverable historical payloads retained in quarantine.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `894df2c` | (see git log) |
+| `62ba4fa` | (see git log) |
+
+### Status
+
+[OK] **Completed**
