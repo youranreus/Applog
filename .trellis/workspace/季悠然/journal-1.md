@@ -918,3 +918,24 @@ Researched Flomo tag access, added a reusable HKDF/AES-GCM application secret co
 ### Status
 
 [OK] **Completed**
+
+
+## Session 35: Automate encryption migration maintenance window
+
+**Date**: 2026-08-20
+**Task**: Automate encryption migration maintenance window
+**Branch**: `master`
+
+### Summary
+
+Added a one-command systemd maintenance orchestrator for application-key migration with safe dry-run, explicit dotenv sources, scheduler-first apply and rollback, controlled sync verification, interruption handling, and manual timer enable handoff.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1fd7f35` | (see git log) |
+
+### Status
+
+[OK] **Completed**
