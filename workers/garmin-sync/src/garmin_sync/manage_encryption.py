@@ -4,10 +4,12 @@ import argparse
 import os
 import re
 import sys
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
+from .cli import load_environment, load_environment_directory
 from .credential import (
     EncryptedToken,
     decode_key,
@@ -208,13 +210,16 @@ def _locked(connection: Any) -> Iterator[None]:
 def preflight(*, dry_run: bool = False) -> None:
     del dry_run
     old_token, old_data = _legacy_keys()
-    _current_keys()
+    new_token, new_data = _current_keys()
     connection = _connection()
     try:
         with _locked(connection):
-            if _validate_source_schema(connection) != 1:
-                raise RuntimeError("preflight expects an entirely legacy source")
-            counts = _validate_legacy(connection, old_token, old_data)
+            source_version = _validate_source_schema(connection)
+            counts = (
+                _validate_legacy(connection, old_token, old_data)
+                if source_version == 1
+                else _validate_current(connection, new_token, new_data)
+            )
             print(f"preflight ok credentials={counts[0]} payloads={counts[1]}")
     finally:
         connection.close()
@@ -475,7 +480,7 @@ def verify(backup_id: str) -> None:
         connection.close()
 
 
-def rollback(backup_id: str) -> None:
+def rollback(backup_id: str, *, dry_run: bool = False) -> None:
     old_token, old_data = _legacy_keys()
     connection = _connection()
     credential_backup, payload_backup = _backup_tables(backup_id)
@@ -494,6 +499,12 @@ def rollback(backup_id: str) -> None:
                 credential_table=credential_backup,
                 payload_table=payload_backup,
             )
+            if dry_run:
+                print(
+                    f"rollback dry-run ok backup={backup_id} "
+                    f"credentials={expected[0]} payloads={expected[1]}"
+                )
+                return
             with connection.cursor() as cursor:
                 cursor.execute("DELETE FROM garmin_credential")
                 cursor.execute(
@@ -521,8 +532,11 @@ def rollback(backup_id: str) -> None:
         connection.close()
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="manage-encryption")
+    environment = parser.add_mutually_exclusive_group(required=True)
+    environment.add_argument("--env-file", type=Path)
+    environment.add_argument("--env-dir", type=Path)
     subparsers = parser.add_subparsers(dest="command", required=True)
     preflight_parser = subparsers.add_parser("preflight")
     preflight_parser.add_argument("--dry-run", action="store_true")
@@ -532,8 +546,14 @@ def main() -> None:
     for name in ("verify", "rollback"):
         command = subparsers.add_parser(name)
         command.add_argument("--backup-id", required=True)
-    args = parser.parse_args()
+        if name == "rollback":
+            command.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args(argv)
     try:
+        if args.env_file is not None:
+            load_environment(args.env_file)
+        else:
+            load_environment_directory(args.env_dir)
         if args.command == "preflight":
             preflight(dry_run=args.dry_run)
         elif args.command == "migrate":
@@ -541,7 +561,7 @@ def main() -> None:
         elif args.command == "verify":
             verify(args.backup_id)
         else:
-            rollback(args.backup_id)
+            rollback(args.backup_id, dry_run=args.dry_run)
     except Exception as error:
         print(f"manage-encryption failed: {type(error).__name__}", file=sys.stderr)
         raise SystemExit(1) from None

@@ -378,6 +378,14 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 - The additive `keyVersion` columns default to `0` so pre-existing envelope-v1
   rows are unambiguously legacy. Steady-state writes always persist envelope 2
   with key version 1 and reject legacy, mixed, or unknown versions.
+- Production migration uses the repository-owned `migrate-app-secret apply`
+  command with exactly one explicit `--env-file` or `--env-dir` and a stable
+  backup id. It disables the systemd timer, verifies a controlled worker run,
+  and always leaves the timer disabled. Only an operator may run the exact
+  `manage-timer enable` guidance printed after reviewing successful output.
+- Migration failures keep the timer disabled and print one redacted retry or
+  rollback command. The orchestrator never deletes legacy keys, backup tables,
+  ledger rows, or quarantine evidence and never automatically rolls back.
 - Worker MySQL configuration prefers `GARMIN_MYSQL_*` and falls back to the
   matching `MYSQL_*` keys used by NestJS/FC.
 - Cover configuration uses `GARMIN_MAP_COVERS_ENABLED`, `TENCENT_MAP_KEY`, and

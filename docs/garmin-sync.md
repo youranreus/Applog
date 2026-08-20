@@ -150,27 +150,41 @@ GARMIN_TOKEN_ENCRYPTION_KEY=legacy-token-key
 GARMIN_DATA_ENCRYPTION_KEY=legacy-data-key
 ```
 
-按顺序执行：
+先用 `--dry-run` 完成只读检查，再执行同一条一键迁移命令：
 
 ```bash
 cd workers/garmin-sync
-.venv/bin/manage-encryption preflight --dry-run
-.venv/bin/manage-encryption migrate --backup-id release_20260820 --dry-run
-.venv/bin/manage-encryption migrate --backup-id release_20260820
-.venv/bin/manage-encryption verify --backup-id release_20260820
+sudo ./migrate-app-secret apply \
+  --env-file /opt/applog/current/packages/backend/.env.production.local \
+  --backup-id release_20260820 \
+  --dry-run
+sudo ./migrate-app-secret apply \
+  --env-file /opt/applog/current/packages/backend/.env.production.local \
+  --backup-id release_20260820
 ```
+
+一键命令负责禁用 timer、确认 worker 停止、预检、备份、迁移、全量验证、运行
+一次受控同步并再次验证。成功后 timer 仍保持关闭，命令会打印准确的 `enable` 与
+`status` 指令，必须由操作员检查结果后手工执行。`--env-dir` 可替代
+`--env-file`，生产 venv 默认位于 `/opt/applog/venvs/garmin-sync`，其他位置可用
+`--venv` 指定。
 
 `backup-id` 仅允许字母、数字和下划线。迁移会创建两张不可覆盖的完整备份表，
 逐条用旧密钥认证解密、用派生子密钥和新随机 nonce 重加密，并在提交后全量回读。
 非敏感进度写入 `app_secret_encryption_migration` ledger，记录阶段和行数，不记录
 密钥或密文内容。同一 `backup-id` 仅在备份与源数据逐字段一致时才允许安全重试。
-任何失败均返回非零且不得重新开启 timer。需要恢复时执行：
+任何失败均返回非零、保持 timer 关闭，并打印唯一的重试或回滚指令。需要恢复时
+执行：
 
 ```bash
-.venv/bin/manage-encryption rollback --backup-id release_20260820
+sudo ./migrate-app-secret rollback \
+  --env-file /opt/applog/current/packages/backend/.env.production.local \
+  --backup-id release_20260820
 ```
 
-验证新 worker 手工同步成功后才恢复 timer。观察期结束且另有数据库备份后，人工
+回滚后必须先部署兼容旧信封的 worker，再按命令输出的指引恢复 timer。底层
+`manage-encryption` 子命令保留用于故障诊断，不是常规生产迁移入口。观察期结束且
+另有数据库备份后，人工
 删除备份表和旧环境变量；维护命令不会自动删除它们。日常运行与 `verify` 只需要
 `APP_SECRET_ENCRYPTION_KEY`，`OIDC_SESSION_SECRET` 保持独立。
 
