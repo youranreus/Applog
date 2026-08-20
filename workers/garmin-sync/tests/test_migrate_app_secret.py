@@ -115,7 +115,7 @@ def test_apply_orders_commands_and_leaves_timer_disabled(tmp_path: Path):
         "systemctl show applog-garmin-sync.service -p ActiveState --value",
         "systemctl show applog-garmin-sync.service -p Result --value",
         "systemctl show applog-garmin-sync.service -p ExecMainStatus --value",
-        f"{manage} verify --backup-id release_1",
+        f"{manage} verify --backup-id release_1 --allow-payload-drift",
         "systemctl is-active --quiet applog-garmin-sync.timer",
     ]
     assert "manage-timer enable" in result.stdout

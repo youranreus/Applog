@@ -453,7 +453,19 @@ def migrate(backup_id: str, *, dry_run: bool = False) -> None:
         connection.close()
 
 
-def verify(backup_id: str) -> None:
+def _require_verification_counts(
+    current: tuple[int, int],
+    backup: tuple[int, int],
+    *,
+    allow_payload_drift: bool,
+) -> None:
+    if current[0] != backup[0]:
+        raise RuntimeError("backup and current credential row counts differ")
+    if not allow_payload_drift and current[1] != backup[1]:
+        raise RuntimeError("backup and current row counts differ")
+
+
+def verify(backup_id: str, *, allow_payload_drift: bool = False) -> None:
     new_token, new_data = _current_keys()
     connection = _connection()
     credential_backup, payload_backup = _backup_tables(backup_id)
@@ -470,8 +482,11 @@ def verify(backup_id: str) -> None:
                 old_credentials = int(cursor.fetchone()[0])
                 cursor.execute(f"SELECT COUNT(*) FROM `{payload_backup}`")
                 old_payloads = int(cursor.fetchone()[0])
-            if current != (old_credentials, old_payloads):
-                raise RuntimeError("backup and current row counts differ")
+            _require_verification_counts(
+                current,
+                (old_credentials, old_payloads),
+                allow_payload_drift=allow_payload_drift,
+            )
             print(
                 f"verification ok backup={backup_id} "
                 f"credentials={current[0]} payloads={current[1]}"
@@ -546,6 +561,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     for name in ("verify", "rollback"):
         command = subparsers.add_parser(name)
         command.add_argument("--backup-id", required=True)
+        if name == "verify":
+            command.add_argument("--allow-payload-drift", action="store_true")
         if name == "rollback":
             command.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
@@ -559,7 +576,10 @@ def main(argv: Sequence[str] | None = None) -> None:
         elif args.command == "migrate":
             migrate(args.backup_id, dry_run=args.dry_run)
         elif args.command == "verify":
-            verify(args.backup_id)
+            verify(
+                args.backup_id,
+                allow_payload_drift=args.allow_payload_drift,
+            )
         else:
             rollback(args.backup_id, dry_run=args.dry_run)
     except Exception as error:

@@ -386,6 +386,10 @@ Worker unittest (`test_normalize` / `test_sync`), `packages/backend/test/garmin.
 - Migration failures keep the timer disabled and print one redacted retry or
   rollback command. The orchestrator never deletes legacy keys, backup tables,
   ledger rows, or quarantine evidence and never automatically rolls back.
+- Pre-sync verification requires exact credential and payload counts against the
+  named backup. Post-sync verification permits payload count drift caused by the
+  controlled worker run, while still requiring every current envelope to be
+  v2/key-1 and decryptable and the singleton credential count to stay unchanged.
 - Worker MySQL configuration prefers `GARMIN_MYSQL_*` and falls back to the
   matching `MYSQL_*` keys used by NestJS/FC.
 - Cover configuration uses `GARMIN_MAP_COVERS_ENABLED`, `TENCENT_MAP_KEY`, and

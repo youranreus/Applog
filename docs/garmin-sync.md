@@ -164,7 +164,9 @@ sudo ./migrate-app-secret apply \
 ```
 
 一键命令负责禁用 timer、确认 worker 停止、预检、备份、迁移、全量验证、运行
-一次受控同步并再次验证。成功后 timer 仍保持关闭，命令会打印准确的 `enable` 与
+一次受控同步并再次验证。首次验证严格要求活动表与备份行数一致；受控同步后的
+复验允许 payload 数量变化，但仍要求当前全部记录均为 v2/key1 且可认证解密，
+并要求凭据数量与备份一致。成功后 timer 仍保持关闭，命令会打印准确的 `enable` 与
 `status` 指令，必须由操作员检查结果后手工执行。`--env-dir` 可替代
 `--env-file`，生产 venv 默认位于 `/opt/applog/venvs/garmin-sync`，其他位置可用
 `--venv` 指定。
