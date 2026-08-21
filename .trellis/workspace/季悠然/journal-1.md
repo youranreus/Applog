@@ -939,3 +939,25 @@ Added a one-command systemd maintenance orchestrator for application-key migrati
 ### Status
 
 [OK] **Completed**
+
+
+## Session 36: WakaTime Landing integration
+
+**Date**: 2026-08-21
+**Task**: WakaTime Landing integration
+**Branch**: `master`
+
+### Summary
+
+验证 WakaTime Free API 能力，完成服务端安全快照、管理员配置与 Landing AI Cost 单卡展示，并通过完整质量门与用户验收。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f9b314a` | (see git log) |
+| `4cf4365` | (see git log) |
+
+### Status
+
+[OK] **Completed**
