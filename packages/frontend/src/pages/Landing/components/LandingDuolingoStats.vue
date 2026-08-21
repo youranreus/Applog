@@ -6,6 +6,7 @@ import {
   formatLearningTime,
   formatXp,
   getHeatmapLeadingBlanks,
+  getHorizontalScrollLeft,
 } from '../duolingo-utils';
 
 /** 指标卡片色盘轮转 tone（与样式 nth / class 对应） */
@@ -119,10 +120,14 @@ const skeletonMetricTones: MetricTone[] = ['green', 'blue', 'ink', 'leaf'];
  */
 async function scrollToCurrentWeek(): Promise<void> {
   await nextTick();
-  const today = heatmapScroll.value?.querySelector<HTMLElement>(
+  const container = heatmapScroll.value;
+  const today = container?.querySelector<HTMLElement>(
     `[data-date="${todayKey.value}"]`,
   );
-  today?.scrollIntoView({ block: 'nearest', inline: 'end' });
+  if (!container || !today) return;
+  container.scrollTo({
+    left: getHorizontalScrollLeft(container, today),
+  });
 }
 
 watch(

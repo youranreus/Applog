@@ -5,6 +5,16 @@ export interface IHeatmapCell extends IDuolingoYearDay {
   label: string;
 }
 
+interface IHorizontalScrollContainer {
+  clientWidth: number;
+  scrollWidth: number;
+}
+
+interface IHorizontalScrollTarget {
+  offsetLeft: number;
+  offsetWidth: number;
+}
+
 /** 格式化整数 XP。 */
 export function formatXp(value: number): string {
   return new Intl.NumberFormat('zh-CN').format(value);
@@ -77,4 +87,16 @@ export function buildHeatmapCells(days: IDuolingoYearDay[]): IHeatmapCell[] {
 export function getHeatmapLeadingBlanks(firstDate: string): number[] {
   const weekday = new Date(`${firstDate}T00:00:00Z`).getUTCDay();
   return Array.from({ length: weekday }, (_, index) => index);
+}
+
+/**
+ * 计算将目标右边缘滚入容器时的横向位置，不影响页面纵向滚动。
+ */
+export function getHorizontalScrollLeft(
+  container: IHorizontalScrollContainer,
+  target: IHorizontalScrollTarget,
+): number {
+  const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+  const targetRight = target.offsetLeft + target.offsetWidth;
+  return Math.min(maxScrollLeft, Math.max(0, targetRight - container.clientWidth));
 }

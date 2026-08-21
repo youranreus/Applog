@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert'
 import { describe, it } from 'node:test'
+import { readFile } from 'node:fs/promises'
 import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
@@ -7,6 +8,7 @@ const {
   buildHeatmapCells,
   formatLearningTime,
   getHeatmapLeadingBlanks,
+  getHorizontalScrollLeft,
 } = await jiti.import('../src/pages/Landing/duolingo-utils.ts')
 
 describe('Landing Duolingo view utils', () => {
@@ -34,5 +36,28 @@ describe('Landing Duolingo view utils', () => {
 
   it('按星期为年度网格补齐前导空格', () => {
     assert.equal(getHeatmapLeadingBlanks('2026-01-01').length, 4)
+  })
+
+  it('只滚动热力图横轴，不通过 scrollIntoView 带动 landing 页纵向滚动', async () => {
+    assert.equal(
+      getHorizontalScrollLeft(
+        { clientWidth: 320, scrollWidth: 800 },
+        { offsetLeft: 740, offsetWidth: 12 },
+      ),
+      432,
+    )
+    assert.equal(
+      getHorizontalScrollLeft(
+        { clientWidth: 800, scrollWidth: 800 },
+        { offsetLeft: 740, offsetWidth: 12 },
+      ),
+      0,
+    )
+
+    const component = await readFile(
+      new URL('../src/pages/Landing/components/LandingDuolingoStats.vue', import.meta.url),
+      'utf8',
+    )
+    assert.equal(component.includes('scrollIntoView'), false)
   })
 })
