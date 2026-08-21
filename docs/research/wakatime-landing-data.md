@@ -11,7 +11,7 @@
 2. live 文档使用 `ai_model_*`，并未定义独立的 `ai_agent_*` 聚合维度。工具/agent 只能由 `editors` 聚合或 `User Agents.editor` / plugin 记录识别；模型则可由 `ai_model_line_changes`、`ai_model_costs`、`ai_model_breakdown`，以及 `User Agents.ai_model(_version/_complexity)` 原生读取。[官方 API：User Agents](https://wakatime.com/developers#user-agents)
 3. `ai_additions + ai_deletions` 是「AI 造成的行变更事件」，不是「当前代码库中由 AI 写成的代码占比」，也不是接受率。Landing 应写成「AI 行变更占比」；当前 live API 没有 `acceptance_rate`，且现有增删行计数无法安全重建接受/保留率。[官方 API：Stats 字段](https://wakatime.com/developers#stats)
 4. 对个人 Landing，推荐服务端使用最小 OAuth scope / API Key 拉取并生成白名单快照；WakaTime 明确禁止把 secret API key 放进公开网页，只有可撤销的 embeddable JSON/SVG 适合浏览器直连。[官方 API：Security 与 Embedding](https://wakatime.com/developers#embedding-charts-json)
-5. MVP 最适合「7/30 天编码时长指标卡 + 日历热力图 + AI/人工行变更热力环 + Top 语言/编辑器条带」；模型、prompt、token、估算成本放进 Premium 能力探测后的进阶区。官方定价把完整历史和 AI insights 列为 Premium，但 API 文档又明确提到 Free 的长范围 Stats/Insights 会后台计算，端点级套餐边界没有完整公开矩阵，因此上线前必须用目标账户实测 403/字段缺失，而不能只按定价页推断。[官方 Pricing](https://wakatime.com/pricing) [官方 API：Stats](https://wakatime.com/developers#stats)
+5. MVP 最适合「7/30 天编码时长指标卡 + 日历热力图 + AI/人工行变更热力环 + Top 语言/编辑器条带」。目标 Free 账号实测可从 Stats/Summaries 读取模型、prompt、token、session 和估算成本字段，但 `Insights/ai_days` 返回 402；因此是否能展示 AI 聚合数据不能只按 Pricing 页面推断，必须按 endpoint 做能力探测。[官方 Pricing](https://wakatime.com/pricing) [官方 API：Stats](https://wakatime.com/developers#stats)
 
 ## 外部一手资料
 
@@ -29,6 +29,34 @@
 
 - 本报告以 2026-08-21 可访问的 live `wakatime.com/developers` 为准。搜索缓存中偶尔能看到 `ai_agent_*` 旧/旁支字段，但 live 文档当前公开的是 `ai_model_*`；生产契约不应依赖缓存字段。
 - 未找到 WakaTime 官方发布、可独立版本锁定的 OpenAPI 文件；官方 Developer API HTML 是当前权威 schema。因此建议接入时对响应做容错解析并保留契约测试。
+
+## 目标账号 live API 验证
+
+- 验证日期：2026-08-21；账号套餐：Free。
+- 鉴权来源：本机 `~/.wakatime.cfg` 的 `api_key`，仅通过 HTTP Basic Auth 发往 WakaTime 官方 API；未打印、复制或写入凭证。
+- 记录范围：只保留 HTTP 状态、字段路径和脱敏后的能力判断；未保存邮箱、项目名、文件路径、分支、机器、原始 user agent、session ID 或完整响应。
+
+| 资源 | 实测结果 | 能力结论 |
+|---|---|---|
+| Current User | 200 | 鉴权有效，套餐为 Free。 |
+| All Time Since Today | 200 | 累计时长、日均、范围和 freshness 字段可直接使用。 |
+| Stats / last 7 days | 200，`is_up_to_date=true`、`percent_calculated=100` | 基础时长、语言、编辑器以及 AI/human additions/deletions、模型、成本、token、prompt、session 字段均实际存在且当前账号有数据。 |
+| Stats / last 30 days | 首次 202，稍后重试 200，最终 `is_up_to_date=true` | Free 账号可读取完整 30 天 Stats，但服务端必须把 202 / 未完成响应映射成 `pending`，退避重试并保留 last-known-good。 |
+| Summaries / 30 days | 200，返回完整 30 个日项 | 可支撑 30 天编码热力图、活跃天与日级 AI/human 统计；`cumulative_total`、`daily_average` 均存在，`timezone=Asia/Shanghai` 的 UTC 边界正确换算。 |
+| Insights / ai_days / last 30 days | 402，`Upgrade to unlock this and more features.` | Free 账号不能使用官方 AI-vs-human 日百分比 Insights。MVP 应由 Summaries 的日级 additions/deletions 自行计算，或隐藏该视觉。 |
+| Status Bar / today | 200 | 今日缓存 Summary 可读，可做非强实时状态卡。 |
+| User Agents | 200，分页元数据存在 | `editor`、`ai_model`、`ai_model_version`、`ai_model_complexity` 均有实际记录；只应公开规范化 tool/model 名。 |
+| Durations / 单日 | 200 | AI/human 行变更、模型、token、prompt、session 字段可读，可派生小时桶；因包含精确时段和项目，仍不建议 MVP 使用。 |
+| Heartbeats / 单日 | 200 | 原始 AI/human 行变更、token、prompt 长度和 session 字段可读；同时暴露文件、项目、分支、机器和精确时间，Landing 禁止直用。 |
+| Goals | 200，空数组 | endpoint 可用，但当前账号没有目标；UI 应视为“未配置”而非错误。 |
+| Projects | 200，分页元数据存在 | endpoint 可用，但名称、repository 和 clients 属于敏感信息；除显式 allowlist/alias 外不得进入公开响应。 |
+
+### 实测发现的契约风险
+
+- 同一份 7 天 Stats 中，`ai_line_changes_total` 与 `ai_additions + ai_deletions` 实际不相等。它们不能作为可互换字段；Landing 的「AI 行变更占比」应固定使用文档化的 additions/deletions 公式，并用真实 fixture 锁定口径。
+- AI 字段在目标 Free 账号上实际可用，不能把“Free 套餐”直接映射成 `aiAvailable=false`；应按 endpoint 状态和字段 presence 判断。
+- 30 天 Stats 的首次 202 是正常后台计算流程，不是失败。公开 snapshot 需要 `pending/stale/last-known-good` 三态。
+- User Agents 和 Projects 的 live 响应都带 `page/next_page/prev_page/total/total_pages`；即使文档示例未强调分页，接入也不能只消费第一页后声称覆盖完整历史。
 
 ## 主要 API / 公开能力矩阵
 
