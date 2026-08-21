@@ -24,6 +24,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Comment, moderation, pending capability, or Typecho comment migration changes follow [Comment Cross-Layer Contract](./comment-guidelines.md)
 - [ ] Comment email notification, H mail token, template, or delivery changes follow [Comment Notification Contract](./notification-guidelines.md)
 - [ ] Duolingo Landing/config changes follow [Duolingo Landing Statistics Contract](./duolingo-guidelines.md)
+- [ ] WakaTime Landing/config changes follow [WakaTime Landing Statistics Contract](./wakatime-guidelines.md)
 - [ ] Garmin Landing/worker/snapshot changes follow [Garmin Landing Activity Snapshot Contract](./garmin-guidelines.md)
 
 ---
@@ -43,6 +44,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 | [Comment Guidelines](./comment-guidelines.md) | Public trees, moderation, pending capabilities, safe meme rendering, and Typecho migration | Filled |
 | [Comment Notification Guidelines](./notification-guidelines.md) | H mail-token config, comment notification triggers, recipients, templates, retry, and admin UI | Filled |
 | [Duolingo Guidelines](./duolingo-guidelines.md) | Secret config, third-party normalization, cache, public DTO, and Landing presentation | Filled |
+| [WakaTime Guidelines](./wakatime-guidelines.md) | Secret config, Summaries normalization, background snapshot, AI/token/cost semantics, and Landing presentation | Filled |
 | [Garmin Guidelines](./garmin-guidelines.md) | Worker snapshot, public DTO, privacy, and Landing activity cards | Filled |
 
 ---

@@ -5,12 +5,14 @@ import LandingProfile from './components/LandingProfile.vue'
 import LandingRecentPosts from './components/LandingRecentPosts.vue'
 import LandingSlogan from './components/LandingSlogan.vue'
 import LandingDuolingoStats from './components/LandingDuolingoStats.vue'
+import LandingWakaTimeStats from './components/LandingWakaTimeStats.vue'
 import LandingGarminStats from './components/LandingGarminStats/index.vue'
 import LandingYesterdayStatus from './components/LandingYesterdayStatus/index.vue'
 import { LANDING_DEFAULTS } from './constants'
 import { useLanding } from './hooks/useLanding'
 import { useLandingMeta } from './hooks/useLandingMeta'
 import { useLandingDuolingoStats } from './hooks/useLandingDuolingoStats'
+import { useLandingWakaTimeStats } from './hooks/useLandingWakaTimeStats'
 import { useLandingGarminStats } from './hooks/useLandingGarminStats'
 import { useLandingYesterdayStatus } from './hooks/useLandingYesterdayStatus'
 import type { ILandingSocialLink } from './types'
@@ -27,6 +29,7 @@ const systemStore = useSystemStore()
 const { recentPosts, postsLoading, hasPostError } = useLanding()
 const { weather, onlineVisitors, uptimeText } = useLandingMeta()
 const { stats: duolingoStats, loading: duolingoLoading } = useLandingDuolingoStats()
+const { stats: wakaTimeStats, loading: wakaTimeLoading } = useLandingWakaTimeStats()
 const { stats: garminStats, loading: garminLoading } = useLandingGarminStats()
 const {
   status: yesterdayStatus,
@@ -103,6 +106,11 @@ useWebSiteJsonLd({
         v-if="duolingoLoading || duolingoStats"
         :stats="duolingoStats"
         :loading="duolingoLoading"
+      />
+      <LandingWakaTimeStats
+        v-if="wakaTimeLoading || wakaTimeStats"
+        :stats="wakaTimeStats"
+        :loading="wakaTimeLoading"
       />
       <LandingSlogan v-if="slogan" :slogan="slogan" />
     </div>

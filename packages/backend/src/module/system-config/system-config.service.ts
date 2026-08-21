@@ -10,9 +10,11 @@ import type {
   INotificationConfig,
   ISystemBaseConfig,
   IUmamiConfig,
+  IWakaTimeConfig,
 } from '@applog/common';
 import {
   DEFAULT_DUOLINGO_TIME_ZONE,
+  DEFAULT_WAKATIME_TIME_ZONE,
   SYSTEM_CONFIG_KEYS,
   SYSTEM_CONFIG_PREFIX_DEFAULT,
   getSystemConfigKey,
@@ -20,10 +22,12 @@ import {
   maskDuolingoConfigJwt,
   maskNotificationMailToken,
   maskUmamiConfigPassword,
+  maskWakaTimeConfigApiKey,
   shouldKeepExistingDuolingoJwt,
   shouldKeepExistingNotificationMailToken,
   normalizeNotificationConfig,
   shouldKeepExistingUmamiPassword,
+  shouldKeepExistingWakaTimeApiKey,
   normalizeUmamiBaseUrl,
 } from '@applog/common';
 import { SystemConfigEntity } from '@/entities';
@@ -92,6 +96,14 @@ export class SystemConfigService {
     );
   }
 
+  /** 完整 WakaTime 配置 key（含前缀）。 */
+  getWakaTimeConfigKey(): string {
+    return getSystemConfigKey(
+      SYSTEM_CONFIG_KEYS.WAKATIME_CONFIG,
+      this.systemKeyPrefix,
+    );
+  }
+
   getNotificationConfigKey(): string {
     return getSystemConfigKey(
       SYSTEM_CONFIG_KEYS.NOTIFICATION_CONFIG,
@@ -131,6 +143,15 @@ export class SystemConfigService {
       configKey === SYSTEM_CONFIG_KEYS.DUOLINGO_CONFIG ||
       configKey ===
         `${this.systemKeyPrefix}${SYSTEM_CONFIG_KEYS.DUOLINGO_CONFIG}`
+    );
+  }
+
+  private isWakaTimeConfigKey(configKey: string): boolean {
+    return (
+      configKey === this.getWakaTimeConfigKey() ||
+      configKey === SYSTEM_CONFIG_KEYS.WAKATIME_CONFIG ||
+      configKey ===
+        `${this.systemKeyPrefix}${SYSTEM_CONFIG_KEYS.WAKATIME_CONFIG}`
     );
   }
 
@@ -182,6 +203,7 @@ export class SystemConfigService {
     if (
       this.isUmamiConfigKey(configKey) ||
       this.isDuolingoConfigKey(configKey) ||
+      this.isWakaTimeConfigKey(configKey) ||
       this.isNotificationConfigKey(configKey)
     ) {
       if (!this.isAdmin(user)) {
@@ -221,37 +243,46 @@ export class SystemConfigService {
     if (
       !this.isUmamiConfigKey(entity.configKey) &&
       !this.isDuolingoConfigKey(entity.configKey) &&
+      !this.isWakaTimeConfigKey(entity.configKey) &&
       !this.isNotificationConfigKey(entity.configKey)
     ) {
       return data;
     }
 
-    const masked = this.isNotificationConfigKey(entity.configKey)
-      ? maskNotificationMailToken(
-          this.parseNotificationConfigValue(data.configValue) ?? {
-            mailToken: '',
+    const masked = this.isWakaTimeConfigKey(entity.configKey)
+      ? maskWakaTimeConfigApiKey(
+          this.parseWakaTimeConfigValue(data.configValue) ?? {
+            apiKey: '',
+            timeZone: DEFAULT_WAKATIME_TIME_ZONE,
             enabled: false,
           },
         )
-      : this.isDuolingoConfigKey(entity.configKey)
-        ? maskDuolingoConfigJwt(
-            this.parseDuolingoConfigValue(data.configValue) ?? {
-              username: '',
-              jwt: '',
-              timeZone: DEFAULT_DUOLINGO_TIME_ZONE,
+      : this.isNotificationConfigKey(entity.configKey)
+        ? maskNotificationMailToken(
+            this.parseNotificationConfigValue(data.configValue) ?? {
+              mailToken: '',
               enabled: false,
             },
           )
-        : maskUmamiConfigPassword(
-            this.parseUmamiConfigValue(data.configValue) ?? {
-              baseUrl: '',
-              websiteId: '',
-              scriptUrl: '',
-              username: '',
-              password: '',
-              enabled: false,
-            },
-          );
+        : this.isDuolingoConfigKey(entity.configKey)
+          ? maskDuolingoConfigJwt(
+              this.parseDuolingoConfigValue(data.configValue) ?? {
+                username: '',
+                jwt: '',
+                timeZone: DEFAULT_DUOLINGO_TIME_ZONE,
+                enabled: false,
+              },
+            )
+          : maskUmamiConfigPassword(
+              this.parseUmamiConfigValue(data.configValue) ?? {
+                baseUrl: '',
+                websiteId: '',
+                scriptUrl: '',
+                username: '',
+                password: '',
+                enabled: false,
+              },
+            );
     return {
       ...data,
       configValue: JSON.stringify(masked),
@@ -281,6 +312,7 @@ export class SystemConfigService {
     if (
       this.isUmamiConfigKey(payload.configKey) ||
       this.isDuolingoConfigKey(payload.configKey) ||
+      this.isWakaTimeConfigKey(payload.configKey) ||
       this.isNotificationConfigKey(payload.configKey)
     ) {
       throw new BusinessException('请使用对应的专用接口管理含凭证配置');
@@ -708,6 +740,96 @@ export class SystemConfigService {
     } catch (err) {
       if (err instanceof BusinessException) throw err;
       this.error(`保存 Duolingo 配置失败: ${(err as Error).message}`);
+      throw new BusinessException('保存配置失败，请稍后重试');
+    }
+  }
+
+  private parseWakaTimeConfigValue(raw: string): IWakaTimeConfig | null {
+    try {
+      const parsed = JSON.parse(raw) as Partial<IWakaTimeConfig>;
+      if (!parsed || typeof parsed !== 'object') return null;
+      return {
+        apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : '',
+        timeZone:
+          typeof parsed.timeZone === 'string'
+            ? parsed.timeZone
+            : DEFAULT_WAKATIME_TIME_ZONE,
+        enabled: parsed.enabled === true,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** 服务端读取完整 WakaTime 配置（含明文 API key，勿下发）。 */
+  async getWakaTimeConfigRaw(): Promise<IWakaTimeConfig | null> {
+    const configKey = this.getWakaTimeConfigKey();
+    try {
+      const entity = await this.configRepo.findOne({ where: { configKey } });
+      return entity ? this.parseWakaTimeConfigValue(entity.configValue) : null;
+    } catch {
+      this.error('读取 WakaTime 配置失败');
+      throw new BusinessException('查询配置失败，请稍后重试');
+    }
+  }
+
+  /** 管理员读取脱敏 WakaTime 配置。 */
+  async getWakaTimeConfigMasked(
+    user: UserJwtPayload,
+  ): Promise<IWakaTimeConfig> {
+    this.ensureSystemKeyAccess(this.getWakaTimeConfigKey(), 'read', user);
+    return maskWakaTimeConfigApiKey(
+      (await this.getWakaTimeConfigRaw()) ?? {
+        apiKey: '',
+        timeZone: DEFAULT_WAKATIME_TIME_ZONE,
+        enabled: false,
+      },
+    );
+  }
+
+  /** 保存 WakaTime 配置；空值或脱敏占位保留旧 API key。 */
+  async setWakaTimeConfig(
+    payload: IWakaTimeConfig,
+    user: UserJwtPayload,
+  ): Promise<IWakaTimeConfig> {
+    const configKey = this.getWakaTimeConfigKey();
+    this.ensureSystemKeyAccess(configKey, 'write', user);
+    const timeZone =
+      (payload.timeZone || '').trim() || DEFAULT_WAKATIME_TIME_ZONE;
+    if (!isValidIanaTimeZone(timeZone)) {
+      throw new BusinessException('请输入有效的 IANA 时区');
+    }
+
+    try {
+      const existing = await this.getWakaTimeConfigRaw();
+      const apiKey = shouldKeepExistingWakaTimeApiKey(payload.apiKey)
+        ? (existing?.apiKey ?? '')
+        : (payload.apiKey || '').trim();
+      const toStore: IWakaTimeConfig = {
+        apiKey,
+        timeZone,
+        enabled: payload.enabled === true,
+      };
+      let entity = await this.configRepo.findOne({ where: { configKey } });
+      if (isNil(entity)) {
+        entity = this.configRepo.create({
+          configKey,
+          configValue: JSON.stringify(toStore),
+          description: 'WakaTime Landing 编码统计配置',
+          extra: { type: 'IWakaTimeConfig' },
+        });
+      } else {
+        entity.configValue = JSON.stringify(toStore);
+        entity.description = 'WakaTime Landing 编码统计配置';
+        entity.extra = { ...(entity.extra ?? {}), type: 'IWakaTimeConfig' };
+      }
+      await this.configRepo.save(entity);
+      this.log('WakaTime 配置保存成功');
+      return maskWakaTimeConfigApiKey(toStore);
+    } catch (err) {
+      if (err instanceof BusinessException) throw err;
+      // 数据库/驱动错误可能附带绑定参数；凭证配置禁止转写原始错误。
+      this.error('保存 WakaTime 配置失败');
       throw new BusinessException('保存配置失败，请稍后重试');
     }
   }

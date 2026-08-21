@@ -1,0 +1,8 @@
+{"file":"docs/research/wakatime-landing-data.md","reason":"Check endpoint use, AI/cost wording, live Free-plan behavior and forbidden-data boundary against research."}
+{"file":".trellis/spec/backend/backend/duolingo-guidelines.md","reason":"Check secret config, cache generations, retries, stale/null behavior and Landing degradation consistency."}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Check no generic configuration path leaks or overwrites the WakaTime API key."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Check the shared DTO remains the single contract owner across all layers."}
+{"file":".trellis/spec/common/shared/quality-guidelines.md","reason":"Check common package exports, ESM imports and build quality."}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Check Nest module structure, typing, validation and verification requirements."}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Check Vue/Alova layering, lint, type-check and build requirements."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Check responsive, accessible Landing visual implementation follows project UI conventions."}

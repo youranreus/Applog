@@ -24,25 +24,26 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] Visitor cursor changes follow the cross-layer [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md)
 - [ ] Comment UI, pending storage, or meme rendering changes follow the cross-layer [Comment Contract](../../backend/backend/comment-guidelines.md)
 - [ ] Duolingo Landing/config UI changes follow the cross-layer [Duolingo Contract](../../backend/backend/duolingo-guidelines.md)
+- [ ] WakaTime Landing/config UI changes follow the cross-layer [WakaTime Contract](../../backend/backend/wakatime-guidelines.md)
 - [ ] Garmin Landing activity UI changes follow the cross-layer [Garmin Contract](../../backend/backend/garmin-guidelines.md)
-
 
 ---
 
 ## Guidelines Index
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | `src/` layout and placement rules | Filled |
-| [Component Guidelines](./component-guidelines.md) | SFC patterns, shadcn, Apple theme tokens | Filled |
-| [Hook Guidelines](./hook-guidelines.md) | Public vs page hooks, Alova hooks | Filled |
-| [State Management](./state-management.md) | Pinia stores + API layering | Filled |
-| [Quality Guidelines](./quality-guidelines.md) | Forbidden patterns, lint/typecheck | Filled |
-| [Type Safety](./type-safety.md) | Types, constants, `@applog/common` | Filled |
-| [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Public-route cursor identity, polling, API, and rendering | Filled |
-| [Comment Contract](../../backend/backend/comment-guidelines.md) | Public trees, safe rendering, pending capability storage, and moderation | Filled |
-| [Duolingo Contract](../../backend/backend/duolingo-guidelines.md) | Public learning stats, admin secret form, heatmap semantics, and degradation | Filled |
-| [Garmin Contract](../../backend/backend/garmin-guidelines.md) | Landing activity cards, covers, optional metrics, and privacy bounds | Filled |
+| Guide                                                                         | Description                                                                          | Status |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------ |
+| [Directory Structure](./directory-structure.md)                               | `src/` layout and placement rules                                                    | Filled |
+| [Component Guidelines](./component-guidelines.md)                             | SFC patterns, shadcn, Apple theme tokens                                             | Filled |
+| [Hook Guidelines](./hook-guidelines.md)                                       | Public vs page hooks, Alova hooks                                                    | Filled |
+| [State Management](./state-management.md)                                     | Pinia stores + API layering                                                          | Filled |
+| [Quality Guidelines](./quality-guidelines.md)                                 | Forbidden patterns, lint/typecheck                                                   | Filled |
+| [Type Safety](./type-safety.md)                                               | Types, constants, `@applog/common`                                                   | Filled |
+| [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Public-route cursor identity, polling, API, and rendering                            | Filled |
+| [Comment Contract](../../backend/backend/comment-guidelines.md)               | Public trees, safe rendering, pending capability storage, and moderation             | Filled |
+| [Duolingo Contract](../../backend/backend/duolingo-guidelines.md)             | Public learning stats, admin secret form, heatmap semantics, and degradation         | Filled |
+| [WakaTime Contract](../../backend/backend/wakatime-guidelines.md)             | Public coding stats, admin secret form, single usage-card semantics, and degradation | Filled |
+| [Garmin Contract](../../backend/backend/garmin-guidelines.md)                 | Landing activity cards, covers, optional metrics, and privacy bounds                 | Filled |
 
 ---
 

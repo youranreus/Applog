@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/dialog';
 import LandingSettingsFields from './LandingSettingsFields.vue';
 import DuolingoSettings from './DuolingoSettings.vue';
+import WakaTimeSettings from './WakaTimeSettings.vue';
 import NotificationSettings from './NotificationSettings.vue';
 
 /**
@@ -853,6 +854,7 @@ async function handleSaveUmami(): Promise<void> {
       </FieldGroup>
 
       <DuolingoSettings v-if="isAdmin" />
+      <WakaTimeSettings v-if="isAdmin" />
       <NotificationSettings v-if="isAdmin" />
     </div>
 

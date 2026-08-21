@@ -6,38 +6,44 @@
  * 系统配置默认前缀
  * 用于标识系统级配置，需要管理员权限访问
  */
-export const SYSTEM_CONFIG_PREFIX_DEFAULT = 'SYSTEM_';
+export const SYSTEM_CONFIG_PREFIX_DEFAULT = "SYSTEM_";
 
 /**
  * 系统基础配置 key 后缀
  */
-export const SYSTEM_BASE_CONFIG_KEY = 'BASE_CONFIG';
+export const SYSTEM_BASE_CONFIG_KEY = "BASE_CONFIG";
 
 /**
  * Umami 对接配置 key 后缀
  */
-export const SYSTEM_UMAMI_CONFIG_KEY = 'UMAMI_CONFIG';
+export const SYSTEM_UMAMI_CONFIG_KEY = "UMAMI_CONFIG";
 
 /**
  * Duolingo 学习统计配置 key 后缀
  */
-export const SYSTEM_DUOLINGO_CONFIG_KEY = 'DUOLINGO_CONFIG';
+export const SYSTEM_DUOLINGO_CONFIG_KEY = "DUOLINGO_CONFIG";
+
+/** WakaTime Landing 统计配置 key 后缀 */
+export const SYSTEM_WAKATIME_CONFIG_KEY = "WAKATIME_CONFIG";
 
 /** 评论邮件通知配置 key 后缀 */
-export const SYSTEM_NOTIFICATION_CONFIG_KEY = 'NOTIFICATION_CONFIG';
+export const SYSTEM_NOTIFICATION_CONFIG_KEY = "NOTIFICATION_CONFIG";
 
 /**
  * Umami 密码读回脱敏占位（空密码提交表示不修改）
  */
-export const UMAMI_PASSWORD_MASK = '********';
+export const UMAMI_PASSWORD_MASK = "********";
 
 /**
  * Duolingo JWT 读回脱敏占位
  */
-export const DUOLINGO_JWT_MASK = '********';
+export const DUOLINGO_JWT_MASK = "********";
+
+/** WakaTime API key 读回脱敏占位 */
+export const WAKATIME_API_KEY_MASK = "********";
 
 /** 评论邮件 token 读回脱敏占位 */
-export const NOTIFICATION_MAIL_TOKEN_MASK = '********';
+export const NOTIFICATION_MAIL_TOKEN_MASK = "********";
 
 /**
  * 系统配置 key 映射
@@ -50,6 +56,8 @@ export const SYSTEM_CONFIG_KEYS = {
   UMAMI_CONFIG: SYSTEM_UMAMI_CONFIG_KEY,
   /** Duolingo 学习统计配置（含凭证，仅 admin） */
   DUOLINGO_CONFIG: SYSTEM_DUOLINGO_CONFIG_KEY,
+  /** WakaTime Landing 统计配置（含凭证，仅 admin） */
+  WAKATIME_CONFIG: SYSTEM_WAKATIME_CONFIG_KEY,
   /** 评论邮件通知配置（含凭证，仅 admin） */
   NOTIFICATION_CONFIG: SYSTEM_NOTIFICATION_CONFIG_KEY,
 } as const;

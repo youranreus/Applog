@@ -1,0 +1,9 @@
+{"file":"docs/research/wakatime-landing-data.md","reason":"Authoritative WakaTime endpoint, live-account capability, metric semantics, plan and privacy research."}
+{"file":".trellis/spec/backend/backend/duolingo-guidelines.md","reason":"Closest cross-layer pattern for admin secret config, third-party client, normalization, SWR cache and Landing soft degradation."}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Shared system-config keys, secret masking, compatibility and generic access rules."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Required data-flow and boundary design for common → backend → frontend work."}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"BusinessException and upstream error normalization rules."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"HLogger use and credential-safe logging requirements."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Landing-compatible Vue component, semantic token and responsive UI conventions."}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"Alova API and page-local soft-degradation hook layering."}
+{"file":".trellis/spec/frontend/frontend/type-safety.md","reason":"Shared DTO consumption and Vue TypeScript constraints."}
