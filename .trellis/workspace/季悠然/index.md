@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 36
-- **Last Active**: 2026-08-21
+- **Total Sessions**: 37
+- **Last Active**: 2026-08-22
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~963 | Active |
+| `journal-1.md` | ~987 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 37 | 2026-08-22 | 按标签发布 Flomo 公开笔记 | `d978607`, `68ce25a`, `90aeeac`, `345117c` | `master` |
 | 36 | 2026-08-21 | WakaTime Landing integration | `f9b314a`, `4cf4365` | `master` |
 | 35 | 2026-08-20 | Automate encryption migration maintenance window | `1fd7f35` | `master` |
 | 34 | 2026-08-20 | Migrate persistent encryption to application master key | `894df2c`, `62ba4fa` | `master` |

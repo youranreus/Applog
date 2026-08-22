@@ -961,3 +961,27 @@ Added a one-command systemd maintenance orchestrator for application-key migrati
 ### Status
 
 [OK] **Completed**
+
+
+## Session 37: 按标签发布 Flomo 公开笔记
+
+**Date**: 2026-08-22
+**Task**: 按标签发布 Flomo 公开笔记
+**Branch**: `master`
+
+### Summary
+
+完成按发布标签筛选的 Flomo 公开笔记：加密同步、消毒快照、笔记页卡片预览与原位 Dialog 开合，并写入跨层约定。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d978607` | (see git log) |
+| `68ce25a` | (see git log) |
+| `90aeeac` | (see git log) |
+| `345117c` | (see git log) |
+
+### Status
+
+[OK] **Completed**
