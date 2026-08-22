@@ -1,0 +1,10 @@
+{"file":"docs/research/flomo-tag-data.md","reason":"Flomo official capability, MCP/private-interface boundary, tag-search limits, privacy recommendations, and unresolved protocol risks."}
+{"file":"docs/research/flomo-bridge-analysis.md","reason":"Pinned private Web API audit covering token handling, signature, composite pagination, incremental updates, deletions, attachments, and adapter risks."}
+{"file":"docs/security/secret-encryption.md","reason":"Immutable flomo.token HKDF/AES-GCM envelope, AAD, record identity, and versioning contract."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Required source-to-database-to-public-DTO-to-UI data-flow and trust-boundary design."}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"TypeORM entity registration, synchronize:true schema behavior, query, pagination, and transaction conventions."}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"BusinessException and upstream failure normalization conventions."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"HLogger usage and credential/private-content redaction requirements."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Public container, Apple-light component, Dialog, accessibility, responsive, and reduced-motion conventions."}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"Alova API and page-local hook layering for load-more and admin polling flows."}
+{"file":".trellis/spec/common/shared/package-boundaries.md","reason":"Placement rules for shared Flomo config/public DTOs and pure helpers."}

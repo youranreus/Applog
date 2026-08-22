@@ -1,0 +1,9 @@
+{"file":"docs/research/flomo-tag-data.md","reason":"Check the shipped source strategy and public privacy boundary against the capability research."}
+{"file":"docs/research/flomo-bridge-analysis.md","reason":"Check pagination, cursor, delete/tag-withdrawal, error handling, and private-adapter isolation against the pinned audit."}
+{"file":"docs/security/secret-encryption.md","reason":"Check exact flomo.token envelope/AAD/version compliance and no plaintext persistence."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Check every raw/private field is normalized once and only the shared public projection crosses layers."}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"Check entity registration, keyset query, transaction, and synchronize:true staging requirements."}
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Check Nest module, DTO, auth, typing, test, lint, and build conventions."}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Check Vue/Alova layering, bodyless POST contract, lint, type-check, and build requirements."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Check shared container, accessible card/Dialog behavior, responsive layout, and design-system consistency."}
+{"file":".trellis/spec/common/shared/quality-guidelines.md","reason":"Check common exports, ESM declarations, framework-free helpers, and build order."}
