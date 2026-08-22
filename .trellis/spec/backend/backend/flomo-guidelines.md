@@ -77,23 +77,32 @@ created it.
 - Public notes are database-only, ordered by
   `(sourceCreatedAt DESC, id DESC)`, and fetched with one-row lookahead. The
   public read path never starts upstream work.
-- `/notes` appends and deduplicates pages in a responsive masonry flow. Capture
-  the first visible existing card before load-more and compensate its vertical
-  displacement after CSS-column rebalance. Card previews render sanitized
+- `/notes` appends and deduplicates pages in a responsive masonry flow. Split
+  notes into columns in row-major order (visual 1,2 then 3,4) rather than CSS
+  `column-count` (which fills vertically as 1,4 then 2,5). Capture the first
+  visible existing card before load-more and compensate its vertical
+  displacement after a rebalance. Card previews render sanitized
   `contentHtml` through `FlomoContent` (the sole `v-html` owner), not plain
-  `previewText`. Only previews with measured overflow show a surface-colored
-  fade. Date and `displayTags` share one footer row. One accessible Reka Dialog
-  owns full content and has no outer border, shadow, or internal divider;
-  every close path restores the source card's visibility, scroll, and focus.
-  The Flomo dialog disables the shared `zoom-in` enter animation so it cannot
-  overwrite centering. It keeps the shared dim/blur overlay and fades that
-  overlay's opacity and backdrop-filter with the card morph (not the overlay's
-  default 100ms fade). Query the overlay as the sibling of
-  `[data-flomo-note-dialog]`, never as a bare `[data-slot=dialog-overlay]`.
-  FLIP mounts prepare-hidden, then animates independent `translate`/`scale`
-  with `fill: 'backwards'`, opacity 1, and a delayed chrome fade; it preserves
-  `-50% -50%` centering in every keyframe (`calc(-50% + dx)` /
-  `calc(-50% + dy)` to `-50% -50%`, never `0 0`).
+  `previewText`. Collapsed previews clamp and show a surface-colored fade only
+  when they overflow. Expanded reading scrolls inside the card body; date and
+  `displayTags` stay on a pinned footer row. The same fade sits on the inner
+  pane and hides once that pane is scrolled to the bottom. The reading dialog
+  does not add a visible「笔记」title or move the date into a separate header. One accessible Reka Dialog provides overlay,
+  focus trap, Escape, and close; the source card Teleports into that dialog
+  so the same DOM expands. Teleport `to` is unset until the slot exists, then
+  switches to `#flomo-note-card-slot` so Vue re-resolves the target instead of
+  caching null. Every close path returns the card to the grid,
+  restores scroll, and restores focus. The Flomo dialog disables the shared
+  `zoom-in` enter animation so it cannot overwrite geometry. It keeps the
+  shared dim/blur overlay and fades that overlay's opacity and
+  backdrop-filter with the card morph (not the overlay's default 100ms fade).
+  Query the overlay as the sibling of `[data-flomo-note-dialog]`, never as a
+  bare `[data-slot=dialog-overlay]`. Open mounts prepare-hidden until the
+  card is in the slot, then animates `top`/`left`/`width`/`height` (no
+  content-stretching `scale`) with `fill: 'both'`, `commitStyles()`, opacity 1,
+  and a delayed close-button fade; keyframes use `transform: none`. Geometry
+  is not rebound to the source rect after the morph, so the rest frame cannot
+  snap back.
   It is progressive enhancement and must degrade safely for reduced motion or
   unavailable animation APIs.
 
@@ -158,12 +167,15 @@ schema details; they must be decoded and normalized privately first.
   visibility. Cover normalizer-version mismatch full-sync and fail-closed reads.
 - First/next/end public pages, invalid/stale cursors, equal timestamps, restart
   persistence, and forbidden-field scans.
-- Append/dedupe, navigation order, masonry flow and load-more scroll anchoring,
-  HTML card preview via `FlomoContent`, overflow detection, date/tag footer
-  row, renderer ownership, borderless Dialog styling, focus/scroll restoration,
-  centering-preserving FLIP (`calc(-50% + dx)`, `fill: 'backwards'`, opacity 1,
-  delayed chrome fade), Flomo overlay dim/blur faded with the morph, outside-click
-  retained, disabled shared zoom-in, and animation/reduced-motion fallbacks.
+- Append/dedupe, navigation order, row-major masonry columns and load-more
+  scroll anchoring, HTML card preview via `FlomoContent`, overflow detection,
+  pinned date/tag footer with inner-pane scrolling, fade that hides at the
+  trailing edge, same-DOM Teleport expand, visually hidden Dialog title,
+  renderer ownership, borderless Dialog styling, focus/scroll restoration,
+  box morph (`top`/`left`/`width`/`height`, `transform: none`,
+  `fill: 'both'`, `commitStyles()`, opacity 1, delayed close-button fade),
+  Flomo overlay dim/blur faded with the morph, outside-click retained,
+  disabled shared zoom-in, and animation/reduced-motion fallbacks.
 - Run common build; backend unit/lint/build; frontend unit/lint/type-check/build;
   and `git diff --check`.
 

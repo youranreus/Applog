@@ -4,8 +4,14 @@ import { readFile } from 'node:fs/promises'
 import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
-const { appendUniqueFlomoNotes, formatFlomoNoteDate, shouldMorphFlomoDialog } =
-  await jiti.import('../src/pages/Notes/notes-utils.ts')
+const {
+  appendUniqueFlomoNotes,
+  formatFlomoNoteDate,
+  isOverflowing,
+  isScrolledToBottom,
+  shouldMorphFlomoDialog,
+  splitNotesIntoColumns,
+} = await jiti.import('../src/pages/Notes/notes-utils.ts')
 
 const note = (id, createdAt = '2026-08-20T02:00:00.000Z') => ({
   id,
@@ -59,6 +65,21 @@ describe('Flomo notes frontend contract', () => {
     assert.match(api, /Post<IFlomoSyncTriggerResult>\('\/flomo\/sync', \{\}\)/)
   })
 
+  it('detects overflow and trailing-edge scroll for the card fade', () => {
+    assert.equal(isOverflowing({ scrollHeight: 200, clientHeight: 100 }), true)
+    assert.equal(isOverflowing({ scrollHeight: 100, clientHeight: 100 }), false)
+    assert.equal(isScrolledToBottom({ scrollTop: 0, clientHeight: 100, scrollHeight: 200 }), false)
+    assert.equal(isScrolledToBottom({ scrollTop: 100, clientHeight: 100, scrollHeight: 200 }), true)
+  })
+
+  it('splits notes into row-major masonry columns', () => {
+    assert.deepEqual(splitNotesIntoColumns(['1', '2', '3', '4', '5', '6'], 2), [
+      ['1', '3', '5'],
+      ['2', '4', '6'],
+    ])
+    assert.deepEqual(splitNotesIntoColumns(['1', '2', '3'], 1), [['1', '2', '3']])
+  })
+
   it('uses masonry, derived tag presentation and a borderless accessible dialog', async () => {
     const [page, card, dialogSource, motion, content, displayTags] = await Promise.all([
       readFile(new URL('../src/pages/Notes/index.vue', import.meta.url), 'utf8'),
@@ -70,14 +91,25 @@ describe('Flomo notes frontend contract', () => {
     ])
     const dialog = `${dialogSource}\n${motion}`
     assert.match(page, /canonicalPath: '\/notes'/)
-    assert.match(page, /column-count:\s*2/)
-    assert.match(page, /column-count:\s*1/)
+    assert.match(page, /splitNotesIntoColumns/)
+    assert.match(page, /NOTES_WIDE_MEDIA_QUERY/)
+    assert.doesNotMatch(page, /column-count/)
+    assert.match(page, /note-card-placeholder/)
     assert.match(page, /loadMoreWithAnchor/)
     assert.match(page, /anchor\.getBoundingClientRect\(\)\.top - anchorTop/)
     assert.match(page, /window\.scrollBy\(0, offset\)/)
-    assert.match(card, /scrollHeight > element\.clientHeight/)
-    assert.match(card, /v-if="overflowing"/)
-    assert.match(card, /break-inside:\s*avoid/)
+    assert.match(page, /focus\(\{ preventScroll: true \}\)/)
+    assert.match(card, /showFade/)
+    assert.match(card, /note-card__scroll/)
+    assert.match(card, /isOverflowing/)
+    assert.match(card, /isScrolledToBottom/)
+    assert.match(card, /overscroll-behavior:\s*contain/)
+    assert.match(card, /scrollbar-width:\s*none/)
+    assert.match(card, /:disabled="!expanded"/)
+    assert.match(card, /expanded \? `#\$\{FLOMO_CARD_SLOT_ID\}` : undefined/)
+    assert.doesNotMatch(card, /Teleport defer/)
+    assert.match(card, /FLOMO_CARD_SLOT_ID/)
+    assert.match(page, /await nextTick\(\)\s*\n\s*expandedId\.value = note\.id/)
     assert.match(card, /FlomoContent/)
     assert.match(card, /:content-html="note.contentHtml"/)
     assert.match(card, /props\.note\.contentHtml/)
@@ -85,32 +117,36 @@ describe('Flomo notes frontend contract', () => {
     assert.match(card, /FlomoDisplayTags/)
     assert.match(card, /display:\s*flex/)
     assert.match(card, /flex-shrink:\s*0/)
-    assert.match(card, /role="button"/)
+    assert.match(card, /:role="expanded \? undefined : 'button'"/)
     assert.match(card, /@keydown\.enter/)
-    assert.match(page, /sourceHidden && selected\?\.id === note\.id/)
-    assert.match(page, /@source-hidden="setSourceHidden"/)
+    assert.match(page, /expandedId === note\.id/)
+    assert.match(page, /@source-released="releaseSource"/)
     assert.match(dialog, /DialogTitle/)
-    assert.match(dialog, /DialogDescription/)
+    assert.match(dialog, /sr-only/)
+    assert.doesNotMatch(dialog, /DialogDescription/)
+    assert.doesNotMatch(dialog, /flomo-dialog__header/)
     assert.match(dialog, /prefers-reduced-motion/)
     assert.match(dialog, /data-open:animate-none/)
     assert.match(dialog, /data-closed:animate-none/)
     assert.match(dialog, /requestAnimationFrame/)
-    assert.match(dialog, /calc\(-50% \+ \$\{dx\}px\) calc\(-50% \+ \$\{dy\}px\)/)
-    assert.match(dialog, /CENTERED_TRANSLATE = '-50% -50%'/)
-    assert.match(dialog, /scale: `\$\{sourceRect\.width \/ target\.width\}/)
-    assert.doesNotMatch(dialog, /translate: '0 0'/)
-    assert.doesNotMatch(dialog, /transform: 'none'/)
+    assert.match(dialog, /boxKeyframe/)
+    assert.match(dialog, /measureRestBox/)
+    assert.match(dialog, /transform: 'none'/)
+    assert.doesNotMatch(dialog, /scale: `\$\{sourceRect\.width \/ target\.width\}/)
     assert.match(dialog, /savedScrollY\.value = window\.scrollY/)
-    assert.match(dialog, /focus\(\{ preventScroll: true \}\)/)
     assert.match(dialog, /:global\(\.flomo-dialog\)/)
-    assert.match(dialog, /FlomoDisplayTags/)
+    assert.match(dialog, /FLOMO_CARD_SLOT_ID/)
     assert.match(dialog, /border:\s*0\s*!important/)
     assert.match(dialog, /box-shadow:\s*none\s*!important/)
     assert.doesNotMatch(dialog, /border-bottom/)
     assert.match(dialog, /overlay-class/)
     assert.match(dialog, /data-open:animate-none data-closed:animate-none/)
     assert.match(dialog, /flomo-dialog--prepare/)
-    assert.match(dialog, /fill: 'backwards'/)
+    assert.match(dialog, /pointer-events:\s*none/)
+    assert.match(dialog, /playBoxMorph/)
+    assert.match(dialog, /fill: 'both'/)
+    assert.match(dialog, /commitStyles/)
+    assert.doesNotMatch(dialog, /fill: 'backwards'/)
     assert.match(dialog, /OPEN_MORPH_MS = 440/)
     assert.match(dialog, /CLOSE_MORPH_MS = 360/)
     assert.match(dialog, /cubic-bezier\(0\.16, 1, 0\.3, 1\)/)
@@ -121,7 +157,7 @@ describe('Flomo notes frontend contract', () => {
     assert.match(dialog, /blur\(4px\)/)
     assert.doesNotMatch(dialog, /opacity:\s*0\.7/)
     assert.doesNotMatch(dialog, /!bg-transparent/)
-    assert.match(dialog, /'source-hidden': \[hidden: boolean\]/)
+    assert.match(dialog, /'source-released': \[\]/)
     assert.match(content, /v-html="contentHtml"/)
     assert.match(displayTags, /#\{\{ tag \}\}/)
     for (const source of [page, card, dialog]) assert.doesNotMatch(source, /v-html|attachment|publicationTags/)
@@ -143,6 +179,7 @@ describe('Flomo notes frontend contract', () => {
     assert.match(dialog, /data-open:animate-none data-closed:animate-none/)
     assert.match(dialog, /fadeOverlay\('in', OPEN_MORPH_MS/)
     assert.match(dialog, /fadeOverlay\('out', CLOSE_MORPH_MS/)
+    assert.match(dialog, /pointer-events:\s*none/)
     assert.match(motion, /\[data-slot="dialog-overlay"\]:has\(\+ \[data-flomo-note-dialog\]\)/)
     assert.doesNotMatch(dialog, /!bg-transparent/)
     assert.doesNotMatch(dialog, /!backdrop-blur-none/)

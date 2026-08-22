@@ -1,43 +1,55 @@
 <script setup lang="ts">
 import type { IFlomoPublicMemo } from '@applog/common'
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { FLOMO_CARD_SLOT_ID, formatFlomoNoteDate, isOverflowing, isScrolledToBottom } from '../notes-utils'
 import FlomoContent from './FlomoContent.vue'
 import FlomoDisplayTags from './FlomoDisplayTags.vue'
-import { formatFlomoNoteDate } from '../notes-utils'
 
-const props = defineProps<{ note: IFlomoPublicMemo; active: boolean }>()
+const props = defineProps<{ note: IFlomoPublicMemo; expanded: boolean }>()
 const emit = defineEmits<{ open: [note: IFlomoPublicMemo, source: HTMLElement] }>()
 const preview = ref<HTMLElement | null>(null)
+const scroller = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
 const overflowing = ref(false)
+const atBottom = ref(true)
 let observer: ResizeObserver | undefined
 
+const showFade = computed(() => overflowing.value && !(props.expanded && atBottom.value))
+
 /**
- * Measure whether the trusted HTML preview actually overflows its clamp.
+ * Measure overflow and whether the inner pane has reached its trailing edge.
  */
 function measure(): void {
-  const element = preview.value
-  overflowing.value = Boolean(element && element.scrollHeight > element.clientHeight + 1)
+  const element = props.expanded ? scroller.value : preview.value
+  if (!element) {
+    overflowing.value = false
+    atBottom.value = true
+    return
+  }
+  overflowing.value = isOverflowing(element)
+  atBottom.value = isScrolledToBottom(element)
 }
 
 /**
- * Bind ResizeObserver to the current preview box after contentHtml mounts or changes.
+ * Bind ResizeObserver to the box that actually clips content in this state.
  */
-function observePreview(): void {
+function observeClip(): void {
   observer?.disconnect()
-  if (preview.value) observer?.observe(preview.value)
+  const element = props.expanded ? scroller.value : preview.value
+  if (element) observer?.observe(element)
 }
 
 /**
  * Open the source card into the page-level reading dialog.
  */
 function open(): void {
+  if (props.expanded) return
   if (card.value) emit('open', props.note, card.value)
 }
 
 onMounted(() => {
   observer = new ResizeObserver(() => measure())
-  observePreview()
+  observeClip()
   void nextTick(async () => {
     measure()
     if (document.fonts?.ready) {
@@ -49,7 +61,14 @@ onMounted(() => {
 
 watch(() => props.note.contentHtml, () => {
   void nextTick(() => {
-    observePreview()
+    observeClip()
+    measure()
+  })
+})
+watch(() => props.expanded, (expanded) => {
+  void nextTick(() => {
+    if (expanded && scroller.value) scroller.value.scrollTop = 0
+    observeClip()
     measure()
   })
 })
@@ -57,42 +76,49 @@ onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
-  <article
-    ref="card"
-    class="note-card"
-    :class="{ 'note-card--active': active }"
-    role="button"
-    tabindex="0"
-    :aria-label="`打开 ${formatFlomoNoteDate(note.createdAt)} 的笔记`"
-    @click="open"
-    @keydown.enter="open"
-    @keydown.space.prevent="open"
+  <Teleport
+    :disabled="!expanded"
+    :to="expanded ? `#${FLOMO_CARD_SLOT_ID}` : undefined"
   >
-    <div v-if="note.contentHtml" class="note-card__body">
-      <div ref="preview" class="note-card__preview">
-        <FlomoContent :content-html="note.contentHtml" />
+    <article
+      ref="card"
+      class="note-card"
+      :class="{ 'note-card--expanded': expanded }"
+      :role="expanded ? undefined : 'button'"
+      :tabindex="expanded ? undefined : 0"
+      :aria-label="expanded ? undefined : `打开 ${formatFlomoNoteDate(note.createdAt)} 的笔记`"
+      @click="open"
+      @keydown.enter="open"
+      @keydown.space.prevent="open"
+    >
+      <div v-if="note.contentHtml" class="note-card__body">
+        <div ref="scroller" class="note-card__scroll" @scroll="measure">
+          <div ref="preview" class="note-card__preview">
+            <FlomoContent :content-html="note.contentHtml" />
+          </div>
+        </div>
+        <div v-if="showFade" class="note-card__fade" aria-hidden="true" />
       </div>
-      <div v-if="overflowing" class="note-card__fade" aria-hidden="true" />
-    </div>
-    <footer class="note-card__meta">
-      <time :datetime="note.createdAt" class="note-card__date">
-        {{ formatFlomoNoteDate(note.createdAt) }}
-      </time>
-      <FlomoDisplayTags class="note-card__tags" :tags="note.displayTags" />
-    </footer>
-  </article>
+      <footer class="note-card__meta">
+        <time :datetime="note.createdAt" class="note-card__date">
+          {{ formatFlomoNoteDate(note.createdAt) }}
+        </time>
+        <FlomoDisplayTags class="note-card__tags" :tags="note.displayTags" />
+      </footer>
+    </article>
+  </Teleport>
 </template>
 
 <style scoped>
 .note-card {
   --note-card-surface: var(--card);
 
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   min-width: 0;
-  margin-bottom: 1rem;
   padding: 1.3rem 1.35rem 1.15rem;
-  break-inside: avoid;
+  overflow: hidden;
   border: 1px solid var(--color-pebble);
   border-radius: var(--radius-cards);
   background: var(--note-card-surface);
@@ -112,13 +138,53 @@ onBeforeUnmount(() => observer?.disconnect())
   outline-offset: 3px;
 }
 
-.note-card--active { visibility: hidden; }
+.note-card--expanded {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  cursor: default;
+}
 
-.note-card__body { position: relative; }
+.note-card--expanded:hover {
+  --note-card-surface: var(--card);
+
+  border-color: var(--color-pebble);
+  background: var(--note-card-surface);
+}
+
+.note-card__body { position: relative; min-height: 0; }
+
+.note-card--expanded .note-card__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.note-card__scroll { min-height: 0; }
+
+.note-card--expanded .note-card__scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.note-card--expanded .note-card__scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
 
 .note-card__preview {
   max-height: 13.5rem;
   overflow: hidden;
+}
+
+.note-card--expanded .note-card__preview {
+  max-height: none;
+  overflow: visible;
 }
 
 .note-card__fade {
@@ -133,6 +199,7 @@ onBeforeUnmount(() => observer?.disconnect())
 
 .note-card__meta {
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   gap: 0.4rem 0.75rem;
   align-items: center;
