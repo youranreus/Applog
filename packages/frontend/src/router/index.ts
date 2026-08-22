@@ -26,6 +26,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/post/PostDetail.vue'),
     props: true,
   },
+  {
+    path: '/notes',
+    name: ROUTE_NAMES.NOTES,
+    component: () => import('@/pages/Notes/index.vue'),
+  },
   // /:slug.html 页面详情
   {
     path: '/:slug.html',

@@ -49,10 +49,14 @@ export const NAV_GROUPS: Record<string, INavItemSource[]> = {
       route: { name: ROUTE_NAMES.POST_LIST },
       title: '文章',
     },
+    {
+      type: 'route',
+      route: { name: ROUTE_NAMES.NOTES },
+      title: '笔记',
+    },
   ],
 };
 
 export const SHOW_BACK_ROUTES: string[] = [
   ROUTE_NAMES.POST_DETAIL
 ]
-

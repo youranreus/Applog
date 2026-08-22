@@ -23,6 +23,7 @@ export const ROUTE_NAMES = {
   LANDING: 'landing',
   POST_LIST: 'postList',
   POST_DETAIL: 'postDetail',
+  NOTES: 'notes',
   PAGE_DETAIL: 'pageDetail',
 
   // 用户相关（需要登录）
@@ -59,4 +60,3 @@ export const ROUTE_PERMISSIONS: Record<string, RouteMeta> = {
   [ROUTE_NAMES.USER_PAGE_EDIT]: { requiresAuth: true, roles: ['admin'] },
   [ROUTE_NAMES.USER_COMMENT_LIST]: { requiresAuth: true, roles: ['admin'] },
 };
-
