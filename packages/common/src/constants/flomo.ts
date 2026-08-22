@@ -1,0 +1,7 @@
+export const FLOMO_TOKEN_MASK = "********";
+export const FLOMO_PUBLIC_PAGE_SIZE = 20;
+export const FLOMO_MAX_PUBLICATION_TAGS = 20;
+export const FLOMO_MAX_PUBLICATION_TAG_LENGTH = 64;
+export const FLOMO_MAX_DISPLAY_TAGS = 20;
+export const FLOMO_MAX_DISPLAY_TAG_LENGTH = 64;
+export const FLOMO_MAX_TOKEN_LENGTH = 4096;
