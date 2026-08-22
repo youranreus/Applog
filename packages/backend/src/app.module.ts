@@ -20,6 +20,7 @@ import {
   GarminModule,
   NotificationModule,
   SecretEncryptionModule,
+  FlomoModule,
 } from '@/module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -60,6 +61,7 @@ import { ENTITY_LIST } from '@/entities';
     GarminModule,
     NotificationModule,
     SecretEncryptionModule,
+    FlomoModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],

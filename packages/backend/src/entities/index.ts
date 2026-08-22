@@ -15,6 +15,9 @@ import { GarminActivityDetailEntity } from './GarminActivityDetail';
 import { GarminHealthDailyEntity } from './GarminHealthDaily';
 import { GarminSyncStreamStateEntity } from './GarminSyncStreamState';
 import { GarminActivityCoverEntity } from './GarminActivityCover';
+import { FlomoConfigEntity } from './FlomoConfig';
+import { FlomoPublicMemoEntity } from './FlomoPublicMemo';
+import { FlomoSyncStateEntity } from './FlomoSyncState';
 
 export * from './User';
 export * from './Post';
@@ -33,6 +36,9 @@ export * from './GarminActivityDetail';
 export * from './GarminHealthDaily';
 export * from './GarminSyncStreamState';
 export * from './GarminActivityCover';
+export * from './FlomoConfig';
+export * from './FlomoPublicMemo';
+export * from './FlomoSyncState';
 
 export const ENTITY_LIST = [
   UserEntity,
@@ -52,4 +58,7 @@ export const ENTITY_LIST = [
   GarminHealthDailyEntity,
   GarminSyncStreamStateEntity,
   GarminActivityCoverEntity,
+  FlomoConfigEntity,
+  FlomoPublicMemoEntity,
+  FlomoSyncStateEntity,
 ];

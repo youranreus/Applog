@@ -12,3 +12,4 @@ export * from './wakatime/wakatime.module';
 export * from './garmin/garmin.module';
 export * from './notification/notification.module';
 export * from './secret-encryption/secret-encryption.module';
+export * from './flomo/flomo.module';
