@@ -26,6 +26,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 - [ ] Duolingo Landing/config changes follow [Duolingo Landing Statistics Contract](./duolingo-guidelines.md)
 - [ ] WakaTime Landing/config changes follow [WakaTime Landing Statistics Contract](./wakatime-guidelines.md)
 - [ ] Garmin Landing/worker/snapshot changes follow [Garmin Landing Activity Snapshot Contract](./garmin-guidelines.md)
+- [ ] Flomo adapter/sync/public notes changes follow [Flomo Public Notes Contract](./flomo-guidelines.md)
 
 ---
 
@@ -46,6 +47,7 @@ Backend is a NestJS 10 app using Fastify, TypeORM + MySQL, URI versioning, and s
 | [Duolingo Guidelines](./duolingo-guidelines.md) | Secret config, third-party normalization, cache, public DTO, and Landing presentation | Filled |
 | [WakaTime Guidelines](./wakatime-guidelines.md) | Secret config, Summaries normalization, background snapshot, AI/token/cost semantics, and Landing presentation | Filled |
 | [Garmin Guidelines](./garmin-guidelines.md) | Worker snapshot, public DTO, privacy, and Landing activity cards | Filled |
+| [Flomo Guidelines](./flomo-guidelines.md) | Encrypted config, private adapter, revision-gated sync, sanitizer, and notes UI | Filled |
 
 ---
 

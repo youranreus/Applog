@@ -26,6 +26,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] Duolingo Landing/config UI changes follow the cross-layer [Duolingo Contract](../../backend/backend/duolingo-guidelines.md)
 - [ ] WakaTime Landing/config UI changes follow the cross-layer [WakaTime Contract](../../backend/backend/wakatime-guidelines.md)
 - [ ] Garmin Landing activity UI changes follow the cross-layer [Garmin Contract](../../backend/backend/garmin-guidelines.md)
+- [ ] Flomo settings or public notes UI changes follow [Flomo Contract](../../backend/backend/flomo-guidelines.md)
 
 ---
 
@@ -44,6 +45,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 | [Duolingo Contract](../../backend/backend/duolingo-guidelines.md)             | Public learning stats, admin secret form, heatmap semantics, and degradation         | Filled |
 | [WakaTime Contract](../../backend/backend/wakatime-guidelines.md)             | Public coding stats, admin secret form, single usage-card semantics, and degradation | Filled |
 | [Garmin Contract](../../backend/backend/garmin-guidelines.md)                 | Landing activity cards, covers, optional metrics, and privacy bounds                 | Filled |
+| [Flomo Contract](../../backend/backend/flomo-guidelines.md)                   | Admin publication settings, cursor loading, safe HTML, cards, and Dialog behavior    | Filled |
 
 ---
 

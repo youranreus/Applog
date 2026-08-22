@@ -36,6 +36,7 @@ Build output: `dist/` (`main`: `dist/index.js`, `types`: `dist/index.d.ts`). Tur
 | [Duolingo Contract](../../backend/backend/duolingo-guidelines.md) | Shared secret config and public Landing statistics DTO | Filled |
 | [WakaTime Contract](../../backend/backend/wakatime-guidelines.md) | Shared secret config, public coding snapshot, AI/token/cost semantics, and privacy boundary | Filled |
 | [Garmin Contract](../../backend/backend/garmin-guidelines.md) | Shared public Landing activity snapshot DTO and privacy bounds | Filled |
+| [Flomo Contract](../../backend/backend/flomo-guidelines.md) | Shared masked config, sync status, and public-note allowlist DTO | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | Build, imports, anti-patterns | Filled |
 
 ---
