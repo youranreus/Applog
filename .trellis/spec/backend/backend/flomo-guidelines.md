@@ -26,7 +26,8 @@ created it.
 - `DialogContent` accepts an optional `overlayClass` so a page can restyle its
   overlay without changing the shared default. Flomo passes
   `data-open:animate-none data-closed:animate-none` and then WAAPI-fades the
-  overlay itself.
+  overlay opacity itself. Shared `DialogContent` wraps overlay + surface in
+  `dialog-root` so overlay `backdrop-filter` cannot frost the card.
 
 ## 3. Contracts
 
@@ -94,15 +95,17 @@ created it.
   caching null. Every close path returns the card to the grid,
   restores scroll, and restores focus. The Flomo dialog disables the shared
   `zoom-in` enter animation so it cannot overwrite geometry. It keeps the
-  shared dim/blur overlay and fades that overlay's opacity and
-  backdrop-filter with the card morph (not the overlay's default 100ms fade).
+  shared dim/blur overlay and fades that overlay's opacity with the card morph
+  (not the overlay's default 100ms fade). Backdrop blur stays as overlay CSS;
+  do not WAAPI-animate `backdrop-filter`, and keep the dialog on a `translateZ(0)`
+  layer above the overlay (`z-index` 51) so Safari cannot frost the card.
   Query the overlay as the sibling of `[data-flomo-note-dialog]`, never as a
   bare `[data-slot=dialog-overlay]`. Open mounts prepare-hidden until the
-  card is in the slot, then animates `top`/`left`/`width`/`height` (no
-  content-stretching `scale`) with `fill: 'both'`, `commitStyles()`, opacity 1,
-  and a delayed close-button fade; keyframes use `transform: none`. Geometry
-  is not rebound to the source rect after the morph, so the rest frame cannot
-  snap back.
+  card is in the slot, then animates `top`/`left`/`width`/`height` with CSS
+  transitions (no content-stretching `scale`, no WAAPI cancel that Safari
+  restores to the source box). Opacity 1 is applied before the morph so Vue
+  class patches cannot kill the transition; a delayed close-button fade still
+  uses WAAPI. Geometry is not rebound to the source rect after the morph.
   It is progressive enhancement and must degrade safely for reduced motion or
   unavailable animation APIs.
 
@@ -172,9 +175,10 @@ schema details; they must be decoded and normalized privately first.
   pinned date/tag footer with inner-pane scrolling, fade that hides at the
   trailing edge, same-DOM Teleport expand, visually hidden Dialog title,
   renderer ownership, borderless Dialog styling, focus/scroll restoration,
-  box morph (`top`/`left`/`width`/`height`, `transform: none`,
-  `fill: 'both'`, `commitStyles()`, opacity 1, delayed close-button fade),
-  Flomo overlay dim/blur faded with the morph, outside-click retained,
+  box morph (`top`/`left`/`width`/`height` CSS transitions, no WAAPI cancel
+  snap-back, opacity 1 before morph, delayed close-button fade),
+  Flomo overlay dim faded with the morph (blur remains CSS on the overlay),
+  dialog compositor isolation above the overlay, outside-click retained,
   disabled shared zoom-in, and animation/reduced-motion fallbacks.
 - Run common build; backend unit/lint/build; frontend unit/lint/type-check/build;
   and `git diff --check`.
@@ -197,5 +201,5 @@ schema details; they must be decoded and normalized privately first.
 | Animate `transform: none` or `translate: 0 0` on the centered Dialog | Animate independent `translate`/`scale` with `calc(-50% + dx)` preserving `-50% -50%` |
 | Keep the shared Dialog `zoom-in` enter animation on `/notes` | Disable it on the Flomo dialog; zoom overwrites centering on the first frames |
 | Query `[data-slot=dialog-overlay]` globally | Query `[data-slot=dialog-overlay]:has(+ [data-flomo-note-dialog])` |
-| Snap the overlay in, or cancel dim/blur entirely | Keep `bg-black/10` + `backdrop-blur-xs` and WAAPI-fade opacity/blur with the morph |
+| Snap the overlay in, or cancel dim/blur entirely | Keep `bg-black/10` + `backdrop-blur-xs`; WAAPI-fade overlay opacity only |
 | Assume `element.animate()` cannot fail | Catch enhancement failures and retain normal Dialog behavior |

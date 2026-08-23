@@ -16,17 +16,7 @@ export const CLOSE_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
 export const CHROME_FADE_MS = 160
 export const CHROME_FADE_DELAY_MS = 120
 
-const OVERLAY_BLUR = 'blur(4px)'
-const OVERLAY_HIDDEN: Keyframe = {
-  opacity: 0,
-  backdropFilter: 'blur(0px)',
-  webkitBackdropFilter: 'blur(0px)',
-}
-const OVERLAY_VISIBLE: Keyframe = {
-  opacity: 1,
-  backdropFilter: OVERLAY_BLUR,
-  webkitBackdropFilter: OVERLAY_BLUR,
-}
+const DIALOG_LAYER = 'translateZ(0)'
 
 /**
  * Copy viewport-relative geometry so later layout changes cannot mutate it.
@@ -72,7 +62,51 @@ export function overlayElement(): HTMLElement | null {
 }
 
 /**
- * Fade the dim/blur overlay in or out with the card morph.
+ * Keep the dialog on its own compositor layer so Safari cannot fold it into
+ * the overlay's backdrop-filter (which makes the card look faded and frosted).
+ * @param element - The dialog content element
+ */
+export function isolateDialogLayer(element: HTMLElement): void {
+  element.style.opacity = '1'
+  element.style.filter = 'none'
+  element.style.backdropFilter = 'none'
+  element.style.setProperty('-webkit-backdrop-filter', 'none')
+  element.style.translate = '0 0'
+  element.style.transform = DIALOG_LAYER
+}
+
+/**
+ * Drop a finished WAAPI effect after copying its last opacity onto the overlay.
+ * Leaving fill:both + backdrop-filter alive lets Safari composite the dialog
+ * into the overlay's blur.
+ * @param overlay - The dim overlay element
+ * @param animation - The opacity animation that just settled
+ * @param opacity - Final opacity to keep as a real inline style
+ */
+async function settleOverlayOpacity(
+  overlay: HTMLElement,
+  animation: Animation,
+  opacity: string,
+): Promise<void> {
+  try {
+    await animation.finished
+  } catch {
+    overlay.style.opacity = opacity
+    return
+  }
+  overlay.style.opacity = opacity
+  try {
+    animation.commitStyles()
+  } catch {
+    // Safari may reject commitStyles; inline opacity is already set.
+  }
+  animation.cancel()
+  overlay.style.opacity = opacity
+}
+
+/**
+ * Fade the dim overlay in or out with the card morph. Only opacity is animated;
+ * CSS `backdrop-blur-xs` stays on the overlay so blur cannot leak onto the card.
  * @param direction - Whether the overlay is appearing or disappearing
  * @param duration - Animation duration in milliseconds
  * @param easing - Timing function matching the morph
@@ -85,13 +119,18 @@ export function fadeOverlay(
 ): Animation | null {
   const overlay = overlayElement()
   if (!overlay) return null
+  const from = direction === 'in' ? 0 : 1
+  const to = direction === 'in' ? 1 : 0
   try {
-    return overlay.animate(
-      direction === 'in' ? [OVERLAY_HIDDEN, OVERLAY_VISIBLE] : [OVERLAY_VISIBLE, OVERLAY_HIDDEN],
-      { duration, easing, fill: 'both' },
-    )
+    const animation = overlay.animate([{ opacity: from }, { opacity: to }], {
+      duration,
+      easing,
+      fill: 'forwards',
+    })
+    void settleOverlayOpacity(overlay, animation, String(to))
+    return animation
   } catch {
-    overlay.style.opacity = direction === 'in' ? '1' : '0'
+    overlay.style.opacity = String(to)
     return null
   }
 }
@@ -165,38 +204,48 @@ export function dialogViewportGutter(): number {
 }
 
 /**
+ * Wait for two animation frames so Safari commits the current box before a transition.
+ * @returns Resolves after two frames
+ */
+export async function waitForFrames(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve())
+    })
+  })
+}
+
+/**
+ * Drop leftover geometric transitions without copying opacity or filters onto
+ * the dialog. Safari can list sibling overlay effects here; commitStyles would
+ * stamp blur/transparency onto the card.
+ * @param element - The dialog content element
+ */
+export function clearBoxAnimations(element: HTMLElement): void {
+  for (const animation of element.getAnimations({ subtree: false })) {
+    animation.cancel()
+  }
+}
+
+/**
  * Apply a viewport-relative box without the shared Dialog centering transform.
  * @param element - The dialog content element
  * @param box - Top/left/width/height in CSS pixels
  */
 export function applyBox(element: HTMLElement, box: IFlomoBox): void {
-  element.style.top = `${box.top}px`
-  element.style.left = `${box.left}px`
-  element.style.width = `${box.width}px`
-  element.style.height = `${box.height}px`
+  element.style.top = `${Math.round(box.top)}px`
+  element.style.left = `${Math.round(box.left)}px`
+  element.style.width = `${Math.round(box.width)}px`
+  element.style.height = `${Math.round(box.height)}px`
   element.style.maxWidth = 'none'
   element.style.maxHeight = 'none'
-  element.style.transform = 'none'
+  element.style.translate = '0 0'
+  element.style.transform = DIALOG_LAYER
 }
 
 /**
- * Build a WAAPI keyframe from a viewport-relative box.
- * @param box - Top/left/width/height in CSS pixels
- * @returns A keyframe that does not scale inner text
- */
-export function boxKeyframe(box: IFlomoBox): Keyframe {
-  return {
-    top: `${box.top}px`,
-    left: `${box.left}px`,
-    width: `${box.width}px`,
-    height: `${box.height}px`,
-    transform: 'none',
-  }
-}
-
-/**
- * Animate a box, then commit the end geometry so Vue/CSS cannot snap back.
- * fill `both` applies the source frame immediately and keeps the rest frame.
+ * Animate a box with CSS transitions. Safari WAAPI cancel() restores the source
+ * box for one frame; transitions keep the destination as real inline styles.
  * @param element - The dialog content element
  * @param from - Starting viewport box
  * @param to - Ending viewport box
@@ -210,28 +259,34 @@ export async function playBoxMorph(
   duration: number,
   easing: string,
 ): Promise<void> {
+  clearBoxAnimations(element)
+  isolateDialogLayer(element)
+  element.style.transition = 'none'
   applyBox(element, from)
-  try {
-    const animation = element.animate([boxKeyframe(from), boxKeyframe(to)], {
-      duration,
-      easing,
-      fill: 'both',
-    })
-    try {
-      await animation.finished
-    } catch {
-      // Cancelled animations must not unwind the already-applied from-state.
-    }
-    try {
-      animation.commitStyles()
-    } catch {
-      applyBox(element, to)
-    }
-    animation.cancel()
-  } catch {
-    // Incomplete WAAPI still lands on the destination box.
-  }
+  void element.getBoundingClientRect()
+  await waitForFrames()
+  const properties: Array<keyof IFlomoBox> = ['top', 'left', 'width', 'height']
+  element.style.transition = properties
+    .map((property) => `${property} ${duration}ms ${easing}`)
+    .join(', ')
   applyBox(element, to)
+  await new Promise<void>((resolve) => {
+    let settled = false
+    const finish = (): void => {
+      if (settled) return
+      settled = true
+      element.removeEventListener('transitionend', onEnd)
+      resolve()
+    }
+    const onEnd = (event: Event): void => {
+      if (event.target !== element) return
+      if ((event as TransitionEvent).propertyName === 'width') finish()
+    }
+    element.addEventListener('transitionend', onEnd)
+    window.setTimeout(finish, duration + 80)
+  })
+  element.style.transition = 'none'
+  isolateDialogLayer(element)
 }
 
 /**
@@ -264,7 +319,8 @@ export function measureRestBox(element: HTMLElement): IFlomoBox | null {
   element.style.maxHeight = `calc(100dvh - ${gutter * 2}px)`
   element.style.top = '0px'
   element.style.left = '0px'
-  element.style.transform = 'none'
+  element.style.translate = '0 0'
+  element.style.transform = DIALOG_LAYER
   const width = element.getBoundingClientRect().width
   const maxHeight = window.innerHeight - gutter * 2
   const height = Math.min(element.scrollHeight, maxHeight)

@@ -15,10 +15,12 @@ import {
   dialogElement,
   fadeChrome,
   fadeOverlay,
+  isolateDialogLayer,
   measureRestBox,
   playBoxMorph,
   setScrollLocked,
   waitForDialogCard,
+  waitForFrames,
 } from '../notes-dialog-motion'
 import { FLOMO_CARD_SLOT_ID, formatFlomoNoteDate, shouldMorphFlomoDialog } from '../notes-utils'
 
@@ -52,6 +54,7 @@ function revealWithoutMorph(element: HTMLElement | null): void {
   if (element) {
     const rest = measureRestBox(element)
     if (rest) applyBox(element, rest)
+    isolateDialogLayer(element)
   }
   preparing.value = false
   setScrollLocked(false)
@@ -79,10 +82,14 @@ async function animateOpen(): Promise<void> {
       revealWithoutMorph(element)
       return
     }
+    preparing.value = false
+    await nextTick()
+    await waitForFrames()
+    isolateDialogLayer(element)
     fadeOverlay('in', OPEN_MORPH_MS, OPEN_EASING)
     fadeChrome(element, 'in')
-    preparing.value = false
     await playBoxMorph(element, from, rest, OPEN_MORPH_MS, OPEN_EASING)
+    isolateDialogLayer(element)
     setScrollLocked(false)
   } catch {
     revealWithoutMorph(element)
@@ -143,7 +150,7 @@ watch(
     <DialogContent
       v-if="note"
       data-flomo-note-dialog
-      class="flomo-dialog top-0 left-0 block w-auto max-w-none p-0 gap-0 bg-transparent translate-x-0 translate-y-0 shadow-none ring-0 data-open:animate-none data-closed:animate-none"
+      class="flomo-dialog isolate top-0 left-0 z-[51] block w-auto max-w-none p-0 gap-0 bg-transparent translate-x-0 translate-y-0 shadow-none ring-0 transition-none data-open:animate-none data-closed:animate-none"
       :class="{ 'flomo-dialog--prepare': preparing }"
       :overlay-class="FLOMO_OVERLAY_CLASS"
       :show-close-button="true"
@@ -166,8 +173,11 @@ watch(
   border-radius: var(--radius-cards);
   background: transparent !important;
   box-shadow: none !important;
-  transform: none !important;
+  /* translateZ keeps a Safari compositor layer above overlay backdrop-filter. */
+  transform: translateZ(0) !important;
+  translate: 0 0;
   transform-origin: top left;
+  transition: none;
 }
 
 :global(.flomo-dialog.flomo-dialog--prepare) {
