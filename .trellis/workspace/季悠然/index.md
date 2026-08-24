@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 37
-- **Last Active**: 2026-08-22
+- **Total Sessions**: 38
+- **Last Active**: 2026-08-24
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~987 | Active |
+| `journal-1.md` | ~1008 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 38 | 2026-08-24 | 实现 OSS 相册与 HEIC 预览 | `760702b` | `master` |
 | 37 | 2026-08-22 | 按标签发布 Flomo 公开笔记 | `d978607`, `68ce25a`, `90aeeac`, `345117c` | `master` |
 | 36 | 2026-08-21 | WakaTime Landing integration | `f9b314a`, `4cf4365` | `master` |
 | 35 | 2026-08-20 | Automate encryption migration maintenance window | `1fd7f35` | `master` |

@@ -985,3 +985,24 @@ Added a one-command systemd maintenance orchestrator for application-key migrati
 ### Status
 
 [OK] **Completed**
+
+
+## Session 38: 实现 OSS 相册与 HEIC 预览
+
+**Date**: 2026-08-24
+**Task**: 实现 OSS 相册与 HEIC 预览
+**Branch**: `master`
+
+### Summary
+
+完成阿里云 OSS/CDN 配置、revision 验证门禁、前台同页相册管理、HEIC 原图与 JPEG 展示、EXIF/GPS MapCN 地图、失败补偿，并通过全量测试和桌面/移动浏览器验收。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `760702b` | (see git log) |
+
+### Status
+
+[OK] **Completed**
