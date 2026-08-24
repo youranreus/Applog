@@ -53,6 +53,7 @@ import DuolingoSettings from './DuolingoSettings.vue';
 import WakaTimeSettings from './WakaTimeSettings.vue';
 import NotificationSettings from './NotificationSettings.vue';
 import FlomoSettings from './FlomoSettings.vue';
+import GallerySettings from './GallerySettings.vue';
 
 /**
  * 建站日期展示用格式化器（本地时区）
@@ -857,6 +858,7 @@ async function handleSaveUmami(): Promise<void> {
       <DuolingoSettings v-if="isAdmin" />
       <WakaTimeSettings v-if="isAdmin" />
       <FlomoSettings v-if="isAdmin" />
+      <GallerySettings v-if="isAdmin" />
       <NotificationSettings v-if="isAdmin" />
     </div>
 

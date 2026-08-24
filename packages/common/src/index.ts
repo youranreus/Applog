@@ -13,3 +13,6 @@ export * from "./utils/duolingo-config.js";
 export * from "./utils/wakatime-config.js";
 export * from "./utils/notification-config.js";
 export * from "./utils/flomo-config.js";
+export * from "./constants/gallery.js";
+export * from "./types/gallery.js";
+export * from "./utils/gallery.js";

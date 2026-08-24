@@ -11,6 +11,7 @@ export const SECRET_PURPOSES = [
   'garmin.credential',
   'garmin.private-payload',
   'flomo.token',
+  'gallery.oss-credential',
 ] as const;
 export type SecretPurpose = (typeof SECRET_PURPOSES)[number];
 

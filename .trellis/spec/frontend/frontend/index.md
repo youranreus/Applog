@@ -27,6 +27,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] WakaTime Landing/config UI changes follow the cross-layer [WakaTime Contract](../../backend/backend/wakatime-guidelines.md)
 - [ ] Garmin Landing activity UI changes follow the cross-layer [Garmin Contract](../../backend/backend/garmin-guidelines.md)
 - [ ] Flomo settings or public notes UI changes follow [Flomo Contract](../../backend/backend/flomo-guidelines.md)
+- [ ] Gallery navigation/page/admin/map changes follow [Gallery Contract](../../common/shared/gallery-contracts.md)
 
 ---
 
@@ -46,6 +47,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 | [WakaTime Contract](../../backend/backend/wakatime-guidelines.md)             | Public coding stats, admin secret form, single usage-card semantics, and degradation | Filled |
 | [Garmin Contract](../../backend/backend/garmin-guidelines.md)                 | Landing activity cards, covers, optional metrics, and privacy bounds                 | Filled |
 | [Flomo Contract](../../backend/backend/flomo-guidelines.md)                   | Admin publication settings, cursor loading, safe HTML, cards, and Dialog behavior    | Filled |
+| [Gallery Contract](../../common/shared/gallery-contracts.md)                  | Dynamic nav, same-page admin editing, upload queue, full-screen details, and MapCN Vue | Filled |
 
 ---
 

@@ -18,6 +18,9 @@ import { GarminActivityCoverEntity } from './GarminActivityCover';
 import { FlomoConfigEntity } from './FlomoConfig';
 import { FlomoPublicMemoEntity } from './FlomoPublicMemo';
 import { FlomoSyncStateEntity } from './FlomoSyncState';
+import { GalleryConfigEntity } from './GalleryConfig';
+import { GalleryAlbumEntity } from './GalleryAlbum';
+import { GalleryPhotoEntity } from './GalleryPhoto';
 
 export * from './User';
 export * from './Post';
@@ -39,6 +42,9 @@ export * from './GarminActivityCover';
 export * from './FlomoConfig';
 export * from './FlomoPublicMemo';
 export * from './FlomoSyncState';
+export * from './GalleryConfig';
+export * from './GalleryAlbum';
+export * from './GalleryPhoto';
 
 export const ENTITY_LIST = [
   UserEntity,
@@ -61,4 +67,7 @@ export const ENTITY_LIST = [
   FlomoConfigEntity,
   FlomoPublicMemoEntity,
   FlomoSyncStateEntity,
+  GalleryConfigEntity,
+  GalleryAlbumEntity,
+  GalleryPhotoEntity,
 ];

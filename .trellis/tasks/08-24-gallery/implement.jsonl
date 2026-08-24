@@ -1,0 +1,13 @@
+{"file":".trellis/spec/backend/backend/index.md","reason":"Follow NestJS module, auth, DTO, entity registration, error and logger conventions."}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"Design Album/Photo/Config entities, relations, indexes and synchronize-compatible persistence."}
+{"file":".trellis/spec/backend/backend/error-handling.md","reason":"Keep provider/upload/storage failures inside BusinessException and global response conventions."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Log OSS operations and compensation without credentials, filenames or sensitive metadata."}
+{"file":".trellis/spec/frontend/frontend/index.md","reason":"Place Gallery route, API, hooks, components and auth-sensitive UI according to Vue conventions."}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"Build the album surface, fullscreen Dialog, fields and responsive states with existing UI primitives/tokens."}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"Keep upload queue, pagination and Dialog logic outside fat SFCs."}
+{"file":".trellis/spec/frontend/frontend/state-management.md","reason":"Integrate public status with layout navigation and keep admin mutations in the owning gallery flow."}
+{"file":".trellis/spec/common/shared/index.md","reason":"Own stable gallery contracts and pure helpers in the framework-free shared package."}
+{"file":".trellis/spec/common/shared/type-safety.md","reason":"Use shared interfaces, const maps and root exports without enum/any drift."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Trace config, secret, DB, OSS, CDN, API and UI data across every boundary."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Centralize URL/path normalization, masks, limits and payload projections."}
+{"file":".trellis/tasks/08-24-gallery/research/gallery-integration.md","reason":"Use verified MapCN, HEIC, EXIF, OSS and repository evidence while implementing."}

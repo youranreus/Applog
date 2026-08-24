@@ -21,6 +21,7 @@ import {
   NotificationModule,
   SecretEncryptionModule,
   FlomoModule,
+  GalleryModule,
 } from '@/module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -62,6 +63,7 @@ import { ENTITY_LIST } from '@/entities';
     NotificationModule,
     SecretEncryptionModule,
     FlomoModule,
+    GalleryModule,
     EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],

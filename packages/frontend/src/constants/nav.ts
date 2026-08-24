@@ -54,6 +54,11 @@ export const NAV_GROUPS: Record<string, INavItemSource[]> = {
       route: { name: ROUTE_NAMES.NOTES },
       title: '笔记',
     },
+    {
+      type: 'route',
+      route: { name: ROUTE_NAMES.GALLERY },
+      title: '相册',
+    },
   ],
 };
 

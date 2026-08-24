@@ -6,6 +6,8 @@ import { getNavPages } from '@/api/page/getNavPages';
 import { NAV_GROUPS } from '@/constants/nav';
 import type { IPageNavItem, INavItemSource, INavItem } from '@/types/layout';
 import type { INotification, INotificationOptions } from '@/types/notification';
+import { getGalleryStatus } from '@/api/gallery';
+import { ROUTE_NAMES } from '@/constants/permission';
 
 /**
  * 布局 Store
@@ -23,11 +25,24 @@ export const useLayoutStore = defineStore('layout', () => {
     loading,
     data: allPages,
     error,
-    send: refresh,
+    send: refreshPages,
   } = useRequest(getNavPages, {
     immediate: true, // 立即请求
     initialData: [],
   });
+
+  const {
+    data: galleryStatus,
+    error: galleryStatusError,
+    send: refreshGalleryStatus,
+  } = useRequest(getGalleryStatus, {
+    immediate: true,
+    initialData: { enabled: false },
+  });
+
+  async function refresh(): Promise<void> {
+    await Promise.allSettled([refreshPages(), refreshGalleryStatus()]);
+  }
 
   /**
    * 从路由中获取 navGroup（支持继承，就近原则）
@@ -114,7 +129,15 @@ export const useLayoutStore = defineStore('layout', () => {
         to: `/${page.slug}.html`,
         type: 'page' as const,
       }))
-    const defaultNavRoutePages = (NAV_GROUPS.default || []).map((source) => resolveNavItem(source)) as INavItem[]
+    const defaultNavRoutePages = (NAV_GROUPS.default || [])
+      .filter(
+        (source) =>
+          source.type !== 'route' ||
+          typeof source.route === 'string' ||
+          source.route.name !== ROUTE_NAMES.GALLERY ||
+          (!galleryStatusError.value && galleryStatus.value?.enabled === true),
+      )
+      .map((source) => resolveNavItem(source)) as INavItem[]
     return [...defaultNavRoutePages, ...defaultNavPagePages];
   });
 
@@ -232,4 +255,3 @@ export const useLayoutStore = defineStore('layout', () => {
     clearNotifications,
   };
 });
-

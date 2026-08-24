@@ -13,3 +13,4 @@ export * from './garmin/garmin.module';
 export * from './notification/notification.module';
 export * from './secret-encryption/secret-encryption.module';
 export * from './flomo/flomo.module';
+export * from './gallery/gallery.module';

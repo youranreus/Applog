@@ -1,0 +1,10 @@
+{"file":".trellis/spec/backend/backend/quality-guidelines.md","reason":"Verify roles, controller/service boundaries, DTO typing, test coverage and build/lint compliance."}
+{"file":".trellis/spec/backend/backend/database-guidelines.md","reason":"Verify relations, ordering indexes, ready-only reads and non-empty album delete behavior."}
+{"file":".trellis/spec/backend/backend/logging-guidelines.md","reason":"Audit logs for OSS secrets, raw EXIF/GPS and original filename leakage."}
+{"file":".trellis/spec/frontend/frontend/quality-guidelines.md","reason":"Verify Alova-only API use, no fat pages, auth-sensitive controls and responsive quality."}
+{"file":".trellis/spec/frontend/frontend/type-safety.md","reason":"Verify shared DTO consumption and absence of local payload drift, enum and any."}
+{"file":".trellis/spec/common/shared/quality-guidelines.md","reason":"Verify pure ESM shared exports and consumer builds."}
+{"file":".trellis/spec/common/shared/system-config-contracts.md","reason":"Compare gallery config masking, compatibility and missing/empty semantics with existing cross-layer config contracts."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Audit complete config-to-OSS-to-database-to-CDN-to-Dialog flow and failure boundaries."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Search for duplicated URL, path, role, date and payload parsing logic."}
+{"file":".trellis/tasks/08-24-gallery/research/gallery-integration.md","reason":"Check delivered dependencies and behavior against primary-source constraints."}
