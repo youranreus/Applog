@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { readFile, writeFile } from 'fs/promises';
-import sharp from 'sharp';
+import sharpModule = require('sharp');
 import * as exifr from 'exifr';
-import convertHeic from 'heic-convert';
+import convertHeic = require('heic-convert');
 import type { IGalleryExif } from '@applog/common';
+
+// Sharp 0.35 exposes a callable CommonJS value at runtime, while its conditional
+// type exports present a default callable to TypeScript under this tsconfig.
+const sharp = sharpModule as unknown as typeof import('sharp').default;
 
 export interface GalleryImageMetadata {
   sourceMime: string;
