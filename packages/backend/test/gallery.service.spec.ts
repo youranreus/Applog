@@ -2,6 +2,8 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 import { GALLERY_SECRET_MASK } from '@applog/common';
 import { GalleryService } from '../src/module/gallery/gallery.service';
+import OSS = require('ali-oss');
+import { AliyunGalleryOssAdapter } from '../src/module/gallery/gallery-oss.adapter';
 
 function createHarness() {
   let config: Record<string, any> | null = null;
@@ -242,5 +244,31 @@ describe('GalleryService configuration gate', () => {
     });
 
     await assert.doesNotReject(harness.service.deletePhoto('already-removed'));
+  });
+});
+
+describe('AliyunGalleryOssAdapter runtime interop', () => {
+  it('constructs the CommonJS ali-oss client and reaches listV2', async () => {
+    const original = OSS.prototype.listV2;
+    let receivedPrefix: string | undefined;
+    OSS.prototype.listV2 = async function (query) {
+      receivedPrefix = query?.prefix;
+      return {} as never;
+    };
+
+    try {
+      await new AliyunGalleryOssAdapter().list(
+        {
+          endpoint: 'https://oss-cn-hangzhou.aliyuncs.com',
+          bucket: 'photos',
+          accessKeyId: 'test-id',
+          accessKeySecret: 'test-secret',
+        },
+        'gallery/',
+      );
+      assert.equal(receivedPrefix, 'gallery/');
+    } finally {
+      OSS.prototype.listV2 = original;
+    }
   });
 });

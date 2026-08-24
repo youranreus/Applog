@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import OSS from 'ali-oss';
+import OSS = require('ali-oss');
 import axios from 'axios';
 import { buildGalleryUrl } from '@applog/common';
 
