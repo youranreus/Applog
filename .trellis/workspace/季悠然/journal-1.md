@@ -1006,3 +1006,24 @@ Added a one-command systemd maintenance orchestrator for application-key migrati
 ### Status
 
 [OK] **Completed**
+
+
+## Session 39: 完成相册列表与详情拆分
+
+**Date**: 2026-08-25
+**Task**: 完成相册列表与详情拆分
+**Branch**: `master`
+
+### Summary
+
+将相册改为列表与按需详情两层结构，修复照片加载响应式状态和返回链接遮挡，并完成移动优先 3/2/1 列布局、多视口浏览器回归与规范同步。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e06c752` | (see git log) |
+
+### Status
+
+[OK] **Completed**
