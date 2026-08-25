@@ -63,5 +63,6 @@ export const NAV_GROUPS: Record<string, INavItemSource[]> = {
 };
 
 export const SHOW_BACK_ROUTES: string[] = [
-  ROUTE_NAMES.POST_DETAIL
+  ROUTE_NAMES.POST_DETAIL,
+  ROUTE_NAMES.GALLERY_ALBUM,
 ]

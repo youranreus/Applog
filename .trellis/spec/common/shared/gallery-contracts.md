@@ -3,7 +3,7 @@
 > Executable contract for the OSS-backed public gallery shared by common,
 > backend, and frontend.
 
-## Scenario: OSS-backed public gallery with same-page admin editing
+## Scenario: OSS-backed two-level public gallery with in-context admin editing
 
 ### 1. Scope / Trigger
 
@@ -98,8 +98,31 @@ normalizers; never concatenate raw user input in a controller or component.
 
 - `/gallery` remains directly addressable when disabled and renders an explicit
   unavailable state; the top-nav item appears only when public status is enabled.
-- Visitors and normal users have no write controls. Admin CRUD is rendered on
-  the same public gallery page, not in a second gallery-management page.
+- `/gallery` renders album summaries as cover cards and must not prefetch every
+  album's photos. A card links to the directly addressable
+  `/gallery/:albumId` detail route; that route loads photos for only the selected
+  album and renders missing or invisible album ids as a recoverable not-found
+  state.
+- Album covers use the shared 8px image radius with title and date overlaid at
+  the lower-left. Admin-only empty albums use a stable same-size placeholder.
+- The album-list grid is mobile-first: one column by default, two columns from
+  `640px`, and three columns from `1100px`. Do not make three columns the base
+  rule or postpone the tablet transition until a narrow phone-sized viewport.
+- The detail photo masonry has no fixed content max-width. It keeps responsive
+  page gutters and column gaps, balances items by image aspect ratio, and uses
+  three, two, then one column as the viewport narrows.
+- Photo-page state stored in a Vue `reactive` record must be mutated through the
+  Proxy returned by reading the record. Do not return the right-hand value of a
+  `??=` assignment: that value is the raw object, so a successful response may
+  update memory without causing the loading UI to re-render.
+- The list and detail pages share the top-gutter formula
+  `calc(clamp(6.5rem, 10vh, 8rem) + env(safe-area-inset-top))`. Their first
+  content sits at least 24px below the fixed Header; the detail back link must
+  also pass a real `elementFromPoint`/coordinate-click check. A correct `href`
+  alone is insufficient when another layer owns the hit target.
+- Visitors and normal users have no write controls. Admin album create/edit/
+  delete stays on the public album-list route; upload and photo edit/delete stay
+  on the public album-detail route. Do not add a second gallery-management page.
 - The full-screen photo Dialog shows the display image and available EXIF/time
   data. GPS uses MapCN Vue's `@geoql/v-maplibre` integration with coordinate
   order `[longitude, latitude]`; absent GPS hides the map and map failure does
@@ -126,17 +149,25 @@ normalizers; never concatenate raw user input in a controller or component.
 | Album contains any photo row | Reject album deletion |
 | Missing GPS | Hide map; keep image and metadata usable |
 | Map style/tile/WebGL failure | Show coordinate fallback; keep Dialog usable |
+| Photo API returns but UI remains loading | Treat as a reactive identity failure; state writes must target the stored Proxy |
+| Back link has the correct `/gallery` href but misses coordinate click | Move both page starts below the fixed Header/safe area and verify the hit target |
+| Album list remains three columns at tablet or phone widths | Use the mobile-first 1/2/3 column contract and verify computed columns at 390/768/1440 |
 
 ### 5. Good / Base / Bad Cases
 
 - Good: save complete config, test the current revision, enable, create an album,
   upload a real HEIC, browse its generated JPEG over CDN, see EXIF/GPS, then
   delete both source and display objects.
+- Good frontend: one selected-album response removes the loading state, renders
+  its photo tiles, and the visible back link receives a real coordinate click at
+  both 1440px and 390px.
 - Base: upload a JPEG without EXIF; use upload time, render no map, and expose
   the normalized `{cdn}/{path}/{folder}/{uuid}.jpg` URL.
 - Bad: reuse an old successful test after changing CDN/path, accept `../album`,
   publish a `delete_failed` row, expose the HEIC source key, or render admin
   controls based only on client-side hiding.
+- Bad frontend: mutate the raw initializer returned by `??=`, or place the back
+  link visually underneath the fixed Header even though its route target is valid.
 
 ### 6. Tests Required
 
@@ -147,11 +178,20 @@ normalizers; never concatenate raw user input in a controller or component.
   capture-time precedence, real HEIC-to-JPEG doctor, partial-write and database
   compensation, delete failure/retry, and non-empty album rejection.
 - Frontend: navigation fail-closed, disabled/error/loading/content states,
-  nested-ref state rendering, visitor/admin DOM boundaries, queue limit and
+  album-list requests that do not prefetch photos, single-album detail loading,
+  invalid-album recovery, visitor/admin DOM boundaries, queue limit and
   concurrency, retry behavior, detail metadata, optional map, and map fallback.
-- Browser: verify 1440px and 390px layouts, full-screen Dialog rect equals the
-  viewport at `(0, 0)`, no horizontal overflow, desktop side rail, mobile stack,
-  keyboard close/focus behavior, and map teardown.
+- Browser: verify album-list columns at 1440px, 768px, and 390px, plus the
+  full-width masonry at 1440px and 390px. Assert both pages use equal computed
+  top padding, keep at least 24px below the Header, preserve responsive gutters/
+  gaps and no horizontal
+  overflow, full-screen Dialog rect equals the viewport at `(0, 0)`, desktop
+  side rail, mobile stack, keyboard close/focus behavior, and map teardown.
+- Gallery browser regression: run a real Vue/Vite page against deterministic
+  album/photo responses; assert list 3/2/1 columns, detail request count,
+  loading disappearance, rendered tile, detail 3/1 columns,
+  `scrollWidth <= innerWidth`, shared top padding, Header clearance,
+  center-point ownership, and coordinate-click navigation to `/gallery`.
 - Gates: common build; backend lint/build/unit/doctor; frontend
   lint/type-check/unit/build; `git diff --check`.
 
@@ -181,4 +221,17 @@ const url = buildGalleryUrl(config.cdnDomain, key);
   translate: none !important;
 }
 </style>
+```
+
+```typescript
+// Wrong: ??= evaluates to the raw initializer, so later writes bypass Vue's Proxy.
+function stateFor(albumId: string) {
+  return (albumPhotos[albumId] ??= createPhotoState());
+}
+
+// Correct: write first, then read the value back from the reactive record.
+function stateFor(albumId: string) {
+  if (!albumPhotos[albumId]) albumPhotos[albumId] = createPhotoState();
+  return albumPhotos[albumId];
+}
 ```

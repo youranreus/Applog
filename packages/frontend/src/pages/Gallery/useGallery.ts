@@ -12,6 +12,7 @@ import {
   deleteGalleryAlbum,
   deleteGalleryPhoto,
   getGalleryAlbums,
+  getGalleryPhoto,
   getGalleryPhotos,
   getGalleryStatus,
   updateGalleryAlbum,
@@ -37,6 +38,11 @@ export interface GalleryAlbumPhotosState {
   retryAppend: boolean
 }
 
+/**
+ * 管理公开相册摘要、当前相册照片和管理员上传队列。
+ * @param isAdmin 获取当前用户是否为管理员
+ * @returns 相册页面共享的响应式状态与操作
+ */
 export function useGallery(isAdmin: () => boolean) {
   const enabled = ref(false)
   const loading = ref(true)
@@ -44,6 +50,10 @@ export function useGallery(isAdmin: () => boolean) {
   const albums = ref<IGalleryAlbumSummary[]>([])
   const albumPhotos = reactive<Record<string, GalleryAlbumPhotosState>>({})
   const uploads = ref<UploadItem[]>([])
+  let loadRevision = 0
+  let albumLoadRevision = 0
+  let photoLoadRevision = 0
+  const photoLoadRevisions = new Map<string, number>()
   const uploadBusy = computed(() =>
     uploads.value.some((item) => item.state === 'queued' || item.state === 'uploading'),
   )
@@ -51,51 +61,70 @@ export function useGallery(isAdmin: () => boolean) {
     value instanceof Error ? value.message : '请求失败，请稍后重试'
 
   function stateFor(albumId: string): GalleryAlbumPhotosState {
-    return (albumPhotos[albumId] ??= {
-      items: [],
-      nextCursor: null,
-      loading: false,
-      error: '',
-      retryAppend: false,
-    })
+    if (!albumPhotos[albumId]) {
+      albumPhotos[albumId] = {
+        items: [],
+        nextCursor: null,
+        loading: false,
+        error: '',
+        retryAppend: false,
+      }
+    }
+    return albumPhotos[albumId]
   }
 
   function clearAlbums(): void {
     albums.value = []
-    Object.keys(albumPhotos).forEach((albumId) => delete albumPhotos[albumId])
+    Object.keys(albumPhotos).forEach((albumId) => {
+      delete albumPhotos[albumId]
+      photoLoadRevisions.delete(albumId)
+    })
+  }
+
+  async function loadAlbums(isCurrent: () => boolean = () => true): Promise<void> {
+    const revision = ++albumLoadRevision
+    const nextAlbums = await getGalleryAlbums(isAdmin())
+    if (revision !== albumLoadRevision || !isCurrent()) return
+    const nextIds = new Set(nextAlbums.map((album) => album.id))
+    Object.keys(albumPhotos).forEach((albumId) => {
+      if (!nextIds.has(albumId)) {
+        delete albumPhotos[albumId]
+        photoLoadRevisions.delete(albumId)
+      }
+    })
+    albums.value = nextAlbums
   }
 
   async function load(): Promise<void> {
+    const revision = ++loadRevision
     loading.value = true
     error.value = ''
     try {
       const status = await getGalleryStatus()
+      if (revision !== loadRevision) return
       enabled.value = status.enabled
       if (!status.enabled) {
         clearAlbums()
         return
       }
 
-      const nextAlbums = await getGalleryAlbums(isAdmin())
-      const nextIds = new Set(nextAlbums.map((album) => album.id))
-      Object.keys(albumPhotos).forEach((albumId) => {
-        if (!nextIds.has(albumId)) delete albumPhotos[albumId]
-      })
-      albums.value = nextAlbums
-      nextAlbums.forEach((album) => stateFor(album.id))
-      await Promise.all(nextAlbums.map((album) => loadPhotos(album.id)))
+      await loadAlbums(() => revision === loadRevision)
+      if (revision !== loadRevision) return
     } catch (cause) {
+      if (revision !== loadRevision) return
       enabled.value = false
       clearAlbums()
       error.value = errorText(cause)
     } finally {
-      loading.value = false
+      if (revision === loadRevision) loading.value = false
     }
   }
 
   async function loadPhotos(albumId: string, append = false): Promise<void> {
     const state = stateFor(albumId)
     if (append && !state.nextCursor) return
+    const revision = ++photoLoadRevision
+    photoLoadRevisions.set(albumId, revision)
     state.loading = true
     state.error = ''
     try {
@@ -104,13 +133,15 @@ export function useGallery(isAdmin: () => boolean) {
         append ? (state.nextCursor ?? undefined) : undefined,
         isAdmin(),
       )
+      if (photoLoadRevisions.get(albumId) !== revision) return
       state.items = append ? [...state.items, ...page.items] : page.items
       state.nextCursor = page.nextCursor
     } catch (cause) {
+      if (photoLoadRevisions.get(albumId) !== revision) return
       state.error = errorText(cause)
       state.retryAppend = append
     } finally {
-      state.loading = false
+      if (photoLoadRevisions.get(albumId) === revision) state.loading = false
     }
   }
 
@@ -135,12 +166,17 @@ export function useGallery(isAdmin: () => boolean) {
     value: IUpdateGalleryPhoto,
   ): Promise<void> {
     await updateGalleryPhoto(photoId, value)
-    await loadPhotos(albumId)
+    await Promise.allSettled([loadAlbums(), loadPhotos(albumId)])
   }
 
-  async function removePhoto(photoId: string): Promise<void> {
-    await deleteGalleryPhoto(photoId)
-    await load()
+  async function removePhoto(albumId: string, photoId: string): Promise<void> {
+    try {
+      await deleteGalleryPhoto(photoId)
+    } catch (cause) {
+      await Promise.allSettled([loadAlbums(), loadPhotos(albumId)])
+      throw cause
+    }
+    await Promise.allSettled([loadAlbums(), loadPhotos(albumId)])
   }
 
   async function uploadFiles(albumId: string, fileList: FileList | File[]): Promise<void> {
@@ -174,7 +210,7 @@ export function useGallery(isAdmin: () => boolean) {
       }
     }
     await Promise.all([worker(), worker()])
-    await load()
+    await Promise.allSettled([loadAlbums(), loadPhotos(albumId)])
   }
 
   async function retryUpload(item: UploadItem): Promise<void> {
@@ -183,7 +219,7 @@ export function useGallery(isAdmin: () => boolean) {
     try {
       await uploadGalleryPhoto(item.albumId, item.file)
       item.state = 'success'
-      await load()
+      await Promise.allSettled([loadAlbums(), loadPhotos(item.albumId)])
     } catch (cause) {
       item.state = 'failure'
       item.error = errorText(cause)
@@ -192,6 +228,10 @@ export function useGallery(isAdmin: () => boolean) {
 
   function uploadsFor(albumId: string): UploadItem[] {
     return uploads.value.filter((item) => item.albumId === albumId)
+  }
+
+  async function loadPhoto(photoId: string) {
+    return getGalleryPhoto(photoId, isAdmin())
   }
 
   return {
@@ -203,6 +243,7 @@ export function useGallery(isAdmin: () => boolean) {
     uploads,
     uploadBusy,
     load,
+    loadPhoto,
     loadPhotos,
     createAlbum,
     updateAlbum,

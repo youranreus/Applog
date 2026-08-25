@@ -36,6 +36,11 @@ const routes: RouteRecordRaw[] = [
     name: ROUTE_NAMES.GALLERY,
     component: () => import('@/pages/Gallery/index.vue'),
   },
+  {
+    path: '/gallery/:albumId',
+    name: ROUTE_NAMES.GALLERY_ALBUM,
+    component: () => import('@/pages/Gallery/AlbumDetail.vue'),
+  },
   // /:slug.html 页面详情
   {
     path: '/:slug.html',

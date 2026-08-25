@@ -1,0 +1,4 @@
+{"file":".trellis/spec/frontend/frontend/index.md","reason":"加载前端包结构、分层和 Gallery 契约入口。"}
+{"file":".trellis/spec/frontend/frontend/component-guidelines.md","reason":"约束 Vue SFC、页面局部组件、主题样式与可访问交互。"}
+{"file":".trellis/spec/frontend/frontend/hook-guidelines.md","reason":"约束相册状态逻辑与页面/API 分层。"}
+{"file":".trellis/spec/common/shared/gallery-contracts.md","reason":"保持 Gallery 公开/管理员边界、预览、上传和响应式浏览契约。"}

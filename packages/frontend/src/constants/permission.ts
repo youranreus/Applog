@@ -25,6 +25,7 @@ export const ROUTE_NAMES = {
   POST_DETAIL: 'postDetail',
   NOTES: 'notes',
   GALLERY: 'gallery',
+  GALLERY_ALBUM: 'galleryAlbum',
   PAGE_DETAIL: 'pageDetail',
 
   // 用户相关（需要登录）
