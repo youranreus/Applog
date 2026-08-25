@@ -40,7 +40,8 @@ const users = useUserStore()
 const layout = useLayoutStore()
 const isAdmin = computed(() => users.user?.role === USER_ROLES.ADMIN)
 const gallery = useGallery(() => isAdmin.value)
-const isWide = useMediaQuery('(min-width: 701px)')
+const isMultiColumn = useMediaQuery('(min-width: 701px)')
+const isThreeColumn = useMediaQuery('(min-width: 1101px)')
 const albumDialog = ref(false)
 const editingAlbumId = ref<string | null>(null)
 const albumForm = reactive({ folder: '', title: '', description: '', publishedAt: '' })
@@ -87,7 +88,7 @@ function formatDate(value: string): string {
 
 function photoColumns(albumId: string): IGalleryPhotoSummary[][] {
   const items = gallery.albumPhotos[albumId]?.items ?? []
-  const count = isWide.value ? 2 : 1
+  const count = isThreeColumn.value ? 3 : isMultiColumn.value ? 2 : 1
   const columns: IGalleryPhotoSummary[][] = Array.from({ length: count }, () => [])
   const columnHeights = Array.from({ length: count }, () => 0)
   items.forEach((photo) => {
@@ -266,7 +267,7 @@ onMounted(gallery.load)
 
 <template>
   <div class="gallery-root">
-    <main class="gallery-page common-page-container">
+    <main class="gallery-page">
       <section v-if="gallery.loading.value" class="gallery-state">
         <CameraIcon class="size-7" />
         <p>正在打开相册…</p>
@@ -281,16 +282,9 @@ onMounted(gallery.load)
         <p>管理员启用并验证存储配置后，这里会出现照片。</p>
       </section>
       <template v-else>
-        <header class="gallery-page__header">
-          <div>
-            <p class="gallery-page__eyebrow">Gallery</p>
-            <h1>相册</h1>
-            <p>沿着时间，慢慢翻看留下来的光。</p>
-          </div>
-          <Button v-if="isAdmin" variant="outline" @click="openCreate">
-            <PlusIcon />新建相册
-          </Button>
-        </header>
+        <div v-if="isAdmin" class="gallery-toolbar">
+          <Button variant="outline" @click="openCreate"> <PlusIcon />新建相册 </Button>
+        </div>
 
         <section v-if="!gallery.albums.value.length" class="gallery-state compact">
           <ImagePlusIcon class="size-7" />
@@ -608,38 +602,18 @@ onMounted(gallery.load)
 <style scoped>
 .gallery-page {
   width: 100%;
-  padding-top: clamp(3.5rem, 8vh, 7rem);
+  max-width: 80rem;
+  margin: 0 auto;
+  padding-top: clamp(2.5rem, 6vh, 4.5rem);
+  padding-right: clamp(1.5rem, 4vw, 3rem);
   padding-bottom: 5rem;
+  padding-left: clamp(1.5rem, 4vw, 3rem);
 }
 
-.gallery-page__header {
+.gallery-toolbar {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
-}
-
-.gallery-page__eyebrow {
-  color: var(--color-link-blue);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.gallery-page__header h1 {
-  margin-top: 0.35rem;
-  font-family: var(--font-heading);
-  font-size: clamp(2rem, 1.6rem + 1.5vw, 2.75rem);
-  font-weight: 600;
-  letter-spacing: -0.035em;
-}
-
-.gallery-page__header > div > p:last-child {
-  margin-top: 0.55rem;
-  color: var(--muted-foreground);
-  font-size: 0.9rem;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
 }
 
 .album-list {
@@ -685,7 +659,7 @@ onMounted(gallery.load)
 
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.625rem;
   align-items: start;
 }
@@ -824,8 +798,13 @@ onMounted(gallery.load)
   border: 0;
 }
 
+@media (max-width: 1100px) {
+  .photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 700px) {
-  .gallery-page__header,
   .album-heading {
     align-items: flex-start;
     flex-direction: column;

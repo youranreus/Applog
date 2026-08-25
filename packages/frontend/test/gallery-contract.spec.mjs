@@ -41,16 +41,19 @@ describe('gallery frontend cross-layer contract', () => {
     assert.match(page, /translate: none !important/)
   })
 
-  it('stacks albums in the shared page container with masonry and explicit preview controls', async () => {
+  it('stacks albums in a wide gallery container with masonry and explicit preview controls', async () => {
     const [page, hook] = await Promise.all([
       readFile(new URL('../src/pages/Gallery/index.vue', import.meta.url), 'utf8'),
       readFile(new URL('../src/pages/Gallery/useGallery.ts', import.meta.url), 'utf8'),
     ])
-    assert.match(page, /gallery-page common-page-container/)
+    assert.match(page, /max-width: 80rem/)
+    assert.doesNotMatch(page, /gallery-page common-page-container/)
+    assert.doesNotMatch(page, /<h1>相册<\/h1>/)
     assert.match(page, /v-for="album in gallery\.albums\.value"/)
     assert.doesNotMatch(page, /album-(?:rail|tab)/)
     assert.match(page, /photo-grid__column/)
     assert.match(page, /photo\.height \/ photo\.width/)
+    assert.match(page, /isThreeColumn\.value \? 3/)
     assert.match(hook, /albumPhotos/)
     assert.match(page, /:show-close-button="false"/)
     assert.match(page, /aria-label="关闭照片预览"/)
