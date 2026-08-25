@@ -176,7 +176,10 @@ describe('Flomo notes frontend contract', () => {
     assert.match(overlay, /bg-black\/10/)
     assert.match(overlay, /supports-backdrop-filter:backdrop-blur-xs/)
     assert.match(content, /overlayClass/)
-    assert.match(content, /reactiveOmit\(props, 'class', 'overlayClass', 'showCloseButton'\)/)
+    assert.match(
+      content,
+      /reactiveOmit\(props, 'class', 'overlayClass', 'showCloseButton', 'fullscreen'\)/,
+    )
     assert.match(content, /data-slot="dialog-root"/)
     assert.match(content, /absolute inset-0 pointer-events-auto/)
     assert.match(content, /DialogOverlay :class="cn\('absolute inset-0 pointer-events-auto', props\.overlayClass\)"/)

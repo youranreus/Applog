@@ -6,7 +6,6 @@ import {
   type StyleValue,
   useId,
 } from 'vue';
-import { useColorMode } from '@vueuse/core';
 import { VMap } from '@geoql/v-maplibre';
 import type { Map as MaplibreMap, MapOptions, StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -16,6 +15,7 @@ export interface MapProps {
   zoom?: number;
   bearing?: number;
   pitch?: number;
+  colorMode?: 'light' | 'dark';
   styles?: { light?: string | StyleSpecification; dark?: string | StyleSpecification };
   options?: Partial<MapOptions>;
   class?: string;
@@ -23,14 +23,13 @@ export interface MapProps {
 }
 
 const props = withDefaults(defineProps<MapProps>(), {
-  center: () => [0, 0], zoom: 2, bearing: 0, pitch: 0,
+  center: () => [0, 0], zoom: 2, bearing: 0, pitch: 0, colorMode: 'light',
 });
 const emit = defineEmits<{ load: [map: MaplibreMap]; error: [error: unknown] }>();
-const colorMode = useColorMode();
 const containerId = `mapcn-${useId().replace(/:/g, '')}`;
 let mapInstance: MaplibreMap | null = null;
 const defaults = { light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json', dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' };
-const mapStyle = computed(() => colorMode.state.value === 'dark' ? (props.styles?.dark ?? defaults.dark) : (props.styles?.light ?? defaults.light));
+const mapStyle = computed(() => props.colorMode === 'dark' ? (props.styles?.dark ?? defaults.dark) : (props.styles?.light ?? defaults.light));
 const mapOptions = computed<MapOptions>(() => ({ style: mapStyle.value, center: props.center, zoom: props.zoom,
   bearing: props.bearing, pitch: props.pitch, ...props.options, container: containerId }) as MapOptions);
 function handleLoaded(map: MaplibreMap): void {

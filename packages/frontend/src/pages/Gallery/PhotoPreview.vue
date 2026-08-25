@@ -144,7 +144,12 @@ watch([open, () => props.photoId], ([isOpen]) => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="gallery-preview" overlay-class="bg-black/90" :show-close-button="false">
+    <DialogContent
+      fullscreen
+      class="gallery-preview"
+      overlay-class="bg-black/90"
+      :show-close-button="false"
+    >
       <DialogTitle class="sr-only">{{ preview?.title || '照片详情' }}</DialogTitle>
       <DialogDescription class="sr-only">查看照片及其拍摄信息</DialogDescription>
       <DialogClose as-child>
@@ -268,17 +273,7 @@ watch([open, () => props.photoId], ([isOpen]) => {
 <!-- DialogContent 会 Teleport 到 body，不能依赖本组件的 scoped 属性选择器。 -->
 <style>
 .gallery-preview {
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  max-width: none !important;
-  transform: none !important;
-  translate: none !important;
   grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
-  gap: 0 !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
   background: #050505;
   color: white;
 }

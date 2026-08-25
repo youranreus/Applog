@@ -22,14 +22,19 @@ const props = withDefaults(defineProps<DialogContentProps & {
   class?: HTMLAttributes['class']
   overlayClass?: HTMLAttributes['class']
   showCloseButton?: boolean
+  fullscreen?: boolean
 }>(), {
   showCloseButton: true,
+  fullscreen: false,
 })
 const emits = defineEmits<DialogContentEmits>()
 
-const delegatedProps = reactiveOmit(props, 'class', 'overlayClass', 'showCloseButton')
+const delegatedProps = reactiveOmit(props, 'class', 'overlayClass', 'showCloseButton', 'fullscreen')
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
+
+const DEFAULT_CONTENT_CLASS = 'bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-4 rounded-xl p-4 text-sm ring-1 duration-100 sm:max-w-sm pointer-events-auto fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none'
+const FULLSCREEN_CONTENT_CLASS = 'bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 pointer-events-auto fixed inset-0 z-50 grid h-dvh w-screen max-w-none gap-0 rounded-none p-0 text-sm outline-none duration-100'
 </script>
 
 <template>
@@ -39,7 +44,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       <DialogContent
         data-slot="dialog-content"
         v-bind="{ ...$attrs, ...forwarded }"
-        :class="cn('bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-4 rounded-xl p-4 text-sm ring-1 duration-100 sm:max-w-sm pointer-events-auto fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none', props.class)"
+        :class="cn(props.fullscreen ? FULLSCREEN_CONTENT_CLASS : DEFAULT_CONTENT_CLASS, props.class)"
       >
         <slot />
 

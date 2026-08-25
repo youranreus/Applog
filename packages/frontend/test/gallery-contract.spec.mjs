@@ -97,10 +97,11 @@ describe('gallery frontend cross-layer contract', () => {
   })
 
   it('keeps a full-width responsive masonry and explicit full-screen preview controls', async () => {
-    const [list, detail, preview] = await Promise.all([
+    const [list, detail, preview, dialogContent] = await Promise.all([
       readFile(new URL('../src/pages/Gallery/index.vue', import.meta.url), 'utf8'),
       readFile(new URL('../src/pages/Gallery/AlbumDetail.vue', import.meta.url), 'utf8'),
       readFile(new URL('../src/pages/Gallery/PhotoPreview.vue', import.meta.url), 'utf8'),
+      readFile(new URL('../src/components/ui/dialog/DialogContent.vue', import.meta.url), 'utf8'),
     ])
     const safeAreaTop =
       /padding-top: calc\(clamp\(6\.5rem, 10vh, 8rem\) \+ env\(safe-area-inset-top\)\)/
@@ -117,8 +118,27 @@ describe('gallery frontend cross-layer contract', () => {
     assert.match(detail, /\.photo-tile:focus-visible/)
     assert.match(preview, /:show-close-button="false"/)
     assert.match(preview, /aria-label="关闭照片预览"/)
-    assert.match(preview, /width: 100vw !important/)
-    assert.match(preview, /height: 100dvh !important/)
-    assert.match(preview, /translate: none !important/)
+    assert.match(preview, /<DialogContent[\s\S]*?fullscreen/)
+    assert.doesNotMatch(preview, /translate: none !important/)
+    assert.match(dialogContent, /fullscreen\?: boolean/)
+    assert.match(dialogContent, /props\.fullscreen\s*\?\s*FULLSCREEN_CONTENT_CLASS/)
+    const fullscreenClass = dialogContent.match(
+      /const FULLSCREEN_CONTENT_CLASS = '([^']+)'/,
+    )?.[1]
+    assert.ok(fullscreenClass, 'fullscreen dialog class must be declared explicitly')
+    assert.match(fullscreenClass, /fixed inset-0/)
+    assert.match(fullscreenClass, /h-dvh w-screen max-w-none/)
+    assert.doesNotMatch(fullscreenClass, /top-1\/2|left-1\/2|-translate-|zoom-in|zoom-out/)
+  })
+
+  it('keeps the map color mode local instead of mutating the document theme', async () => {
+    const map = await readFile(
+      new URL('../src/components/ui/map/Map.vue', import.meta.url),
+      'utf8',
+    )
+    assert.doesNotMatch(map, /useColorMode/)
+    assert.match(map, /colorMode\?: 'light' \| 'dark'/)
+    assert.match(map, /colorMode: 'light'/)
+    assert.match(map, /props\.colorMode === 'dark'/)
   })
 })
