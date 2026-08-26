@@ -1,9 +1,36 @@
+import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
+
+const require = createRequire(import.meta.url)
+const maplibreWorkerFiles = ['maplibre-gl-worker.mjs', 'maplibre-gl-shared.mjs'] as const
+
+function emitMaplibreWorkerAssets(): Plugin {
+  let assetsDir = 'assets'
+
+  return {
+    name: 'emit-maplibre-worker-assets',
+    apply: 'build',
+    configResolved(config) {
+      assetsDir = config.build.assetsDir
+    },
+    async buildStart() {
+      for (const fileName of maplibreWorkerFiles) {
+        const source = await readFile(require.resolve(`maplibre-gl/dist/${fileName}`))
+        this.emitFile({
+          type: 'asset',
+          fileName: `${assetsDir}/${fileName}`,
+          source,
+        })
+      }
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -16,15 +43,15 @@ export default defineConfig({
       },
     }),
     vueDevTools(),
-    tailwindcss()
+    tailwindcss(),
+    emitMaplibreWorkerAssets(),
   ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
-  // MapLibre 自带 Web Worker 入口，交给 Vite 按原生 ESM 处理，避免预构建后
-  // worker 文件名失配（maplibre-gl-worker.mjs not found）。
+  // 开发期让 MapLibre 保持原生 ESM 目录结构；生产期由上面的插件补齐同目录 worker 模块图。
   optimizeDeps: {
     exclude: ['maplibre-gl', '@geoql/v-maplibre'],
   },
