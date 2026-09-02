@@ -1,0 +1,14 @@
+{"file": ".trellis/tasks/09-02-tokscale-landing-ai-cost/research/tokscale-api.md", "reason": "核对归一化实现是否忠实于上游字段语义，尤其 <synthetic> 过滤、totals.messages 恒为 0、tokens 含 cacheRead 的口径"}
+{"file": ".trellis/spec/backend/backend/index.md", "reason": "后端 Quality Check 清单，逐条核对"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "命名、JSDoc 完整性、禁用模式核查"}
+{"file": ".trellis/spec/backend/backend/logging-guidelines.md", "reason": "核查日志不泄露 username 与上游 body"}
+{"file": ".trellis/spec/backend/backend/error-handling.md", "reason": "核查错误分类与软降级路径，公开接口不得抛 500"}
+{"file": ".trellis/spec/backend/backend/duolingo-guidelines.md", "reason": "对照既有集成的缓存/stale/单飞行为，确认 tokscale service 没有偏离既定模式"}
+{"file": ".trellis/spec/backend/backend/weather-guidelines.md", "reason": "对照非密钥配置范式，确认 tokscaleUsername 的启用判定与软降级一致"}
+{"file": ".trellis/spec/common/shared/quality-guidelines.md", "reason": "common 包质量门禁"}
+{"file": ".trellis/spec/common/shared/type-safety.md", "reason": "核查 unknown 边界解析是否完整、有无残留 any"}
+{"file": ".trellis/spec/common/shared/package-boundaries.md", "reason": "核查 common 导出面改动是否破坏下游，以及 wakatime 导出是否清理干净"}
+{"file": ".trellis/spec/frontend/frontend/quality-guidelines.md", "reason": "前端质量门禁：组件行数、函数行数、async/await 用法"}
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "核查卡片组件的 props 边界与展示逻辑归属"}
+{"file": ".trellis/spec/frontend/frontend/type-safety.md", "reason": "核查前端类型引用来源与 vue-tsc 通过情况"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "最后一轮全量检查需跨 common/backend/frontend 三层一致性，而非只看最后改动的那层"}

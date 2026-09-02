@@ -1,0 +1,20 @@
+{"file": ".trellis/tasks/09-02-tokscale-landing-ai-cost/research/tokscale-api.md", "reason": "上游 tokscale 两个接口的完整字段、period 语义、软件展示名表、已实测的数值恒等式与坑（<synthetic>、messages 恒为 0、无 schemaVersion）"}
+{"file": ".trellis/spec/backend/backend/index.md", "reason": "后端 Pre-Development Checklist 与模块落位规则，新增 tokscale 模块前必读"}
+{"file": ".trellis/spec/backend/backend/directory-structure.md", "reason": "module/<name>/ 的文件组织约定，决定 tokscale 模块的文件划分"}
+{"file": ".trellis/spec/backend/backend/duolingo-guidelines.md", "reason": "与本任务结构最接近的既有集成：后台刷新 + 进程内快照 + 公开白名单 DTO + stale fallback，tokscale service 照此实现"}
+{"file": ".trellis/spec/backend/backend/weather-guidelines.md", "reason": "非密钥型配置的既有范式（ISystemBaseConfig.weatherCity，空值即禁用），D5 决定 tokscaleUsername 照此实现"}
+{"file": ".trellis/spec/backend/backend/wakatime-guidelines.md", "reason": "被替换对象的完整契约，用于核对删除范围不遗漏；本任务结束时该文件应被 tokscale-guidelines.md 取代"}
+{"file": ".trellis/spec/backend/backend/logging-guidelines.md", "reason": "HLogger 用法；client 错误日志必须不含 body 与 username"}
+{"file": ".trellis/spec/backend/backend/error-handling.md", "reason": "BusinessException 与异常边界约定，tokscale 的软降级不得抛公开 500"}
+{"file": ".trellis/spec/backend/backend/quality-guidelines.md", "reason": "命名、JSDoc、禁用模式（无 console.log、不混用 await 与 .then）"}
+{"file": ".trellis/spec/common/shared/index.md", "reason": "common 包的入口约定与导出规则，新增 tokscale 类型/常量需遵循"}
+{"file": ".trellis/spec/common/shared/package-boundaries.md", "reason": "跨包边界：哪些内容该放 common、ISystemBaseConfig 共享字段的约束"}
+{"file": ".trellis/spec/common/shared/type-safety.md", "reason": "unknown 边界解析与 I 前缀接口约定，归一化函数入参为 unknown"}
+{"file": ".trellis/spec/common/shared/system-config-contracts.md", "reason": "ISystemBaseConfig 字段的跨层契约写法，新增 tokscaleUsername 需对齐"}
+{"file": ".trellis/spec/frontend/frontend/index.md", "reason": "前端 Pre-Development Checklist"}
+{"file": ".trellis/spec/frontend/frontend/directory-structure.md", "reason": "api/ hooks/ pages/ 的落位规则，决定 tokscale 前端文件放哪"}
+{"file": ".trellis/spec/frontend/frontend/component-guidelines.md", "reason": "SFC 结构、props 边界、组件行数上限；卡片组件需遵守"}
+{"file": ".trellis/spec/frontend/frontend/hook-guidelines.md", "reason": "useLandingTokscaleStats 的 alova useRequest 封装与软降级约定"}
+{"file": ".trellis/spec/frontend/frontend/type-safety.md", "reason": "前端类型约定，DTO 从 @applog/common 引入不得本地重复声明"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "本任务同时改 common/backend/frontend 三层，需按跨层顺序推进（common 先 build）"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "判断哪些 WakaTime 逻辑可复用（缓存骨架）、哪些必须重写（client/normalizer/展示）"}
