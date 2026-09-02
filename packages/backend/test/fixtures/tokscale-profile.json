@@ -1,0 +1,2843 @@
+{
+  "user": {
+    "id": "",
+    "username": "youranreus",
+    "displayName": "季悠然",
+    "avatarUrl": "",
+    "createdAt": "2026-09-02T06:46:03.923Z",
+    "rank": 640
+  },
+  "stats": {
+    "totalTokens": 1568825777,
+    "totalCost": 1339.4841000000001,
+    "inputTokens": 67616561,
+    "outputTokens": 8167693,
+    "cacheReadTokens": 1471250106,
+    "cacheWriteTokens": 20546926,
+    "reasoningTokens": 1244491,
+    "submissionCount": 11,
+    "activeDays": 30,
+    "sessionCount": 0
+  },
+  "dateRange": {
+    "start": "2026-08-04",
+    "end": "2026-09-02"
+  },
+  "chartRange": {
+    "start": "2026-08-04",
+    "end": "2026-09-02"
+  },
+  "period": "month",
+  "updatedAt": "2026-09-02T13:17:39.338Z",
+  "submissionFreshness": {
+    "lastUpdated": "2026-09-02T13:17:39.338Z",
+    "cliVersion": "4.15.0",
+    "schemaVersion": 2,
+    "isStale": false
+  },
+  "clients": [
+    "hermes",
+    "codex",
+    "cursor",
+    "pi"
+  ],
+  "models": [
+    "deepseek-v4-pro",
+    "deepseek-v4-flash",
+    "gpt-5.6-sol",
+    "kimi-k3-high",
+    "cursor-grok-4.5-high-fast",
+    "claude-opus-5-thinking-medium",
+    "claude-opus-5-thinking-high",
+    "cursor-grok-4.6-high-fast",
+    "cursor-grok-4.6-high",
+    "composer-2.5",
+    "claude-opus-4-8-thinking-medium",
+    "claude-opus-5-thinking-xhigh",
+    "gpt-5.5",
+    "gpt-5.6-terra"
+  ],
+  "mcpServers": [],
+  "hasBackfill": false,
+  "modelUsage": [
+    {
+      "model": "gpt-5.6-sol",
+      "tokens": 566929254,
+      "cost": 378.3733698,
+      "percentage": 28.247694850213
+    },
+    {
+      "model": "cursor-grok-4.6-high-fast",
+      "tokens": 268526238,
+      "cost": 334.3471119999999,
+      "percentage": 24.960887704169473
+    },
+    {
+      "model": "claude-opus-5-thinking-high",
+      "tokens": 166199858,
+      "cost": 182.52738525000004,
+      "percentage": 13.626693345450317
+    },
+    {
+      "model": "claude-opus-5-thinking-medium",
+      "tokens": 163466311,
+      "cost": 171.38590250000001,
+      "percentage": 12.794919150909967
+    },
+    {
+      "model": "cursor-grok-4.5-high-fast",
+      "tokens": 150511321,
+      "cost": 132.5130584,
+      "percentage": 9.892843249857208
+    },
+    {
+      "model": "claude-opus-5-thinking-xhigh",
+      "tokens": 98937925,
+      "cost": 108.17999999999999,
+      "percentage": 8.076243924119954
+    },
+    {
+      "model": "gpt-5.5",
+      "tokens": 25497943,
+      "cost": 18.016437999999987,
+      "percentage": 1.345028174632869
+    },
+    {
+      "model": "claude-opus-4-8-thinking-medium",
+      "tokens": 4568032,
+      "cost": 6.670000000000001,
+      "percentage": 0.49795292081604836
+    },
+    {
+      "model": "cursor-grok-4.6-high",
+      "tokens": 2497274,
+      "cost": 4.266138,
+      "percentage": 0.3184911360876063
+    },
+    {
+      "model": "deepseek-v4-flash",
+      "tokens": 110081821,
+      "cost": 1.3400821384,
+      "percentage": 0.10004464991749562
+    },
+    {
+      "model": "composer-2.5",
+      "tokens": 4251739,
+      "cost": 1.0637999,
+      "percentage": 0.07941863078992804
+    },
+    {
+      "model": "gpt-5.6-terra",
+      "tokens": 1201067,
+      "cost": 0.4718863999999999,
+      "percentage": 0.0352289671924093
+    },
+    {
+      "model": "kimi-k3-high",
+      "tokens": 85919,
+      "cost": 0.1779474,
+      "percentage": 0.013284771751367566
+    },
+    {
+      "model": "deepseek-v4-pro",
+      "tokens": 6071075,
+      "cost": 0.15094008399999997,
+      "percentage": 0.01126852409235677
+    }
+  ],
+  "contributions": [
+    {
+      "date": "2026-08-04",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 100018548,
+        "cost": 66.4546,
+        "messages": 0
+      },
+      "intensity": 2,
+      "tokenBreakdown": {
+        "input": 3337049,
+        "output": 416482,
+        "cacheRead": 94791495,
+        "cacheWrite": 1400623,
+        "reasoning": 72899
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-pro": {
+              "cost": 0.15094008399999997,
+              "input": 201670,
+              "output": 45161,
+              "tokens": 6071075,
+              "messages": 328,
+              "cacheRead": 5803648,
+              "reasoning": 20596,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.0294058512,
+              "input": 106112,
+              "output": 25090,
+              "tokens": 1986780,
+              "messages": 120,
+              "cacheRead": 1842304,
+              "reasoning": 13274,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 307782,
+            "output": 70251,
+            "cacheRead": 7645952,
+            "cacheWrite": 0,
+            "reasoning": 33870
+          },
+          "cost": 0.18034593519999997,
+          "messages": 448
+        },
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 36.07574160000005,
+              "input": 2331522,
+              "output": 168782,
+              "tokens": 59022917,
+              "messages": 789,
+              "cacheRead": 56483584,
+              "reasoning": 39029,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 2331522,
+            "output": 168782,
+            "cacheRead": 56483584,
+            "cacheWrite": 0,
+            "reasoning": 39029
+          },
+          "cost": 36.07574160000005,
+          "messages": 789
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "kimi-k3-high": {
+              "cost": 0.1779474,
+              "input": 52429,
+              "output": 722,
+              "tokens": 85919,
+              "messages": 1,
+              "cacheRead": 32768,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.5-high-fast": {
+              "cost": 4.8258280000000005,
+              "input": 349350,
+              "output": 48218,
+              "tokens": 7530176,
+              "messages": 30,
+              "cacheRead": 7132608,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-medium": {
+              "cost": 25.194740250000002,
+              "input": 295966,
+              "output": 128509,
+              "tokens": 25321681,
+              "messages": 20,
+              "cacheRead": 23496583,
+              "reasoning": 0,
+              "cacheWrite": 1400623
+            }
+          },
+          "tokens": {
+            "input": 697745,
+            "output": 177449,
+            "cacheRead": 30661959,
+            "cacheWrite": 1400623,
+            "reasoning": 0
+          },
+          "cost": 30.198515650000004,
+          "messages": 51
+        }
+      ]
+    },
+    {
+      "date": "2026-08-05",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 29363941,
+        "cost": 21.201700000000002,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 2452747,
+        "output": 179766,
+        "cacheRead": 26662592,
+        "cacheWrite": 0,
+        "reasoning": 68836
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.062209917600000005,
+              "input": 201368,
+              "output": 83278,
+              "tokens": 3481200,
+              "messages": 259,
+              "cacheRead": 3140992,
+              "reasoning": 55562,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 201368,
+            "output": 83278,
+            "cacheRead": 3140992,
+            "cacheWrite": 0,
+            "reasoning": 55562
+          },
+          "cost": 0.062209917600000005,
+          "messages": 259
+        },
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 12.92304399999999,
+              "input": 1475905,
+              "output": 39662,
+              "tokens": 16430601,
+              "messages": 262,
+              "cacheRead": 14901760,
+              "reasoning": 13274,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1475905,
+            "output": 39662,
+            "cacheRead": 14901760,
+            "cacheWrite": 0,
+            "reasoning": 13274
+          },
+          "cost": 12.92304399999999,
+          "messages": 262
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 8.216449599999999,
+              "input": 775474,
+              "output": 56826,
+              "tokens": 9452140,
+              "messages": 35,
+              "cacheRead": 8619840,
+              "reasoning": 0,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 775474,
+            "output": 56826,
+            "cacheRead": 8619840,
+            "cacheWrite": 0,
+            "reasoning": 0
+          },
+          "cost": 8.216449599999999,
+          "messages": 35
+        }
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 69809930,
+        "cost": 26.360899999999997,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 2031339,
+        "output": 383478,
+        "cacheRead": 67103814,
+        "cacheWrite": 171171,
+        "reasoning": 120128
+      },
+      "clients": [
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 3.115616800000001,
+              "input": 190918,
+              "output": 17073,
+              "tokens": 5056921,
+              "messages": 85,
+              "cacheRead": 4845312,
+              "reasoning": 3618,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 190918,
+            "output": 17073,
+            "cacheRead": 4845312,
+            "cacheWrite": 0,
+            "reasoning": 3618
+          },
+          "cost": 3.115616800000001,
+          "messages": 85
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 21.721299600000002,
+              "input": 1513783,
+              "output": 166958,
+              "tokens": 26600165,
+              "messages": 63,
+              "cacheRead": 24919424,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-medium": {
+              "cost": 1.31912275,
+              "input": 6,
+              "output": 3311,
+              "tokens": 507486,
+              "messages": 1,
+              "cacheRead": 332998,
+              "reasoning": 0,
+              "cacheWrite": 171171
+            }
+          },
+          "tokens": {
+            "input": 1513789,
+            "output": 170269,
+            "cacheRead": 25252422,
+            "cacheWrite": 171171,
+            "reasoning": 0
+          },
+          "cost": 23.04042235,
+          "messages": 64
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.20494538399999995,
+              "input": 326632,
+              "output": 196136,
+              "tokens": 37645358,
+              "messages": 648,
+              "cacheRead": 37006080,
+              "reasoning": 116510,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 326632,
+            "output": 196136,
+            "cacheRead": 37006080,
+            "cacheWrite": 0,
+            "reasoning": 116510
+          },
+          "cost": 0.20494538399999995,
+          "messages": 648
+        }
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 44471158,
+        "cost": 31.034599999999998,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 1520304,
+        "output": 307000,
+        "cacheRead": 42098982,
+        "cacheWrite": 502850,
+        "reasoning": 42022
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.059883495199999984,
+              "input": 154462,
+              "output": 72176,
+              "tokens": 6371444,
+              "messages": 236,
+              "cacheRead": 6102784,
+              "reasoning": 42022,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 154462,
+            "output": 72176,
+            "cacheRead": 6102784,
+            "cacheWrite": 0,
+            "reasoning": 42022
+          },
+          "cost": 0.059883495199999984,
+          "messages": 236
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 18.282629200000002,
+              "input": 1365620,
+              "output": 174390,
+              "tokens": 21461674,
+              "messages": 64,
+              "cacheRead": 19921664,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-medium": {
+              "cost": 12.6920395,
+              "input": 222,
+              "output": 60434,
+              "tokens": 16638040,
+              "messages": 4,
+              "cacheRead": 16074534,
+              "reasoning": 0,
+              "cacheWrite": 502850
+            }
+          },
+          "tokens": {
+            "input": 1365842,
+            "output": 234824,
+            "cacheRead": 35996198,
+            "cacheWrite": 502850,
+            "reasoning": 0
+          },
+          "cost": 30.974668700000002,
+          "messages": 68
+        }
+      ]
+    },
+    {
+      "date": "2026-08-08",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 987944,
+        "cost": 0.0168,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 64415,
+        "output": 16883,
+        "cacheRead": 895744,
+        "cacheWrite": 0,
+        "reasoning": 10902
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.0167824032,
+              "input": 64415,
+              "output": 16883,
+              "tokens": 987944,
+              "messages": 50,
+              "cacheRead": 895744,
+              "reasoning": 10902,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 64415,
+            "output": 16883,
+            "cacheRead": 895744,
+            "cacheWrite": 0,
+            "reasoning": 10902
+          },
+          "cost": 0.0167824032,
+          "messages": 50
+        }
+      ]
+    },
+    {
+      "date": "2026-08-09",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 1298382,
+        "cost": 0.0192,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 73495,
+        "output": 18915,
+        "cacheRead": 1194880,
+        "cacheWrite": 0,
+        "reasoning": 11092
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.019244704,
+              "input": 73495,
+              "output": 18915,
+              "tokens": 1298382,
+              "messages": 67,
+              "cacheRead": 1194880,
+              "reasoning": 11092,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 73495,
+            "output": 18915,
+            "cacheRead": 1194880,
+            "cacheWrite": 0,
+            "reasoning": 11092
+          },
+          "cost": 0.019244704,
+          "messages": 67
+        }
+      ]
+    },
+    {
+      "date": "2026-08-10",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 74921793,
+        "cost": 59.642700000000005,
+        "messages": 0
+      },
+      "intensity": 2,
+      "tokenBreakdown": {
+        "input": 2910548,
+        "output": 456129,
+        "cacheRead": 70217616,
+        "cacheWrite": 1260783,
+        "reasoning": 76717
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.046078179999999996,
+              "input": 158009,
+              "output": 55690,
+              "tokens": 2719344,
+              "messages": 221,
+              "cacheRead": 2476800,
+              "reasoning": 28845,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 158009,
+            "output": 55690,
+            "cacheRead": 2476800,
+            "cacheWrite": 0,
+            "reasoning": 28845
+          },
+          "cost": 0.046078179999999996,
+          "messages": 221
+        },
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 18.762199199999987,
+              "input": 1104287,
+              "output": 115458,
+              "tokens": 28963745,
+              "messages": 324,
+              "cacheRead": 27696128,
+              "reasoning": 47872,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1104287,
+            "output": 115458,
+            "cacheRead": 27696128,
+            "cacheWrite": 0,
+            "reasoning": 47872
+          },
+          "cost": 18.762199199999987,
+          "messages": 324
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 15.216351600000003,
+              "input": 1437523,
+              "output": 124164,
+              "tokens": 16278295,
+              "messages": 31,
+              "cacheRead": 14716608,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 25.61800375,
+              "input": 210729,
+              "output": 160817,
+              "tokens": 26960409,
+              "messages": 6,
+              "cacheRead": 25328080,
+              "reasoning": 0,
+              "cacheWrite": 1260783
+            }
+          },
+          "tokens": {
+            "input": 1648252,
+            "output": 284981,
+            "cacheRead": 40044688,
+            "cacheWrite": 1260783,
+            "reasoning": 0
+          },
+          "cost": 40.83435535,
+          "messages": 37
+        }
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 78068586,
+        "cost": 55.6161,
+        "messages": 0
+      },
+      "intensity": 2,
+      "tokenBreakdown": {
+        "input": 3345630,
+        "output": 493342,
+        "cacheRead": 73429428,
+        "cacheWrite": 716181,
+        "reasoning": 84005
+      },
+      "clients": [
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 21.26450480000001,
+              "input": 1408889,
+              "output": 115149,
+              "tokens": 33390275,
+              "messages": 499,
+              "cacheRead": 31836672,
+              "reasoning": 29565,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1408889,
+            "output": 115149,
+            "cacheRead": 31836672,
+            "cacheWrite": 0,
+            "reasoning": 29565
+          },
+          "cost": 21.26450480000001,
+          "messages": 499
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 21.740383199999997,
+              "input": 1574829,
+              "output": 157687,
+              "tokens": 25553060,
+              "messages": 54,
+              "cacheRead": 23820544,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 12.52492025,
+              "input": 134857,
+              "output": 114366,
+              "tokens": 9996112,
+              "messages": 6,
+              "cacheRead": 9030708,
+              "reasoning": 0,
+              "cacheWrite": 716181
+            }
+          },
+          "tokens": {
+            "input": 1709686,
+            "output": 272053,
+            "cacheRead": 32851252,
+            "cacheWrite": 716181,
+            "reasoning": 0
+          },
+          "cost": 34.26530345,
+          "messages": 60
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.08625197120000001,
+              "input": 227055,
+              "output": 106140,
+              "tokens": 9129139,
+              "messages": 381,
+              "cacheRead": 8741504,
+              "reasoning": 54440,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 227055,
+            "output": 106140,
+            "cacheRead": 8741504,
+            "cacheWrite": 0,
+            "reasoning": 54440
+          },
+          "cost": 0.08625197120000001,
+          "messages": 381
+        }
+      ]
+    },
+    {
+      "date": "2026-08-12",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 98146140,
+        "cost": 68.4123,
+        "messages": 0
+      },
+      "intensity": 2,
+      "tokenBreakdown": {
+        "input": 3914875,
+        "output": 475173,
+        "cacheRead": 93092875,
+        "cacheWrite": 587452,
+        "reasoning": 75765
+      },
+      "clients": [
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 29.326141600000025,
+              "input": 1545032,
+              "output": 136560,
+              "tokens": 50786997,
+              "messages": 492,
+              "cacheRead": 49065984,
+              "reasoning": 39421,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1545032,
+            "output": 136560,
+            "cacheRead": 49065984,
+            "cacheWrite": 0,
+            "reasoning": 39421
+          },
+          "cost": 29.326141600000025,
+          "messages": 492
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 22.768644399999996,
+              "input": 2078056,
+              "output": 171838,
+              "tokens": 24634534,
+              "messages": 41,
+              "cacheRead": 22384640,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high-fast": {
+              "cost": 1.718912,
+              "input": 106262,
+              "output": 3374,
+              "tokens": 1363012,
+              "messages": 1,
+              "cacheRead": 1253376,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 14.5402725,
+              "input": 218,
+              "output": 91938,
+              "tokens": 17817923,
+              "messages": 3,
+              "cacheRead": 17138315,
+              "reasoning": 0,
+              "cacheWrite": 587452
+            }
+          },
+          "tokens": {
+            "input": 2184536,
+            "output": 267150,
+            "cacheRead": 40776331,
+            "cacheWrite": 587452,
+            "reasoning": 0
+          },
+          "cost": 39.027828899999996,
+          "messages": 45
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.05830368799999999,
+              "input": 185307,
+              "output": 71463,
+              "tokens": 3543674,
+              "messages": 254,
+              "cacheRead": 3250560,
+              "reasoning": 36344,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 185307,
+            "output": 71463,
+            "cacheRead": 3250560,
+            "cacheWrite": 0,
+            "reasoning": 36344
+          },
+          "cost": 0.05830368799999999,
+          "messages": 254
+        }
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 35442204,
+        "cost": 21.2873,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 1925871,
+        "output": 158776,
+        "cacheRead": 33289088,
+        "cacheWrite": 0,
+        "reasoning": 68469
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.06776881759999999,
+              "input": 224158,
+              "output": 82356,
+              "tokens": 4327009,
+              "messages": 283,
+              "cacheRead": 3972992,
+              "reasoning": 47503,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 224158,
+            "output": 82356,
+            "cacheRead": 3972992,
+            "cacheWrite": 0,
+            "reasoning": 47503
+          },
+          "cost": 0.06776881759999999,
+          "messages": 283
+        },
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 18.238210399999996,
+              "input": 1426520,
+              "output": 62045,
+              "tokens": 28689307,
+              "messages": 306,
+              "cacheRead": 27179776,
+              "reasoning": 20966,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1426520,
+            "output": 62045,
+            "cacheRead": 27179776,
+            "cacheWrite": 0,
+            "reasoning": 20966
+          },
+          "cost": 18.238210399999996,
+          "messages": 306
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.6-high-fast": {
+              "cost": 2.981278,
+              "input": 275193,
+              "output": 14375,
+              "tokens": 2425888,
+              "messages": 6,
+              "cacheRead": 2136320,
+              "reasoning": 0,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 275193,
+            "output": 14375,
+            "cacheRead": 2136320,
+            "cacheWrite": 0,
+            "reasoning": 0
+          },
+          "cost": 2.981278,
+          "messages": 6
+        }
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 1953226,
+        "cost": 0.0474,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 165601,
+        "output": 65220,
+        "cacheRead": 1684992,
+        "cacheWrite": 0,
+        "reasoning": 37413
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.0473692376,
+              "input": 165601,
+              "output": 65220,
+              "tokens": 1953226,
+              "messages": 207,
+              "cacheRead": 1684992,
+              "reasoning": 37413,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 165601,
+            "output": 65220,
+            "cacheRead": 1684992,
+            "cacheWrite": 0,
+            "reasoning": 37413
+          },
+          "cost": 0.0473692376,
+          "messages": 207
+        }
+      ]
+    },
+    {
+      "date": "2026-08-15",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 275541,
+        "cost": 0.0045,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 20407,
+        "output": 3225,
+        "cacheRead": 250880,
+        "cacheWrite": 0,
+        "reasoning": 1029
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.004462444,
+              "input": 20407,
+              "output": 3225,
+              "tokens": 275541,
+              "messages": 22,
+              "cacheRead": 250880,
+              "reasoning": 1029,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 20407,
+            "output": 3225,
+            "cacheRead": 250880,
+            "cacheWrite": 0,
+            "reasoning": 1029
+          },
+          "cost": 0.004462444,
+          "messages": 22
+        }
+      ]
+    },
+    {
+      "date": "2026-08-16",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 812148,
+        "cost": 0.0132,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 56501,
+        "output": 8469,
+        "cacheRead": 742912,
+        "cacheWrite": 0,
+        "reasoning": 4266
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.0132336336,
+              "input": 56501,
+              "output": 8469,
+              "tokens": 812148,
+              "messages": 55,
+              "cacheRead": 742912,
+              "reasoning": 4266,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 56501,
+            "output": 8469,
+            "cacheRead": 742912,
+            "cacheWrite": 0,
+            "reasoning": 4266
+          },
+          "cost": 0.0132336336,
+          "messages": 55
+        }
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 91537756,
+        "cost": 83.6223,
+        "messages": 0
+      },
+      "intensity": 3,
+      "tokenBreakdown": {
+        "input": 6538901,
+        "output": 488019,
+        "cacheRead": 82970836,
+        "cacheWrite": 1457929,
+        "reasoning": 82071
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 15.114010000000002,
+              "input": 2979230,
+              "output": 7038,
+              "tokens": 3000787,
+              "messages": 248,
+              "cacheRead": 13440,
+              "reasoning": 1079,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.08473854160000001,
+              "input": 213907,
+              "output": 104107,
+              "tokens": 8744925,
+              "messages": 217,
+              "cacheRead": 8367872,
+              "reasoning": 59039,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 3193137,
+            "output": 111145,
+            "cacheRead": 8381312,
+            "cacheWrite": 0,
+            "reasoning": 60118
+          },
+          "cost": 15.198748541600002,
+          "messages": 465
+        },
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 29.67370159999999,
+              "input": 1882939,
+              "output": 136695,
+              "tokens": 49464051,
+              "messages": 568,
+              "cacheRead": 47422464,
+              "reasoning": 21953,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1882939,
+            "output": 136695,
+            "cacheRead": 47422464,
+            "cacheWrite": 0,
+            "reasoning": 21953
+          },
+          "cost": 29.67370159999999,
+          "messages": 568
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.6-high": {
+              "cost": 1.6679680000000001,
+              "input": 279177,
+              "output": 10461,
+              "tokens": 715366,
+              "messages": 1,
+              "cacheRead": 425728,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.5-high-fast": {
+              "cost": 2.0386952,
+              "input": 215660,
+              "output": 14747,
+              "tokens": 1895559,
+              "messages": 3,
+              "cacheRead": 1665152,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high-fast": {
+              "cost": 13.90441,
+              "input": 824853,
+              "output": 54984,
+              "tokens": 10899549,
+              "messages": 15,
+              "cacheRead": 10019712,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 21.138798999999995,
+              "input": 143135,
+              "output": 159987,
+              "tokens": 16817519,
+              "messages": 13,
+              "cacheRead": 15056468,
+              "reasoning": 0,
+              "cacheWrite": 1457929
+            }
+          },
+          "tokens": {
+            "input": 1462825,
+            "output": 240179,
+            "cacheRead": 27167060,
+            "cacheWrite": 1457929,
+            "reasoning": 0
+          },
+          "cost": 38.7498722,
+          "messages": 32
+        }
+      ]
+    },
+    {
+      "date": "2026-08-18",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 137865956,
+        "cost": 145.7476,
+        "messages": 0
+      },
+      "intensity": 4,
+      "tokenBreakdown": {
+        "input": 5551280,
+        "output": 571413,
+        "cacheRead": 128814241,
+        "cacheWrite": 2913228,
+        "reasoning": 15794
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 4.385318,
+              "input": 768167,
+              "output": 15641,
+              "tokens": 936836,
+              "messages": 128,
+              "cacheRead": 150506,
+              "reasoning": 2522,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 768167,
+            "output": 15641,
+            "cacheRead": 150506,
+            "cacheWrite": 0,
+            "reasoning": 2522
+          },
+          "cost": 4.385318,
+          "messages": 128
+        },
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 12.065016799999997,
+              "input": 1062570,
+              "output": 41173,
+              "tokens": 17931607,
+              "messages": 246,
+              "cacheRead": 16814592,
+              "reasoning": 13272,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1062570,
+            "output": 41173,
+            "cacheRead": 16814592,
+            "cacheWrite": 0,
+            "reasoning": 13272
+          },
+          "cost": 12.065016799999997,
+          "messages": 246
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "composer-2.5": {
+              "cost": 0.4728464,
+              "input": 210623,
+              "output": 15569,
+              "tokens": 1869254,
+              "messages": 2,
+              "cacheRead": 1643062,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.5-high-fast": {
+              "cost": 6.072692,
+              "input": 369737,
+              "output": 51068,
+              "tokens": 7055685,
+              "messages": 1,
+              "cacheRead": 6634880,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high-fast": {
+              "cost": 38.90179199999999,
+              "input": 2811935,
+              "output": 143060,
+              "tokens": 30073651,
+              "messages": 54,
+              "cacheRead": 27118656,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 7.37,
+              "input": 162150,
+              "output": 44188,
+              "tokens": 4283451,
+              "messages": 3,
+              "cacheRead": 3521488,
+              "reasoning": 0,
+              "cacheWrite": 555625
+            },
+            "claude-opus-5-thinking-medium": {
+              "cost": 73.49000000000001,
+              "input": 166060,
+              "output": 242704,
+              "tokens": 73477227,
+              "messages": 18,
+              "cacheRead": 70862007,
+              "reasoning": 0,
+              "cacheWrite": 2206456
+            },
+            "claude-opus-4-8-thinking-medium": {
+              "cost": 2.99,
+              "input": 38,
+              "output": 18010,
+              "tokens": 2238245,
+              "messages": 1,
+              "cacheRead": 2069050,
+              "reasoning": 0,
+              "cacheWrite": 151147
+            }
+          },
+          "tokens": {
+            "input": 3720543,
+            "output": 514599,
+            "cacheRead": 111849143,
+            "cacheWrite": 2913228,
+            "reasoning": 0
+          },
+          "cost": 129.2973304,
+          "messages": 79
+        }
+      ]
+    },
+    {
+      "date": "2026-08-19",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 68159073,
+        "cost": 69.1769,
+        "messages": 0
+      },
+      "intensity": 2,
+      "tokenBreakdown": {
+        "input": 5231078,
+        "output": 326261,
+        "cacheRead": 62429761,
+        "cacheWrite": 133733,
+        "reasoning": 38240
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 4.589643,
+              "input": 798817,
+              "output": 13213,
+              "tokens": 1212306,
+              "messages": 111,
+              "cacheRead": 398336,
+              "reasoning": 1940,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.0168190032,
+              "input": 70340,
+              "output": 18164,
+              "tokens": 605094,
+              "messages": 86,
+              "cacheRead": 505344,
+              "reasoning": 11246,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 869157,
+            "output": 31377,
+            "cacheRead": 903680,
+            "cacheWrite": 0,
+            "reasoning": 13186
+          },
+          "cost": 4.6064620032,
+          "messages": 197
+        },
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 18.753664799999978,
+              "input": 1060559,
+              "output": 100392,
+              "tokens": 31192277,
+              "messages": 308,
+              "cacheRead": 30006272,
+              "reasoning": 25054,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1060559,
+            "output": 100392,
+            "cacheRead": 30006272,
+            "cacheWrite": 0,
+            "reasoning": 25054
+          },
+          "cost": 18.753664799999978,
+          "messages": 308
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 4.3927304000000005,
+              "input": 769681,
+              "output": 37270,
+              "tokens": 2662951,
+              "messages": 2,
+              "cacheRead": 1856000,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high-fast": {
+              "cost": 39.524049999999995,
+              "input": 2531659,
+              "output": 146346,
+              "tokens": 31337973,
+              "messages": 41,
+              "cacheRead": 28659968,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-4-8-thinking-medium": {
+              "cost": 1.9,
+              "input": 22,
+              "output": 10876,
+              "tokens": 1148472,
+              "messages": 1,
+              "cacheRead": 1003841,
+              "reasoning": 0,
+              "cacheWrite": 133733
+            }
+          },
+          "tokens": {
+            "input": 3301362,
+            "output": 194492,
+            "cacheRead": 31519809,
+            "cacheWrite": 133733,
+            "reasoning": 0
+          },
+          "cost": 45.8167804,
+          "messages": 44
+        }
+      ]
+    },
+    {
+      "date": "2026-08-20",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 125941626,
+        "cost": 126.9726,
+        "messages": 0
+      },
+      "intensity": 4,
+      "tokenBreakdown": {
+        "input": 5178561,
+        "output": 591978,
+        "cacheRead": 116868094,
+        "cacheWrite": 3248568,
+        "reasoning": 54425
+      },
+      "clients": [
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 30.849707200000005,
+              "input": 2277697,
+              "output": 153626,
+              "tokens": 47107578,
+              "messages": 536,
+              "cacheRead": 44635648,
+              "reasoning": 40607,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 2277697,
+            "output": 153626,
+            "cacheRead": 44635648,
+            "cacheWrite": 0,
+            "reasoning": 40607
+          },
+          "cost": 30.849707200000005,
+          "messages": 536
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.6-high-fast": {
+              "cost": 35.91031199999999,
+              "input": 1913919,
+              "output": 178316,
+              "tokens": 29939403,
+              "messages": 52,
+              "cacheRead": 27847168,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-medium": {
+              "cost": 58.69,
+              "input": 620251,
+              "output": 229937,
+              "tokens": 47521877,
+              "messages": 21,
+              "cacheRead": 43423121,
+              "reasoning": 0,
+              "cacheWrite": 3248568
+            }
+          },
+          "tokens": {
+            "input": 2534170,
+            "output": 408253,
+            "cacheRead": 71270289,
+            "cacheWrite": 3248568,
+            "reasoning": 0
+          },
+          "cost": 94.60031199999999,
+          "messages": 73
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 1.4966544999999998,
+              "input": 254828,
+              "output": 6146,
+              "tokens": 338002,
+              "messages": 34,
+              "cacheRead": 76269,
+              "reasoning": 759,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.0259426664,
+              "input": 111866,
+              "output": 23953,
+              "tokens": 1034766,
+              "messages": 143,
+              "cacheRead": 885888,
+              "reasoning": 13059,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 366694,
+            "output": 30099,
+            "cacheRead": 962157,
+            "cacheWrite": 0,
+            "reasoning": 13818
+          },
+          "cost": 1.5225971663999998,
+          "messages": 177
+        }
+      ]
+    },
+    {
+      "date": "2026-08-21",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 178835662,
+        "cost": 157.4239,
+        "messages": 0
+      },
+      "intensity": 4,
+      "tokenBreakdown": {
+        "input": 4244142,
+        "output": 792700,
+        "cacheRead": 170001691,
+        "cacheWrite": 3742025,
+        "reasoning": 55104
+      },
+      "clients": [
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 44.48883920000004,
+              "input": 2313452,
+              "output": 199969,
+              "tokens": 78160193,
+              "messages": 701,
+              "cacheRead": 75596928,
+              "reasoning": 49844,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 2313452,
+            "output": 199969,
+            "cacheRead": 75596928,
+            "cacheWrite": 0,
+            "reasoning": 49844
+          },
+          "cost": 44.48883920000004,
+          "messages": 701
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.6-high-fast": {
+              "cost": 13.808678,
+              "input": 849841,
+              "output": 61038,
+              "tokens": 10804639,
+              "messages": 12,
+              "cacheRead": 9893760,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-xhigh": {
+              "cost": 98.25999999999999,
+              "input": 891346,
+              "output": 516433,
+              "tokens": 89156615,
+              "messages": 18,
+              "cacheRead": 84006811,
+              "reasoning": 0,
+              "cacheWrite": 3742025
+            }
+          },
+          "tokens": {
+            "input": 1741187,
+            "output": 577471,
+            "cacheRead": 93900571,
+            "cacheWrite": 3742025,
+            "reasoning": 0
+          },
+          "cost": 112.06867799999999,
+          "messages": 30
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 0.855572,
+              "input": 144506,
+              "output": 3959,
+              "tokens": 177193,
+              "messages": 26,
+              "cacheRead": 28544,
+              "reasoning": 184,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.0107956744,
+              "input": 44997,
+              "output": 11301,
+              "tokens": 537022,
+              "messages": 90,
+              "cacheRead": 475648,
+              "reasoning": 5076,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 189503,
+            "output": 15260,
+            "cacheRead": 504192,
+            "cacheWrite": 0,
+            "reasoning": 5260
+          },
+          "cost": 0.8663676744,
+          "messages": 116
+        }
+      ]
+    },
+    {
+      "date": "2026-08-22",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 249101,
+        "cost": 0.0044,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 20515,
+        "output": 3214,
+        "cacheRead": 224128,
+        "cacheWrite": 0,
+        "reasoning": 1244
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.0043995784000000005,
+              "input": 20515,
+              "output": 3214,
+              "tokens": 249101,
+              "messages": 21,
+              "cacheRead": 224128,
+              "reasoning": 1244,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 20515,
+            "output": 3214,
+            "cacheRead": 224128,
+            "cacheWrite": 0,
+            "reasoning": 1244
+          },
+          "cost": 0.0043995784000000005,
+          "messages": 21
+        }
+      ]
+    },
+    {
+      "date": "2026-08-23",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 253832,
+        "cost": 0.0046,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 20653,
+        "output": 3828,
+        "cacheRead": 227968,
+        "cacheWrite": 0,
+        "reasoning": 1383
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.004601570399999999,
+              "input": 20653,
+              "output": 3828,
+              "tokens": 253832,
+              "messages": 21,
+              "cacheRead": 227968,
+              "reasoning": 1383,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 20653,
+            "output": 3828,
+            "cacheRead": 227968,
+            "cacheWrite": 0,
+            "reasoning": 1383
+          },
+          "cost": 0.004601570399999999,
+          "messages": 21
+        }
+      ]
+    },
+    {
+      "date": "2026-08-24",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 1215168,
+        "cost": 0.2316,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 127431,
+        "output": 27663,
+        "cacheRead": 1045165,
+        "cacheWrite": 0,
+        "reasoning": 14909
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 0.20839649999999998,
+              "input": 36210,
+              "output": 514,
+              "tokens": 60620,
+              "messages": 13,
+              "cacheRead": 23853,
+              "reasoning": 43,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.023232333600000002,
+              "input": 91221,
+              "output": 27149,
+              "tokens": 1154548,
+              "messages": 163,
+              "cacheRead": 1021312,
+              "reasoning": 14866,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 127431,
+            "output": 27663,
+            "cacheRead": 1045165,
+            "cacheWrite": 0,
+            "reasoning": 14909
+          },
+          "cost": 0.23162883359999997,
+          "messages": 176
+        }
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 1433523,
+        "cost": 2.1207,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 420261,
+        "output": 27371,
+        "cacheRead": 974976,
+        "cacheWrite": 0,
+        "reasoning": 10915
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 2.103417,
+              "input": 350337,
+              "output": 7878,
+              "tokens": 590019,
+              "messages": 47,
+              "cacheRead": 230784,
+              "reasoning": 1020,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.017331137599999998,
+              "input": 69924,
+              "output": 19493,
+              "tokens": 843504,
+              "messages": 133,
+              "cacheRead": 744192,
+              "reasoning": 9895,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 420261,
+            "output": 27371,
+            "cacheRead": 974976,
+            "cacheWrite": 0,
+            "reasoning": 10915
+          },
+          "cost": 2.1207481375999997,
+          "messages": 180
+        }
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 68359311,
+        "cost": 73.9358,
+        "messages": 0
+      },
+      "intensity": 2,
+      "tokenBreakdown": {
+        "input": 2917927,
+        "output": 418820,
+        "cacheRead": 63897771,
+        "cacheWrite": 1101234,
+        "reasoning": 23559
+      },
+      "clients": [
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 4.524395999999999,
+              "input": 221461,
+              "output": 14966,
+              "tokens": 8028259,
+              "messages": 80,
+              "cacheRead": 7780480,
+              "reasoning": 11352,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 221461,
+            "output": 14966,
+            "cacheRead": 7780480,
+            "cacheWrite": 0,
+            "reasoning": 11352
+          },
+          "cost": 4.524395999999999,
+          "messages": 80
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 4.5579232,
+              "input": 232564,
+              "output": 44392,
+              "tokens": 5435228,
+              "messages": 1,
+              "cacheRead": 5158272,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high-fast": {
+              "cost": 34.68586199999999,
+              "input": 1629474,
+              "output": 186725,
+              "tokens": 27917959,
+              "messages": 22,
+              "cacheRead": 26101760,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 26.919999999999998,
+              "input": 517609,
+              "output": 134247,
+              "tokens": 24496419,
+              "messages": 6,
+              "cacheRead": 22850841,
+              "reasoning": 0,
+              "cacheWrite": 993722
+            },
+            "claude-opus-4-8-thinking-medium": {
+              "cost": 1.78,
+              "input": 26,
+              "output": 11359,
+              "tokens": 1181315,
+              "messages": 1,
+              "cacheRead": 1062418,
+              "reasoning": 0,
+              "cacheWrite": 107512
+            }
+          },
+          "tokens": {
+            "input": 2379673,
+            "output": 376723,
+            "cacheRead": 55173291,
+            "cacheWrite": 1101234,
+            "reasoning": 0
+          },
+          "cost": 67.9437852,
+          "messages": 30
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 1.4483389999999998,
+              "input": 236723,
+              "output": 6198,
+              "tokens": 400951,
+              "messages": 38,
+              "cacheRead": 157568,
+              "reasoning": 462,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.019273049599999998,
+              "input": 80070,
+              "output": 20933,
+              "tokens": 899180,
+              "messages": 120,
+              "cacheRead": 786432,
+              "reasoning": 11745,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 316793,
+            "output": 27131,
+            "cacheRead": 944000,
+            "cacheWrite": 0,
+            "reasoning": 12207
+          },
+          "cost": 1.4676120495999998,
+          "messages": 158
+        }
+      ]
+    },
+    {
+      "date": "2026-08-27",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 105499256,
+        "cost": 119.7945,
+        "messages": 0
+      },
+      "intensity": 4,
+      "tokenBreakdown": {
+        "input": 3821020,
+        "output": 623073,
+        "cacheRead": 98564937,
+        "cacheWrite": 2466516,
+        "reasoning": 23710
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 1.2420109999999998,
+              "input": 190192,
+              "output": 7127,
+              "tokens": 353092,
+              "messages": 32,
+              "cacheRead": 154482,
+              "reasoning": 1291,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.034074769600000006,
+              "input": 131525,
+              "output": 36334,
+              "tokens": 1319110,
+              "messages": 152,
+              "cacheRead": 1128832,
+              "reasoning": 22419,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 321717,
+            "output": 43461,
+            "cacheRead": 1283314,
+            "cacheWrite": 0,
+            "reasoning": 23710
+          },
+          "cost": 1.2760857695999999,
+          "messages": 184
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "composer-2.5": {
+              "cost": 0.43829239999999997,
+              "input": 145569,
+              "output": 16219,
+              "tokens": 1786590,
+              "messages": 2,
+              "cacheRead": 1624802,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high": {
+              "cost": 2.59817,
+              "input": 341459,
+              "output": 24257,
+              "tokens": 1781908,
+              "messages": 8,
+              "cacheRead": 1416192,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.5-high-fast": {
+              "cost": 1.9664544,
+              "input": 222372,
+              "output": 23872,
+              "tokens": 1563748,
+              "messages": 2,
+              "cacheRead": 1317504,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high-fast": {
+              "cost": 48.865446,
+              "input": 2439020,
+              "output": 217133,
+              "tokens": 40477145,
+              "messages": 47,
+              "cacheRead": 37820992,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 64.64999999999999,
+              "input": 350883,
+              "output": 298131,
+              "tokens": 58217663,
+              "messages": 14,
+              "cacheRead": 55102133,
+              "reasoning": 0,
+              "cacheWrite": 2466516
+            }
+          },
+          "tokens": {
+            "input": 3499303,
+            "output": 579612,
+            "cacheRead": 97281623,
+            "cacheWrite": 2466516,
+            "reasoning": 0
+          },
+          "cost": 118.51836279999999,
+          "messages": 73
+        }
+      ]
+    },
+    {
+      "date": "2026-08-28",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 30583549,
+        "cost": 34.080600000000004,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 1364953,
+        "output": 207845,
+        "cacheRead": 28571850,
+        "cacheWrite": 402884,
+        "reasoning": 36017
+      },
+      "clients": [
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.6-high-fast": {
+              "cost": 18.501483999999998,
+              "input": 889861,
+              "output": 78690,
+              "tokens": 14966311,
+              "messages": 15,
+              "cacheRead": 13997760,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 3.86,
+              "input": 90,
+              "output": 18424,
+              "tokens": 3245470,
+              "messages": 5,
+              "cacheRead": 3057893,
+              "reasoning": 0,
+              "cacheWrite": 169063
+            },
+            "claude-opus-5-thinking-xhigh": {
+              "cost": 9.92,
+              "input": 102,
+              "output": 50411,
+              "tokens": 9781310,
+              "messages": 1,
+              "cacheRead": 9496976,
+              "reasoning": 0,
+              "cacheWrite": 233821
+            }
+          },
+          "tokens": {
+            "input": 890053,
+            "output": 147525,
+            "cacheRead": 26552629,
+            "cacheWrite": 402884,
+            "reasoning": 0
+          },
+          "cost": 32.281484,
+          "messages": 21
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 1.7529325,
+              "input": 295676,
+              "output": 7929,
+              "tokens": 377878,
+              "messages": 33,
+              "cacheRead": 73365,
+              "reasoning": 908,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.046161296799999994,
+              "input": 179224,
+              "output": 52391,
+              "tokens": 2212580,
+              "messages": 202,
+              "cacheRead": 1945856,
+              "reasoning": 35109,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 474900,
+            "output": 60320,
+            "cacheRead": 2019221,
+            "cacheWrite": 0,
+            "reasoning": 36017
+          },
+          "cost": 1.7990937968,
+          "messages": 235
+        }
+      ]
+    },
+    {
+      "date": "2026-08-29",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 256752,
+        "cost": 0.0047,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 21085,
+        "output": 3782,
+        "cacheRead": 230656,
+        "cacheWrite": 0,
+        "reasoning": 1229
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.0046566968,
+              "input": 21085,
+              "output": 3782,
+              "tokens": 256752,
+              "messages": 22,
+              "cacheRead": 230656,
+              "reasoning": 1229,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 21085,
+            "output": 3782,
+            "cacheRead": 230656,
+            "cacheWrite": 0,
+            "reasoning": 1229
+          },
+          "cost": 0.0046566968,
+          "messages": 22
+        }
+      ]
+    },
+    {
+      "date": "2026-08-30",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 283462,
+        "cost": 0.0047,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 21071,
+        "output": 3742,
+        "cacheRead": 257536,
+        "cacheWrite": 0,
+        "reasoning": 1113
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "deepseek-v4-flash": {
+              "cost": 0.004718800799999999,
+              "input": 21071,
+              "output": 3742,
+              "tokens": 283462,
+              "messages": 23,
+              "cacheRead": 257536,
+              "reasoning": 1113,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 21071,
+            "output": 3742,
+            "cacheRead": 257536,
+            "cacheWrite": 0,
+            "reasoning": 1113
+          },
+          "cost": 0.004718800799999999,
+          "messages": 23
+        }
+      ]
+    },
+    {
+      "date": "2026-08-31",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 85326963,
+        "cost": 69.662,
+        "messages": 0
+      },
+      "intensity": 2,
+      "tokenBreakdown": {
+        "input": 3586763,
+        "output": 362004,
+        "cacheRead": 80882445,
+        "cacheWrite": 441749,
+        "reasoning": 54002
+      },
+      "clients": [
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 30.63369760000001,
+              "input": 1526574,
+              "output": 142738,
+              "tokens": 53749698,
+              "messages": 402,
+              "cacheRead": 52037504,
+              "reasoning": 42882,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1526574,
+            "output": 142738,
+            "cacheRead": 52037504,
+            "cacheWrite": 0,
+            "reasoning": 42882
+          },
+          "cost": 30.63369760000001,
+          "messages": 402
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "composer-2.5": {
+              "cost": 0.1526611,
+              "input": 53762,
+              "output": 7545,
+              "tokens": 595895,
+              "messages": 1,
+              "cacheRead": 534588,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high-fast": {
+              "cost": 30.604656,
+              "input": 1361834,
+              "output": 163643,
+              "tokens": 25325413,
+              "messages": 43,
+              "cacheRead": 23799936,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "claude-opus-5-thinking-high": {
+              "cost": 5.90538975,
+              "input": 159893,
+              "output": 18913,
+              "tokens": 4364892,
+              "messages": 3,
+              "cacheRead": 3744337,
+              "reasoning": 0,
+              "cacheWrite": 441749
+            }
+          },
+          "tokens": {
+            "input": 1575489,
+            "output": 190101,
+            "cacheRead": 28078861,
+            "cacheWrite": 441749,
+            "reasoning": 0
+          },
+          "cost": 36.66270685,
+          "messages": 47
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 2.3472809999999997,
+              "input": 407957,
+              "output": 8972,
+              "tokens": 494832,
+              "messages": 38,
+              "cacheRead": 76672,
+              "reasoning": 1231,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.0183284024,
+              "input": 76743,
+              "output": 20193,
+              "tokens": 796233,
+              "messages": 128,
+              "cacheRead": 689408,
+              "reasoning": 9889,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 484700,
+            "output": 29165,
+            "cacheRead": 766080,
+            "cacheWrite": 0,
+            "reasoning": 11120
+          },
+          "cost": 2.3656094023999996,
+          "messages": 166
+        }
+      ]
+    },
+    {
+      "date": "2026-09-01",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 86780847,
+        "cost": 74.8023,
+        "messages": 0
+      },
+      "intensity": 2,
+      "tokenBreakdown": {
+        "input": 4183097,
+        "output": 461969,
+        "cacheRead": 82061351,
+        "cacheWrite": 0,
+        "reasoning": 74430
+      },
+      "clients": [
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 1.2849385,
+              "input": 206823,
+              "output": 7254,
+              "tokens": 281747,
+              "messages": 27,
+              "cacheRead": 66407,
+              "reasoning": 1263,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.030719735999999997,
+              "input": 123087,
+              "output": 31002,
+              "tokens": 974547,
+              "messages": 142,
+              "cacheRead": 801920,
+              "reasoning": 18538,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 329910,
+            "output": 38256,
+            "cacheRead": 868327,
+            "cacheWrite": 0,
+            "reasoning": 19801
+          },
+          "cost": 1.315658236,
+          "messages": 169
+        },
+        {
+          "client": "codex",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 28.552443200000003,
+              "input": 1360809,
+              "output": 127376,
+              "tokens": 50215582,
+              "messages": 460,
+              "cacheRead": 48672768,
+              "reasoning": 54629,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 1360809,
+            "output": 127376,
+            "cacheRead": 48672768,
+            "cacheWrite": 0,
+            "reasoning": 54629
+          },
+          "cost": 28.552443200000003,
+          "messages": 460
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.5-high-fast": {
+              "cost": 0.7129776,
+              "input": 110544,
+              "output": 9146,
+              "tokens": 388106,
+              "messages": 1,
+              "cacheRead": 268416,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "cursor-grok-4.6-high-fast": {
+              "cost": 44.221216,
+              "input": 2381834,
+              "output": 287191,
+              "tokens": 34920865,
+              "messages": 46,
+              "cacheRead": 32251840,
+              "reasoning": 0,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 2492378,
+            "output": 296337,
+            "cacheRead": 32520256,
+            "cacheWrite": 0,
+            "reasoning": 0
+          },
+          "cost": 44.9341936,
+          "messages": 47
+        }
+      ]
+    },
+    {
+      "date": "2026-09-02",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 50674399,
+        "cost": 31.7836,
+        "messages": 0
+      },
+      "intensity": 1,
+      "tokenBreakdown": {
+        "input": 2549041,
+        "output": 271153,
+        "cacheRead": 47771402,
+        "cacheWrite": 0,
+        "reasoning": 82803
+      },
+      "clients": [
+        {
+          "client": "pi",
+          "modelId": "",
+          "models": {
+            "gpt-5.5": {
+              "cost": 18.016437999999987,
+              "input": 808924,
+              "output": 55163,
+              "tokens": 25497943,
+              "messages": 232,
+              "cacheRead": 24633856,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "gpt-5.6-terra": {
+              "cost": 0.4718863999999999,
+              "input": 73398,
+              "output": 8437,
+              "tokens": 1201067,
+              "messages": 23,
+              "cacheRead": 1119232,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.14847017600000004,
+              "input": 83447,
+              "output": 36647,
+              "tokens": 4647198,
+              "messages": 60,
+              "cacheRead": 4527104,
+              "reasoning": 0,
+              "cacheWrite": 0
+            },
+            "<synthetic>": {
+              "tokens": 12345,
+              "cost": 9.99,
+              "input": 1,
+              "output": 2,
+              "cacheRead": 3,
+              "cacheWrite": 4,
+              "reasoning": 5,
+              "messages": 0
+            }
+          },
+          "tokens": {
+            "input": 965769,
+            "output": 100247,
+            "cacheRead": 30280192,
+            "cacheWrite": 0,
+            "reasoning": 0
+          },
+          "cost": 18.636794575999986,
+          "messages": 315
+        },
+        {
+          "client": "cursor",
+          "modelId": "",
+          "models": {
+            "cursor-grok-4.6-high-fast": {
+              "cost": 10.719015999999998,
+              "input": 707560,
+              "output": 47446,
+              "tokens": 8074430,
+              "messages": 9,
+              "cacheRead": 7319424,
+              "reasoning": 0,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 707560,
+            "output": 47446,
+            "cacheRead": 7319424,
+            "cacheWrite": 0,
+            "reasoning": 0
+          },
+          "cost": 10.719015999999998,
+          "messages": 9
+        },
+        {
+          "client": "hermes",
+          "modelId": "",
+          "models": {
+            "gpt-5.6-sol": {
+              "cost": 2.297932,
+              "input": 384137,
+              "output": 10595,
+              "tokens": 514983,
+              "messages": 39,
+              "cacheRead": 118794,
+              "reasoning": 1457,
+              "cacheWrite": 0
+            },
+            "deepseek-v4-flash": {
+              "cost": 0.1298789776,
+              "input": 491575,
+              "output": 112865,
+              "tokens": 10738778,
+              "messages": 305,
+              "cacheRead": 10052992,
+              "reasoning": 81346,
+              "cacheWrite": 0
+            }
+          },
+          "tokens": {
+            "input": 875712,
+            "output": 123460,
+            "cacheRead": 10171786,
+            "cacheWrite": 0,
+            "reasoning": 82803
+          },
+          "cost": 2.4278109776,
+          "messages": 344
+        }
+      ]
+    },
+    {
+      "date": "2026-09-03",
+      "timestampMs": null,
+      "totals": {
+        "tokens": 0,
+        "cost": 0,
+        "messages": 0
+      },
+      "intensity": 0,
+      "tokenBreakdown": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "reasoning": 0
+      },
+      "clients": []
+    }
+  ]
+}

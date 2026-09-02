@@ -51,6 +51,8 @@ export interface ISystemBaseConfig {
   githubUrl?: string;
   /** Landing 昨日状态目标步数；未设置时回退 Garmin 目标 */
   landingStepGoal?: number;
+  /** Tokscale 用户名；空字符串或未设置时 Landing 不展示 AI Cost */
+  tokscaleUsername?: string;
 }
 
 /**
@@ -106,15 +108,6 @@ export interface IDuolingoConfig {
   enabled: boolean;
 }
 
-/** WakaTime Landing 统计配置（存于 SYSTEM_WAKATIME_CONFIG）。 */
-export interface IWakaTimeConfig {
-  /** 仅服务端持有；空值或脱敏占位提交表示保留旧值。 */
-  apiKey: string;
-  /** 决定 30 个自然日边界的 IANA 时区。 */
-  timeZone: string;
-  /** Landing 展示总开关。 */
-  enabled: boolean;
-}
 
 /** 评论邮件通知配置（存于 SYSTEM_NOTIFICATION_CONFIG）。 */
 export interface INotificationConfig {

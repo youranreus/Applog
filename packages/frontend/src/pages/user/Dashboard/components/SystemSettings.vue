@@ -50,7 +50,6 @@ import {
 } from '@/components/ui/dialog';
 import LandingSettingsFields from './LandingSettingsFields.vue';
 import DuolingoSettings from './DuolingoSettings.vue';
-import WakaTimeSettings from './WakaTimeSettings.vue';
 import NotificationSettings from './NotificationSettings.vue';
 import FlomoSettings from './FlomoSettings.vue';
 import GallerySettings from './GallerySettings.vue';
@@ -147,6 +146,7 @@ const formData = ref<ISystemBaseConfig>({
   bilibiliUrl: '',
   githubUrl: '',
   landingStepGoal: undefined,
+  tokscaleUsername: '',
 });
 
 /**
@@ -326,6 +326,7 @@ function initializeFormData(): void {
       bilibiliUrl: config.bilibiliUrl || '',
       githubUrl: config.githubUrl,
       landingStepGoal: config.landingStepGoal,
+      tokscaleUsername: config.tokscaleUsername || '',
     };
   } else {
     formData.value = {
@@ -343,6 +344,7 @@ function initializeFormData(): void {
       bilibiliUrl: '',
       githubUrl: '',
       landingStepGoal: undefined,
+      tokscaleUsername: '',
     };
   }
 }
@@ -696,6 +698,7 @@ async function handleSaveUmami(): Promise<void> {
         v-model:landing-bio="formData.landingBio"
         v-model:landing-slogan="formData.landingSlogan"
         v-model:weather-city="formData.weatherCity"
+        v-model:tokscale-username="formData.tokscaleUsername"
         v-model:personal-homepage-url="formData.personalHomepageUrl"
         v-model:bilibili-url="formData.bilibiliUrl"
         v-model:github-url="formData.githubUrl"
@@ -856,7 +859,6 @@ async function handleSaveUmami(): Promise<void> {
       </FieldGroup>
 
       <DuolingoSettings v-if="isAdmin" />
-      <WakaTimeSettings v-if="isAdmin" />
       <FlomoSettings v-if="isAdmin" />
       <GallerySettings v-if="isAdmin" />
       <NotificationSettings v-if="isAdmin" />

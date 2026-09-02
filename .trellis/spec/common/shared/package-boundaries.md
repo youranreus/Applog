@@ -48,7 +48,7 @@ Criteria (all should be true):
 - Stored value JSON matches `ISystemBaseConfig`:
   - Required: `title`, `description`, `allowUserLogin`, `allowComment`
   - Optional site meta: `siteFoundedDate?` (`YYYY-MM-DD` or `''`), `icpFilingNumber?` (display string or `''`)
-  - Optional Landing meta: `landingTitle?`, `landingBio?`, `landingSlogan?`, `weatherCity?`, `personalHomepageUrl?`, `bilibiliUrl?`, `githubUrl?`
+  - Optional Landing meta: `landingTitle?`, `landingBio?`, `landingSlogan?`, `weatherCity?`, `tokscaleUsername?`, `personalHomepageUrl?`, `bilibiliUrl?`, `githubUrl?`
 - Frontend prefers `getSystemConfigKey(...)` when calling config APIs
 - Backend currently concatenates `${prefix}${SYSTEM_CONFIG_KEYS.BASE_CONFIG}` (semantically equivalent; prefer reusing the helper when touching that code)
 - Old configs missing optional fields follow each field's contract below; do not collapse missing and explicit empty with `||`
@@ -101,6 +101,7 @@ References:
 | `landingBio` | `string?` | Landing subtitle; missing = legacy default copy; trimmed empty = hide |
 | `landingSlogan` | `string?` | Missing = legacy default copy; trimmed empty = hide |
 | `weatherCity` | `string?` | Missing/non-string/empty = weather disabled; backend trims before provider lookup |
+| `tokscaleUsername` | `string?` | Missing/non-string/empty = Landing AI Cost disabled; backend trims before Tokscale profile lookup |
 | `personalHomepageUrl` | `string?` | Missing = `/about.html`; empty = hide; allow `/...` or HTTP(S) |
 | `bilibiliUrl` | `string?` | Missing/empty = hide; HTTP(S) only |
 | `githubUrl` | `string?` | Missing = legacy GitHub default; empty = hide; HTTP(S) only |

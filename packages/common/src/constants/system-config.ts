@@ -23,9 +23,6 @@ export const SYSTEM_UMAMI_CONFIG_KEY = "UMAMI_CONFIG";
  */
 export const SYSTEM_DUOLINGO_CONFIG_KEY = "DUOLINGO_CONFIG";
 
-/** WakaTime Landing 统计配置 key 后缀 */
-export const SYSTEM_WAKATIME_CONFIG_KEY = "WAKATIME_CONFIG";
-
 /** 评论邮件通知配置 key 后缀 */
 export const SYSTEM_NOTIFICATION_CONFIG_KEY = "NOTIFICATION_CONFIG";
 
@@ -38,9 +35,6 @@ export const UMAMI_PASSWORD_MASK = "********";
  * Duolingo JWT 读回脱敏占位
  */
 export const DUOLINGO_JWT_MASK = "********";
-
-/** WakaTime API key 读回脱敏占位 */
-export const WAKATIME_API_KEY_MASK = "********";
 
 /** 评论邮件 token 读回脱敏占位 */
 export const NOTIFICATION_MAIL_TOKEN_MASK = "********";
@@ -56,8 +50,6 @@ export const SYSTEM_CONFIG_KEYS = {
   UMAMI_CONFIG: SYSTEM_UMAMI_CONFIG_KEY,
   /** Duolingo 学习统计配置（含凭证，仅 admin） */
   DUOLINGO_CONFIG: SYSTEM_DUOLINGO_CONFIG_KEY,
-  /** WakaTime Landing 统计配置（含凭证，仅 admin） */
-  WAKATIME_CONFIG: SYSTEM_WAKATIME_CONFIG_KEY,
   /** 评论邮件通知配置（含凭证，仅 admin） */
   NOTIFICATION_CONFIG: SYSTEM_NOTIFICATION_CONFIG_KEY,
 } as const;

@@ -11,6 +11,7 @@ const landingTitle = defineModel<string>('landingTitle', { default: '' });
 const landingBio = defineModel<string>('landingBio', { default: '' });
 const landingSlogan = defineModel<string>('landingSlogan', { default: '' });
 const weatherCity = defineModel<string>('weatherCity', { default: '' });
+const tokscaleUsername = defineModel<string>('tokscaleUsername', { default: '' });
 const personalHomepageUrl = defineModel<string>('personalHomepageUrl', {
   default: '/about.html',
 });
@@ -69,6 +70,19 @@ const githubUrl = defineModel<string>('githubUrl', { default: '' });
       />
       <FieldDescription>
         服务端会查询该城市的实时天气；无法获取时首页自动隐藏
+      </FieldDescription>
+    </Field>
+
+    <Field>
+      <FieldLabel>Tokscale 用户名</FieldLabel>
+      <Input
+        v-model="tokscaleUsername"
+        type="text"
+        maxlength="80"
+        placeholder="如 youranreus"
+      />
+      <FieldDescription>
+        服务端会拉取该用户的公开 AI 用量；留空则首页不展示 AI Cost
       </FieldDescription>
     </Field>
 

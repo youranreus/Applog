@@ -24,7 +24,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 - [ ] Visitor cursor changes follow the cross-layer [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md)
 - [ ] Comment UI, pending storage, or meme rendering changes follow the cross-layer [Comment Contract](../../backend/backend/comment-guidelines.md)
 - [ ] Duolingo Landing/config UI changes follow the cross-layer [Duolingo Contract](../../backend/backend/duolingo-guidelines.md)
-- [ ] WakaTime Landing/config UI changes follow the cross-layer [WakaTime Contract](../../backend/backend/wakatime-guidelines.md)
+- [ ] Tokscale Landing/config UI changes follow the cross-layer [Tokscale Contract](../../backend/backend/tokscale-guidelines.md)
 - [ ] Garmin Landing activity UI changes follow the cross-layer [Garmin Contract](../../backend/backend/garmin-guidelines.md)
 - [ ] Flomo settings or public notes UI changes follow [Flomo Contract](../../backend/backend/flomo-guidelines.md)
 - [ ] Gallery navigation/page/admin/map changes follow [Gallery Contract](../../common/shared/gallery-contracts.md)
@@ -44,7 +44,7 @@ Shared contracts: `@applog/common` (system config and visitor cursor presence).
 | [Visitor Cursor Contract](../../backend/backend/visitor-cursor-guidelines.md) | Public-route cursor identity, polling, API, and rendering                            | Filled |
 | [Comment Contract](../../backend/backend/comment-guidelines.md)               | Public trees, safe rendering, pending capability storage, and moderation             | Filled |
 | [Duolingo Contract](../../backend/backend/duolingo-guidelines.md)             | Public learning stats, admin secret form, heatmap semantics, and degradation         | Filled |
-| [WakaTime Contract](../../backend/backend/wakatime-guidelines.md)             | Public coding stats, admin secret form, single usage-card semantics, and degradation | Filled |
+| [Tokscale Contract](../../backend/backend/tokscale-guidelines.md)             | Public AI Cost card, base-config username field, token/client/model presentation, and degradation | Filled |
 | [Garmin Contract](../../backend/backend/garmin-guidelines.md)                 | Landing activity cards, covers, optional metrics, and privacy bounds                 | Filled |
 | [Flomo Contract](../../backend/backend/flomo-guidelines.md)                   | Admin publication settings, cursor loading, safe HTML, cards, and Dialog behavior    | Filled |
 | [Gallery Contract](../../common/shared/gallery-contracts.md)                  | Dynamic nav, same-page admin editing, upload queue, full-screen details, and MapCN Vue | Filled |
