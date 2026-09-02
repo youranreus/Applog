@@ -1027,3 +1027,24 @@ Added a one-command systemd maintenance orchestrator for application-key migrati
 ### Status
 
 [OK] **Completed**
+
+
+## Session 40: Landing AI Cost 切换 Tokscale
+
+**Date**: 2026-09-02
+**Task**: Landing AI Cost 切换 Tokscale
+**Branch**: `master`
+
+### Summary
+
+实现 Landing AI Cost 从 WakaTime 全栈切换到 Tokscale：新增 shared DTO/常量、backend Tokscale 快照刷新与公开接口、frontend Landing 展示和设置入口，删除 WakaTime 代码与规范；补充配置保存后立即刷新逻辑及回归测试，完成全量验证。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `24e8bd7` | (see git log) |
+
+### Status
+
+[OK] **Completed**
